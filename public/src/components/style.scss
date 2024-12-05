@@ -1,0 +1,159 @@
+.no-scroll {
+  overflow: hidden;
+}
+
+.flex-stretch {
+  flex: 1;
+}
+
+.editor {
+  height: 100vh;
+}
+
+
+.control-filters {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+
+  > * {
+    margin: .1em .2em;
+  }
+
+  .selected-filters {
+    cursor: pointer;
+    font-size: .8em;
+    margin: 0 .5em;
+    font-style: italic;
+
+    :hover {
+      background-color: rgb(184, 181, 255) !important;;
+    }
+  }
+}
+
+.scroll-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  min-width: 280px;
+}
+
+.n-list {
+  flex: 1;
+  overflow-y: scroll;
+
+  .selected {
+    outline: 2px solid #99c79c;
+    outline-offset: -1px;
+    background-color: #eaffdb;
+    border-radius: 0.18em;
+  }
+
+  &__item {
+    font-size: 0.8em;
+    //height: 40px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.16);
+    user-select: none;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.07);
+    }
+  }
+
+  &__title {
+    pointer-events: none;
+  }
+
+  &__tags {
+    font-size: 0.9em;
+    font-style: italic;
+
+    a {
+      cursor: pointer;
+      margin-left: .5em;
+      color: rgba(0, 0, 0, 0.67) !important;
+
+      &:hover {
+        background-color: rgb(184, 181, 255) !important;
+      }
+    }
+  }
+
+  &__icon {
+    height: 14px;
+    width: 14px;
+    //margin-right: 0.4em;
+    padding: 0;
+  }
+}
+
+.text-ru, .tags-ru{
+  opacity: 0;
+  height: 0;
+  pointer-events: none;
+  clip-path: inset(100%);
+  position: fixed;
+  visibility: hidden;
+  top: 0;
+}
+
+.ru-container {
+  opacity: 0;
+  height: 0;
+  pointer-events: none;
+  clip-path: inset(100%);
+  position: fixed;
+  visibility: hidden;
+  top: 0;
+}
+
+
+.options {
+  & > * {
+    margin: .1em;
+  }
+
+  &__title {
+    font-weight: 500;
+    border-radius: 0.18em;
+    border: 1px solid #dee2e6;
+  }
+
+  &__tags {
+    border: 1px solid #dee2e6;
+    border-radius: 0.18em;
+    font-style: italic;
+    font-size: .9em;
+    color: #0024d7;
+    resize: none;
+    height: 3em;
+  }
+
+  &__img {
+    height: 100px;
+    overflow: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.18em;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+
+    & img {
+      height: 100px;
+    }
+  }
+
+  &__text {
+    border: 1px solid #dee2e6;
+    border-radius: 0.18em;
+    resize: none;
+  }
+
+  &__control > * {
+    margin: 0.1em 0.2em;
+  }
+
+}
