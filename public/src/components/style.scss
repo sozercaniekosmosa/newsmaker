@@ -23,7 +23,7 @@
 
   .selected-filters {
     cursor: pointer;
-    font-size: .8em;
+    //font-size: .8em;
     margin: 0 .5em;
     font-style: italic;
 
@@ -53,7 +53,7 @@
   }
 
   &__item {
-    font-size: 0.8em;
+    //font-size: 0.8em;
     //height: 40px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.16);
     user-select: none;
@@ -68,7 +68,6 @@
   }
 
   &__tags {
-    font-size: 0.9em;
     font-style: italic;
 
     a {
@@ -90,7 +89,7 @@
   }
 }
 
-.text-ru, .tags-ru{
+.text-ru, .tags-ru {
   opacity: 0;
   height: 0;
   pointer-events: none;
@@ -112,6 +111,7 @@
 
 
 .options {
+  margin: 0 .2em;
   & > * {
     margin: .1em;
   }
@@ -120,16 +120,17 @@
     font-weight: 500;
     border-radius: 0.18em;
     border: 1px solid #dee2e6;
+    //font-size: .8em;
   }
 
   &__tags {
     border: 1px solid #dee2e6;
     border-radius: 0.18em;
     font-style: italic;
-    font-size: .9em;
     color: #0024d7;
     resize: none;
     height: 3em;
+    //font-size: .8em;
   }
 
   &__img {
@@ -150,10 +151,14 @@
     border: 1px solid #dee2e6;
     border-radius: 0.18em;
     resize: none;
+    //font-size: .8em;
   }
 
   &__control > * {
     margin: 0.1em 0.2em;
   }
 
+  &__prompt {
+    font-size: 1em !important;
+  }
 }

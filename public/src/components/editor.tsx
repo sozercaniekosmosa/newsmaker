@@ -260,9 +260,9 @@ function Editor() {
                         <textarea className="options__tags d-flex flex-row" value={news?.tagsEn || ''} ref={refTags}
                                   onChange={({target}) => setNews(was => ({...was, tagsEn: target.value}))}/>
                         <div className="editor-text flex-stretch d-flex flex-column">
-                            <div className="d-flex flex-row" style={{margin: '.3em 0', height: '2em'}}>
+                            <div className="d-flex flex-row" style={{margin: '.3em 0'}}>
                                 <input type="text" className="form-control me-1 options__prompt"
-                                       style={{width: '40em', height: '2em'}}
+                                       style={{width: '40em'}}
                                        value={prompt}
                                        onChange={e => setPrompt(e.target.value)}/>
                                 <ButtonSpinner className="btn-secondary btn-sm notranslate" state={stateNewsSimplify}
