@@ -108,7 +108,7 @@ function Editor() {
     async function updateAllNews() {
         setStateNewsUpdate(1)
         try {
-            let {data: numb} = await axios.post(HOST + 'update');
+            let {data: {numb}} = await axios.post(HOST + 'update');
             if (numb > 0) {
                 const from = formatDateTime(addDay(-1, new Date()), 'yyyy-mm-dd');
                 let to = formatDateTime(new Date(), 'yyyy-mm-dd');

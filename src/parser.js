@@ -79,50 +79,48 @@ export async function updateTG() {
         `);
 
     let html;
-    const strProxy = `200.10.40.164:19936:DMxoCo:kNu8Am\n200.10.40.158:9426:DMxoCo:kNu8Am\n131.108.17.228:9412:DMxoCo:kNu8Am`;
+    // const strProxy = `200.10.40.164:19936:DMxoCo:kNu8Am\n200.10.40.158:9426:DMxoCo:kNu8Am\n131.108.17.228:9412:DMxoCo:kNu8Am`;
     // const req = new Requester(strProxy)
     // html = await req.getUrl(HOST);
     html = await getHtmlUrl(HOST + '/international')
     const body = getDocument(html).querySelector('body');
-    // document.body.querySelectorAll('.dcr-mu6xev a')
     let arrHref = ([...body.querySelectorAll('[id^="container-"] a')].map(a => a.href));
 
     let cnt = 0;
     writeData('./_urls.json', JSON.stringify(arrHref))
 
-    for (let href of arrHref) {
+    async function fetchData(href) {
         try {
 
             if (href.startsWith('/')) href = HOST + href;
-            if (!href.startsWith('http')) continue;
+            if (!href.startsWith('http')) return;
 
             // SELECT id FROM news WHERE id = 2425107985663852
             const id = cyrb53(href);
             const arrSelect = await db.all(`SELECT * FROM news WHERE id = ?`, [id]);
-            if (arrSelect.length) continue;
+            if (arrSelect.length) return;
             const {title, tags, text, date} = await getTheGuardianTopicUrl(href);
-            if (!text || !tags || !text || !text.length || text.length < 50 || !title.length || !tags.length) continue;
+            if (!text || !tags || !text || !text.length || text.length < 50 || !title.length || !tags.length) return;
             console.log(cnt)
 
-            // let arrParam = (new URL(title)).pathname.split('/').filter(it => it.length > 0);
-            // const indexYear = (arrParam).findIndex(it => (+it) > 2000)
-            // let dt = date;
-            // if (!date) {
-            //     const [year, month, day] = arrParam.splice(indexYear, 3)
-            //     dt = (new Date(`${year}${month}${day}`)).getTime();
-            // }
             await db.run(`INSERT INTO news (id, url, title, tags, text, dt) VALUES (?, ?, ?, ?, ?, ?)`, [cyrb53(href), href, title, tags, text, date]);
 
-            // const reqTags = objNews.en.tags
-            // await saveTextToFile(path + `/topic.json`, JSON.stringify(objNews));
-            // const arr = await getArrUrlsImageDDG(reqTags)
-            // await downloadImages({arrUrl: arr, outputDir: path + '/img', ext: '.jfif', max: 10})
-            // await asyncDelay(Math.random() * 1000);
+
             cnt++;
         } catch (e) {
             console.log(e, cnt)
         }
+        return href;
     }
+
+    // for (let href of arrHref) {
+    //     href = await fetchData(href);
+    // }
+
+    let promises = arrHref.map(url => fetchData(url));
+    promises = promises.splice(0,2);
+    const results = await Promise.allSettled(promises);
+
     await db.close()
 
     return cnt;

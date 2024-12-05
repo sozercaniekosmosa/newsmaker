@@ -30,3 +30,4 @@ dist-ssr
 /iam.json
 /.env
 /_urls.json
+/news.db
