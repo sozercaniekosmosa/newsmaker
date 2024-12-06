@@ -21,7 +21,6 @@
 }
 .control-filters .selected-filters {
   cursor: pointer;
-  font-size: 0.8em;
   margin: 0 0.5em;
   font-style: italic;
 }
@@ -48,7 +47,6 @@
   border-radius: 0.18em;
 }
 .n-list__item {
-  font-size: 0.8em;
   border-bottom: 1px solid rgba(0, 0, 0, 0.16);
   user-select: none;
 }
@@ -59,7 +57,6 @@
   pointer-events: none;
 }
 .n-list__tags {
-  font-size: 0.9em;
   font-style: italic;
 }
 .n-list__tags a {
@@ -96,6 +93,9 @@
   top: 0;
 }
 
+.options {
+  margin: 0 0.2em;
+}
 .options > * {
   margin: 0.1em;
 }
@@ -108,7 +108,6 @@
   border: 1px solid #dee2e6;
   border-radius: 0.18em;
   font-style: italic;
-  font-size: 0.9em;
   color: #0024d7;
   resize: none;
   height: 3em;
@@ -132,6 +131,9 @@
 }
 .options__control > * {
   margin: 0.1em 0.2em;
+}
+.options__prompt {
+  font-size: 1em !important;
 }
 
 /*# sourceMappingURL=style.css.map */

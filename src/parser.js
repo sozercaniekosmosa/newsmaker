@@ -5,7 +5,7 @@ import puppeteer from "puppeteer";
 import translate from "@mgcodeur/super-translator";
 import {JSDOM, VirtualConsole} from "jsdom";
 import randUserAgent from "random-useragent";
-import {asyncDelay, CreateVideo, cyrb53, formatDateTime, saveTextToFile, writeData, writeFileAsync} from "./utils.js";
+import {asyncDelay, CreateVideo, cyrb53, formatDateTime, saveTextToFile, writeFileAsync} from "./utils.js";
 import {HttpsProxyAgent} from "https-proxy-agent";
 import Axios from "axios";
 import {Database} from "./db.js";
@@ -79,48 +79,36 @@ export async function updateTG() {
         `);
 
     let html;
-    // const strProxy = `200.10.40.164:19936:DMxoCo:kNu8Am\n200.10.40.158:9426:DMxoCo:kNu8Am\n131.108.17.228:9412:DMxoCo:kNu8Am`;
-    // const req = new Requester(strProxy)
+    const strProxy = `200.10.40.164:19936:DMxoCo:kNu8Am\n200.10.40.158:9426:DMxoCo:kNu8Am\n131.108.17.228:9412:DMxoCo:kNu8Am`;
+    const req = new Requester(strProxy)
     // html = await req.getUrl(HOST);
     html = await getHtmlUrl(HOST + '/international')
     const body = getDocument(html).querySelector('body');
+    // document.body.querySelectorAll('.dcr-mu6xev a')
     let arrHref = ([...body.querySelectorAll('[id^="container-"] a')].map(a => a.href));
 
     let cnt = 0;
-    writeData('./_urls.json', JSON.stringify(arrHref))
 
-    async function fetchData(href) {
+    for (let href of arrHref) {
         try {
 
             if (href.startsWith('/')) href = HOST + href;
-            if (!href.startsWith('http')) return;
+            if (!href.startsWith('http')) continue;
 
-            // SELECT id FROM news WHERE id = 2425107985663852
             const id = cyrb53(href);
             const arrSelect = await db.all(`SELECT * FROM news WHERE id = ?`, [id]);
-            if (arrSelect.length) return;
+
+            if (arrSelect.length) continue;
             const {title, tags, text, date} = await getTheGuardianTopicUrl(href);
-            if (!text || !tags || !text || !text.length || text.length < 50 || !title.length || !tags.length) return;
+            if (!text || !tags || !text || !text.length || text.length < 50 || !title.length || !tags.length) continue;
             console.log(cnt)
 
             await db.run(`INSERT INTO news (id, url, title, tags, text, dt) VALUES (?, ?, ?, ?, ?, ?)`, [cyrb53(href), href, title, tags, text, date]);
-
-
             cnt++;
         } catch (e) {
             console.log(e, cnt)
         }
-        return href;
     }
-
-    // for (let href of arrHref) {
-    //     href = await fetchData(href);
-    // }
-
-    let promises = arrHref.map(url => fetchData(url));
-    promises = promises.splice(0,2);
-    const results = await Promise.allSettled(promises);
-
     await db.close()
 
     return cnt;
@@ -212,7 +200,7 @@ export class Requester {
  * @returns {Promise<any>}
  */
 export const getHtmlUrl = async (url) => {
-    const userAgent = randUserAgent.getRandom();
+    const userAgent = getUserAgent();
     const {data} = await axios.get(url, {
         headers: {
             "User-Agent": userAgent
@@ -245,38 +233,34 @@ export const getDocument = (html) => {
  * @returns {Promise<{ru: {title: string, arrText: string[], tags: string}, en: {title: *, arrText: string[], tags: string}}>}
  */
 export async function getTheGuardianTopicUrl(url) {
-    try {
-        const html = await getHtmlUrl(url)
-        const doc = getDocument(html);
-        const titleEn = doc.title.replace('| The Guardian', '');
-        const arrTags = [...doc.querySelectorAll('.dcr-1jl528t a')].map(node => node.textContent.toLocaleLowerCase())//.sort((a, b) => a.localeCompare(b))
-        let tagsEn = arrTags.join(', ');
-        const unfDate = [...doc.querySelectorAll('[data-gu-name="meta"] *')].filter(a => a.childElementCount === 0 && a.textContent.includes("GMT"))[0].textContent;
-        const date = new Date(unfDate.slice(0, -3).trim().replace('.', ':')).getTime();
-        const p = doc.querySelectorAll('#maincontent > div p'); //doc.querySelector('[data-gu-name="body"]').textContent
+    const html = await getHtmlUrl(url)
+    const doc = getDocument(html);
+    const titleEn = doc.title.replace('| The Guardian', '');
+    const arrTags = [...doc.querySelectorAll('.dcr-1jl528t a')].map(node => node.textContent.toLocaleLowerCase())//.sort((a, b) => a.localeCompare(b))
+    let tagsEn = arrTags.join(', ');
+    const unfDate = doc.querySelector('.dcr-u0h1qy').textContent;
+    const date = new Date(unfDate.slice(0, -3).trim().replace('.', ':')).getTime();
+    const p = doc.querySelectorAll('#maincontent > div p');
 
-        if (!p) return null;
+    if (!p) return null;
 
-        let arrParagraphs = [...p]
+    let arrParagraphs = [...p]
 
-        let paragraphText = '';
-        for (let i = 0; i < arrParagraphs.length; i++) {
-            const paragraph = arrParagraphs[i];
+    let paragraphText = '';
+    for (let i = 0; i < arrParagraphs.length; i++) {
+        const paragraph = arrParagraphs[i];
 
-            //Удаление лишнего
-            if (paragraph.closest('blockquote')) continue
-            if (paragraph.textContent.toLocaleLowerCase().includes('editor’s note:')) continue
-            if (paragraph.textContent.toLocaleLowerCase().includes('related article')) continue
-            if (paragraph.textContent === "" || paragraph.textContent === ' ') continue
+        //Удаление лишнего
+        if (paragraph.closest('blockquote')) continue
+        if (paragraph.textContent.toLocaleLowerCase().includes('editor’s note:')) continue
+        if (paragraph.textContent.toLocaleLowerCase().includes('related article')) continue
+        if (paragraph.textContent === "" || paragraph.textContent === ' ') continue
 
-            paragraphText += paragraph.textContent.trim() + '\n';
-        }
+        paragraphText += paragraph.textContent.trim() + '\n';
+    }
 
-        return {
-            title: titleEn, tags: tagsEn, text: paragraphText, date
-        }
-    } catch (e) {
-        throw e;
+    return {
+        title: titleEn, tags: tagsEn, text: paragraphText, date
     }
 }
 
