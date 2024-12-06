@@ -52,7 +52,13 @@ function createWebServer(port) {
         try {
             const arrUrl = await getArrUrlsImageDDG2(prompt)
             res.send(arrUrl)
-            const arrNames = await downloadImages({arrUrl, outputDir: `./public/public/news/${date}/${name}/`, pfx: '', ext: '.png', max: +max})
+            const arrNames = await downloadImages({
+                arrUrl,
+                outputDir: `./public/public/news/${date}/${name}/`,
+                pfx: '',
+                ext: '.png',
+                max: +max
+            })
             // res.send(arrNames)
         } catch (error) {
             res.status(error.status || 500).send({error: error?.message || error},);
@@ -137,7 +143,7 @@ function createWebServer(port) {
             // http://localhost:5173/news/24.11.30/tg-av9jWaxxA/1.png
             // await updateTG()
             let arrImgUrls = await findExtFiles(filePath, 'png');
-            arrImgUrls = arrImgUrls.map(path=>path.split('\\').splice(2).join('\\'))
+            arrImgUrls = arrImgUrls.map(path => path.split('\\').splice(2).join('\\'))
             res.status(200).send(arrImgUrls);
         } catch (error) {
             res.status(error.status || 500).send({error: error?.message || error},);
@@ -158,11 +164,68 @@ function createWebServer(port) {
         }
         try {
             const {data} = await axios.post(url, promptData, {
-                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${iam_token}`}, params: {folderId: FOLDER_ID,},
+                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${iam_token}`},
+                params: {folderId: FOLDER_ID,},
             })
 
             console.log(data.result)
             res.send(data.result);
+        } catch (error) {
+            console.log(error)
+            res.status(error.status || 500).send({error: error?.message || error},);
+        }
+
+    });
+
+    router.get('/lm', async (req, res) => {
+
+        try {
+
+            // const data = await axios.post('https://api.arliai.com/v1/chat/completions',
+            //     {
+            //         "model": "Meta-Llama-3.1-8B-Instruct",
+            //         "messages": [
+            //             {"role": "system", "content": "You are a helpful assistant."},
+            //             {"role": "user", "content": "Hello!"},
+            //             {"role": "assistant", "content": "Hi!, how can I help you today?"},
+            //             {"role": "user", "content": "Say hello!"}
+            //         ],
+            //         "repetition_penalty": 1.1,
+            //         "temperature": 0.7,
+            //         "top_p": 0.9,
+            //         "top_k": 40,
+            //         "max_tokens": 1024,
+            //         "stream": false
+            //     }, {
+            //         headers: {
+            //             "Authorization": `Bearer 5d138778-de0d-45d9-8ed8-d19bcf17e679`,
+            //             "Content-Type": "application/json"
+            //         }
+            //     })
+
+            let ARLIAI_API_KEY = '5d138778-de0d-45d9-8ed8-d19bcf17e679';
+            const {data} = await axios.post("https://api.arliai.com/v1/chat/completions", {
+                model: "Mistral-Nemo-12B-Instruct-2407",
+                messages: [
+                    { role: "system", content: "Ты будешь помогать программировать js" },
+                    { role: "user", content: "напиши hello world программу" },
+                ],
+                repetition_penalty: 1.1,
+                temperature: 0.7,
+                top_p: 0.9,
+                top_k: 40,
+                max_tokens: 1024,
+                stream: false
+            }, {
+                headers: {
+                    "Authorization": `Bearer ${ARLIAI_API_KEY}`,
+                    "Content-Type": "application/json"
+                }
+            })
+
+
+
+            res.send(data);
         } catch (error) {
             console.log(error)
             res.status(error.status || 500).send({error: error?.message || error},);
