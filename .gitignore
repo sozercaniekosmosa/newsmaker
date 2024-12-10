@@ -31,3 +31,4 @@ dist-ssr
 /.env
 /_urls.json
 /news.db
+/content/

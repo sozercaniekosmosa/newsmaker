@@ -1,15 +1,15 @@
-import {downloadImages, getArrUrlsImageDDG, getArrUrlsImageDDG2, getNewsList, updateTG} from "./parser.js";
+import {downloadImages, getArrUrlsImageDDG2, getNewsList} from "./parser.js";
 import express from "express";
 import {fileURLToPath} from 'url';
-import {dirname} from 'path';
+import path, {dirname} from 'path';
 
 import {config} from "dotenv";
 import bodyParser from "body-parser";
-import path from "path";
 import translate from "@mgcodeur/super-translator";
 import axios from "axios";
-import {findExtFiles, pathResolveRoot, readFileAsync, saveTextToFile, writeData, writeFileAsync} from "./utils.js";
-import {buildAnNews, test} from "./video.js";
+import {findExtFiles, pathResolveRoot, readFileAsync, saveTextToFile, writeFileAsync} from "./utils.js";
+import {buildAnNews} from "./video.js";
+import {getCurrentProgress, updateTG} from "./theGuardian.js";
 
 // import global from "./global";
 
@@ -17,7 +17,7 @@ let iamToken, dtExpMs;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const {parsed: {PORT, OAUTH_TOKEN, FOLDER_ID}} = config();
+const {parsed: {PORT, OAUTH_TOKEN, FOLDER_ID, ARLIAI_API_KEY}} = config();
 const port = +process.env.PORT || +PORT;
 
 global.port = port
@@ -53,11 +53,7 @@ function createWebServer(port) {
             const arrUrl = await getArrUrlsImageDDG2(prompt)
             res.send(arrUrl)
             const arrNames = await downloadImages({
-                arrUrl,
-                outputDir: `./public/public/news/${date}/${name}/`,
-                pfx: '',
-                ext: '.png',
-                max: +max
+                arrUrl, outputDir: `./public/public/news/${date}/${name}/`, pfx: '', ext: '.png', max: +max
             })
             // res.send(arrNames)
         } catch (error) {
@@ -96,8 +92,9 @@ function createWebServer(port) {
     });
     router.post('/update', async (req, res) => {
         try {
-            const numbNewsadded = await updateTG()
-            res.send({numb: numbNewsadded});
+            const {body: {typeNews}} = req;
+            await updateTG(typeNews);
+            res.send('ok');
         } catch (error) {
             res.status(error.status || 500).send({error: error?.message || error},);
         }
@@ -114,11 +111,11 @@ function createWebServer(port) {
     router.post('/build', async (req, res) => {
         try {
             const {body: {title, tags, text, name, date}} = req;
-            let filePath = `./public/public/news/24.11.29/tg-2V8DsGq2u/`
-            // let filePath = `./public/public/news/${date}/${name}/`
-            // await saveTextToFile(filePath + 'title.txt', title)
-            // await saveTextToFile(filePath + 'tags.txt', tags)
-            // await saveTextToFile(filePath + 'news.txt', text)
+            // let filePath = `./public/public/news/24.11.29/tg-2V8DsGq2u/`
+            let filePath = `./public/public/news/${date}/${name}/`
+            await saveTextToFile(filePath + 'title.txt', title)
+            await saveTextToFile(filePath + 'tags.txt', tags)
+            await saveTextToFile(filePath + 'news.txt', text)
 
             await buildAnNews({
                 dir_ffmpeg: './content/ffmpeg/',
@@ -164,8 +161,7 @@ function createWebServer(port) {
         }
         try {
             const {data} = await axios.post(url, promptData, {
-                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${iam_token}`},
-                params: {folderId: FOLDER_ID,},
+                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${iam_token}`}, params: {folderId: FOLDER_ID,},
             })
 
             console.log(data.result)
@@ -177,39 +173,22 @@ function createWebServer(port) {
 
     });
 
+    router.get('/progress', async (req, res) => {
+        const prc = getCurrentProgress();
+        if (prc !== false)
+            res.send({prc})
+        else
+            res.send({stop: true})
+    })
     router.get('/lm', async (req, res) => {
 
         try {
-
-            // const data = await axios.post('https://api.arliai.com/v1/chat/completions',
-            //     {
-            //         "model": "Meta-Llama-3.1-8B-Instruct",
-            //         "messages": [
-            //             {"role": "system", "content": "You are a helpful assistant."},
-            //             {"role": "user", "content": "Hello!"},
-            //             {"role": "assistant", "content": "Hi!, how can I help you today?"},
-            //             {"role": "user", "content": "Say hello!"}
-            //         ],
-            //         "repetition_penalty": 1.1,
-            //         "temperature": 0.7,
-            //         "top_p": 0.9,
-            //         "top_k": 40,
-            //         "max_tokens": 1024,
-            //         "stream": false
-            //     }, {
-            //         headers: {
-            //             "Authorization": `Bearer 5d138778-de0d-45d9-8ed8-d19bcf17e679`,
-            //             "Content-Type": "application/json"
-            //         }
-            //     })
-
-            let ARLIAI_API_KEY = '5d138778-de0d-45d9-8ed8-d19bcf17e679';
             const {data} = await axios.post("https://api.arliai.com/v1/chat/completions", {
                 model: "Mistral-Nemo-12B-Instruct-2407",
-                messages: [
-                    { role: "system", content: "Ты будешь помогать программировать js" },
-                    { role: "user", content: "напиши hello world программу" },
-                ],
+                messages: [{role: "system", content: "Ты будешь помогать программировать js"}, {
+                    role: "user",
+                    content: "напиши hello world программу"
+                },],
                 repetition_penalty: 1.1,
                 temperature: 0.7,
                 top_p: 0.9,
@@ -218,12 +197,11 @@ function createWebServer(port) {
                 stream: false
             }, {
                 headers: {
-                    "Authorization": `Bearer ${ARLIAI_API_KEY}`,
-                    "Content-Type": "application/json"
+                    "Authorization": `Bearer ${ARLIAI_API_KEY}`, "Content-Type": "application/json"
                 }
             })
 
-
+            // const data = removeFragmentsFromUrl('https://www.theguardian.com/science/2024/dec/09/can-you-solve-it-that-sally-rooney-hat-puzzle#comments')
 
             res.send(data);
         } catch (error) {

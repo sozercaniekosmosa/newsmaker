@@ -926,3 +926,14 @@ export class CreateVideo {
         });
     }
 }
+
+export const removeFragmentsFromUrl = (url) => {
+    // Создаем объект URL
+    let urlObj = new URL(url);
+
+    // Удаляем фрагмент
+    urlObj.hash = '';
+
+    // Возвращаем очищенный URL
+    return urlObj.toString();
+};

@@ -5,6 +5,17 @@ import axios from "axios";
 import {addDay, formatDateTime, getSelelected, insertAt, toShortString} from "../utils";
 import iconTG from "../assets/tg.svg";
 import ButtonSpinner from "./Button-spinner";
+import {Button, ButtonGroup} from "react-bootstrap";
+import ProgressBar from './Progress-bar/Progress-bar';
+
+const listHost = {'www.theguardian.com': iconTG}
+
+const transl = {
+    international: "Общие", world: "Мир", europeNews: "Европа", usNews: "США", americas: "Америка",
+    asia: "Азия", australia: "Австралия", africa: "Африка", middleeast: "Ближний восток", science: "Наука",
+    technology: "Технологии", business: "Бизнес", football: "Футбол", cycling: "Велоспорт", formulaone: "F1",
+    books: "Книги", tvRadio: "ТВ-Радио", art: "АРТ", film: "Фильмы", games: "Игры", classical: "Классика", stage: "Сцена"
+};
 
 const HOST = 'http://localhost:3000/api/v1/';
 
@@ -32,6 +43,7 @@ function getNameAndDate(dt, url, id) {
     return {date, name};
 }
 
+
 function Editor() {
     const [dtFrom, setDtFrom] = useState(formatDateTime(addDay(-1, new Date()), 'yyyy-mm-dd'))
     const [dtTo, setDtTo] = useState(formatDateTime(new Date(), 'yyyy-mm-dd'))
@@ -42,13 +54,14 @@ function Editor() {
     // const [prompt, setPrompt] = useState('Выдели основные мысли из статьи сделай в виде текста')
     // const [prompt, setPrompt] = useState('Упрости текст до 30 слов')
     const [filterTags, setFilterTags] = useState(null)
-    const [filterSource, setFilterSource] = useState(null)
     const [arrHandledNews, setArrHandledNews] = useState([])
     const [stateText2Speech, setStateText2Speech] = useState(0)
     const [stateNewsBuild, setStateNewsBuild] = useState(0)
     const [stateImageLoad, setStateImageLoad] = useState(0)
     const [stateNewsUpdate, setStateNewsUpdate] = useState(0)
     const [stateNewsSimplify, setStateNewsSimplify] = useState(0)
+    const [typeNews, setTypeNews] = useState('')
+    const [progress, setProgress] = useState(0)
 
     const refImg: React.MutableRefObject<HTMLImageElement> = useRef();
     const refTags: React.MutableRefObject<HTMLTextAreaElement> = useRef();
@@ -74,6 +87,7 @@ function Editor() {
         } catch (e) {
             console.log(e)
             setStateImageLoad(2)
+            setArrImg([])
         }
     }
 
@@ -89,6 +103,7 @@ function Editor() {
         target.parentNode.parentNode.querySelector('.selected')?.classList.remove('selected')
         target.parentNode.classList.add('selected')
         // refImg.current.innerHTML = ''
+
         refAudio.current.querySelector('source').src = ''
         refAudio.current.load()
 
@@ -105,11 +120,33 @@ function Editor() {
         setFilterTags('')
     }
 
+    async function getProgress() {
+        while (true) {
+            try {
+                const response = await axios.get(HOST + 'progress');
+                const data = response.data;
+
+                // Проверяем, если в ответе есть ключ 'stop'
+                if (data.stop) {
+                    setProgress(0);
+                    break;
+                }
+
+                setProgress(data.prc);
+
+                // Добавляем задержку между запросами, если необходимо
+                await new Promise(resolve => setTimeout(resolve, 500));
+            } catch (error) {
+                console.error('Error occurred:', error);
+                break;
+            }
+        }
+    }
+
     async function updateAllNews() {
         setStateNewsUpdate(1)
         try {
-            let {data: {numb}} = await axios.post(HOST + 'update');
-            if (numb > 0) {
+            axios.post(HOST + 'update', {typeNews}).then(async (data) => {
                 const from = formatDateTime(addDay(-1, new Date()), 'yyyy-mm-dd');
                 let to = formatDateTime(new Date(), 'yyyy-mm-dd');
 
@@ -119,9 +156,12 @@ function Editor() {
                 } else {
                     setArrNews(await getData(dtFrom, dtTo))
                 }
-            }
 
-            setStateNewsUpdate(0)
+
+                setStateNewsUpdate(0)
+            });
+            getProgress();
+
         } catch (e) {
             console.log(e)
             setStateNewsUpdate(2)
@@ -213,8 +253,40 @@ function Editor() {
         }
     }
 
+    function selectSrcNews({target, currentTarget}) {
+        const {dataset: {src}} = target;
+        currentTarget.querySelector('.type-filters .selected-news-src')?.classList.remove('selected-news-src')
+        target.classList.add('selected-news-src')
+        setTypeNews(src)
+        console.log(src)
+    }
+
+    const listPolitics = {
+        international: "Общие", world: "Мир", europeNews: "Европа", usNews: "США", americas: "Америка",
+        asia: "Азия", australia: "Австралия", africa: "Африка", middleeast: "Ближний восток",
+    }
+    const listScience = {science: "Наука", technology: "Технологии",}
+    const listSport = {business: "Бизнес", football: "Футбол", cycling: "Велоспорт", formulaone: "F1",}
+    const listCulture = {books: "Книги", tvRadio: "ТВ-Радио", art: "АРТ", film: "Фильмы", games: "Игры", classical: "Классика", stage: "Сцена"};
+
     return (
         <div className="editor d-flex flex-column h-100">
+            {progress != 0 && <ProgressBar progress={progress}/>}
+            {/*<ProgressBar progress={75}/>*/}
+            <div className="type-filters" onClick={selectSrcNews}>
+                <ButtonGroup>{Object.entries(listPolitics).map(([key, val], index) => {
+                    return <Button key={index} variant="secondary btn-sm notranslate" data-src={key}>{val}</Button>;
+                })}</ButtonGroup>
+                <ButtonGroup>{Object.entries(listScience).map(([key, val], index) => {
+                    return <Button key={index} variant="secondary btn-sm notranslate" data-src={key}>{val}</Button>;
+                })}</ButtonGroup>
+                <ButtonGroup>{Object.entries(listCulture).map(([key, val], index) => {
+                    return <Button key={index} variant="secondary btn-sm notranslate" data-src={key}>{val}</Button>;
+                })}</ButtonGroup>
+                <ButtonGroup>{Object.entries(listSport).map(([key, val], index) => {
+                    return <Button key={index} variant="secondary btn-sm notranslate" data-src={key}>{val}</Button>;
+                })}</ButtonGroup>
+            </div>
             <div className="control-filters d-flex flex-row notranslate">
                 <ButtonSpinner className="btn-secondary btn-sm notranslate"
                                state={stateNewsUpdate} onClick={updateAllNews}>Обновить</ButtonSpinner>
@@ -222,27 +294,26 @@ function Editor() {
                        onChange={e => setDtFrom(e.target.value)}/>
                 <input type="date" className="form-control" style={{width: '8em', height: '2em'}} value={dtTo}
                        onChange={e => setDtTo(e.target.value)}/>
-                <button className="btn btn-secondary btn-sm d-flex align-items-center"><img src={iconTG}
-                                                                                            className="n-list__icon"
-                                                                                            alt={iconTG}/></button>
                 <div className="selected-filters" onClick={resetSelectedTag}>{filterTags ? '#' + filterTags : ''}</div>
             </div>
             <ResizablePanes vertical uniqueId="uid1" className="no-scroll" resizerSize={3}>
                 <Pane id="P0" size={4}>
                     <div className="scroll-wrapper">
                         <div className="n-list">
-                            {arrNews.map(({id, url, title, tags, text, dt}, idx) => {
+                            {arrNews.map(({id, url, title, tags, text, dt, type}, idx) => {
 
                                 if (filterTags && !tags.includes(filterTags)) return '';
-
+                                if (typeNews && !type.includes(typeNews)) return '';
+                                const icon = listHost[(new URL(url)).host];
                                 return (
                                     <div className="n-list__item" key={idx}>
                                         <div data-index={idx} data-id={id} onClick={showNews}>
                                             <div className="text-ru">{text.replaceAll(/\n/g, '%@%')}</div>
                                             <div className="tags-ru">{tags}</div>
-                                            <img src={iconTG} className="n-list__icon" alt={iconTG}/>
+                                            <img src={icon} className="n-list__icon" alt={icon}/>
                                             <span>{formatDateTime(new Date(dt), 'dd.mm.yy hh:MM')}</span>&nbsp;
-                                            <a href={news?.url || ''} target="_blank">ссылка</a>
+                                            <a href={news?.url || ''} target="_blank">ссылка</a>&nbsp;
+                                            <span>{transl[type]}</span>
                                             <div className="n-list__title title-ru">{title}</div>
                                         </div>
                                         <div className="n-list__tags notranslate" onClick={selectTag}>

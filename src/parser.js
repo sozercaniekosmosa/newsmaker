@@ -2,16 +2,31 @@ import fs, {promises} from "fs";
 import path from "path";
 import axios from "axios";
 import puppeteer from "puppeteer";
-import translate from "@mgcodeur/super-translator";
 import {JSDOM, VirtualConsole} from "jsdom";
 import randUserAgent from "random-useragent";
-import {asyncDelay, CreateVideo, cyrb53, formatDateTime, saveTextToFile, writeFileAsync} from "./utils.js";
+import {CreateVideo} from "./utils.js";
 import {HttpsProxyAgent} from "https-proxy-agent";
-import Axios from "axios";
 import {Database} from "./db.js";
 
 function getUserAgent() {
     return randUserAgent.getRandom()
+}
+
+export async function connectDB() {
+    const db = new Database('./news.db')
+    await db.connect();
+    await db.run(`
+            CREATE TABLE IF NOT EXISTS news (
+                id INTEGER PRIMARY KEY,
+                url TEXT,
+                title TEXT,
+                tags TEXT,
+                text TEXT,
+                dt INTEGER,
+                type TEXT
+            )
+        `);
+    return db;
 }
 
 // await db.run(`INSERT INTO users (name, email) VALUES (?, ?)`, ['Bob', 'bob@example.com']);
@@ -31,18 +46,7 @@ const result = await db.run(`UPDATE users SET email = ? WHERE id = ?`, [newEmail
 console.log(`Updated ${result.changes} row(s)`);
 */
 export async function getNewsList(from, to) {
-    const db = new Database('./news.db')
-    await db.connect();
-    await db.run(`
-            CREATE TABLE IF NOT EXISTS news (
-                id INTEGER PRIMARY KEY,
-                url TEXT,
-                title TEXT,
-                tags TEXT,
-                text TEXT,
-                dt INTEGER
-            )
-        `);
+    const db = await connectDB();
     let res;
     try {
         if (from && to) {
@@ -51,67 +55,12 @@ export async function getNewsList(from, to) {
             res = await db.all(`SELECT * FROM news ORDER BY dt DESC`);
         }
     } catch (e) {
+        console.error(e)
     } finally {
         db.close();
     }
 
     return res;
-}
-
-export async function updateTG() {
-    const HOST = 'https://www.theguardian.com';
-    const date = formatDateTime(new Date(), 'yyyy.mm.dd')
-    // let PATH = `../`;
-    // let PATH_DATE = `${PATH}${date}`;
-
-    const db = new Database('./news.db')
-    await db.connect();
-    // if (!await db.run(`SELECT name FROM sqlite_master WHERE type='table' AND name='news'`))
-    await db.run(`
-            CREATE TABLE IF NOT EXISTS news (
-                id INTEGER PRIMARY KEY,
-                url TEXT,
-                title TEXT,
-                tags TEXT,
-                text TEXT,
-                dt INTEGER
-            )
-        `);
-
-    let html;
-    const strProxy = `200.10.40.164:19936:DMxoCo:kNu8Am\n200.10.40.158:9426:DMxoCo:kNu8Am\n131.108.17.228:9412:DMxoCo:kNu8Am`;
-    const req = new Requester(strProxy)
-    // html = await req.getUrl(HOST);
-    html = await getHtmlUrl(HOST + '/international')
-    const body = getDocument(html).querySelector('body');
-    // document.body.querySelectorAll('.dcr-mu6xev a')
-    let arrHref = ([...body.querySelectorAll('[id^="container-"] a')].map(a => a.href));
-
-    let cnt = 0;
-
-    for (let href of arrHref) {
-        try {
-
-            if (href.startsWith('/')) href = HOST + href;
-            if (!href.startsWith('http')) continue;
-
-            const id = cyrb53(href);
-            const arrSelect = await db.all(`SELECT * FROM news WHERE id = ?`, [id]);
-
-            if (arrSelect.length) continue;
-            const {title, tags, text, date} = await getTheGuardianTopicUrl(href);
-            if (!text || !tags || !text || !text.length || text.length < 50 || !title.length || !tags.length) continue;
-            console.log(cnt)
-
-            await db.run(`INSERT INTO news (id, url, title, tags, text, dt) VALUES (?, ?, ?, ?, ?, ?)`, [cyrb53(href), href, title, tags, text, date]);
-            cnt++;
-        } catch (e) {
-            console.log(e, cnt)
-        }
-    }
-    await db.close()
-
-    return cnt;
 }
 
 export class Requester {
@@ -177,7 +126,7 @@ export class Requester {
             let data;
 
             try {
-                ({data} = await Axios.create({httpsAgent}).get(url, {headers: {"User-Agent": userAgent}}));
+                ({data} = await axios.create({httpsAgent}).get(url, {headers: {"User-Agent": userAgent}}));
             } catch (e) {
                 cfgProxy.doneReq--; // уменьшаем
                 continue;
@@ -222,46 +171,6 @@ export const getDocument = (html) => {
     const virtualConsole = new VirtualConsole();
     const dom = new JSDOM(html.toString(), {virtualConsole});
     return dom.window.document;
-}
-
-// пример использования
-// await getTheGuardianTopicUrl('1.txt', HOST + arrHref[0]);
-/**
- * Получить новость The Guardian по url
- * @param url
- * @param maxTranslate
- * @returns {Promise<{ru: {title: string, arrText: string[], tags: string}, en: {title: *, arrText: string[], tags: string}}>}
- */
-export async function getTheGuardianTopicUrl(url) {
-    const html = await getHtmlUrl(url)
-    const doc = getDocument(html);
-    const titleEn = doc.title.replace('| The Guardian', '');
-    const arrTags = [...doc.querySelectorAll('.dcr-1jl528t a')].map(node => node.textContent.toLocaleLowerCase())//.sort((a, b) => a.localeCompare(b))
-    let tagsEn = arrTags.join(', ');
-    const unfDate = doc.querySelector('.dcr-u0h1qy').textContent;
-    const date = new Date(unfDate.slice(0, -3).trim().replace('.', ':')).getTime();
-    const p = doc.querySelectorAll('#maincontent > div p');
-
-    if (!p) return null;
-
-    let arrParagraphs = [...p]
-
-    let paragraphText = '';
-    for (let i = 0; i < arrParagraphs.length; i++) {
-        const paragraph = arrParagraphs[i];
-
-        //Удаление лишнего
-        if (paragraph.closest('blockquote')) continue
-        if (paragraph.textContent.toLocaleLowerCase().includes('editor’s note:')) continue
-        if (paragraph.textContent.toLocaleLowerCase().includes('related article')) continue
-        if (paragraph.textContent === "" || paragraph.textContent === ' ') continue
-
-        paragraphText += paragraph.textContent.trim() + '\n';
-    }
-
-    return {
-        title: titleEn, tags: tagsEn, text: paragraphText, date
-    }
 }
 
 // Пример использования
@@ -343,7 +252,8 @@ export async function getArrUrlsImageDDG2(querySearch, max = 5) {
 
     const page = await browser.newPage();
     page.on('console', msg => console.log('PAGE LOG:', msg.text()))
-    await loadUrl(page, `https://duckduckgo.com/?q=${queryEncode}&t=h_&iar=images&iax=images&ia=images&iaf=size%3ALarge%2Clicense%3AModifyCommercially`)
+    await loadUrl(page, `https://duckduckgo.com/?q=${queryEncode}&t=h_&iar=images&iax=images&ia=images&iaf=size%3ALarge`)
+    // await loadUrl(page, `https://duckduckgo.com/?q=${queryEncode}&t=h_&iar=images&iax=images&ia=images&iaf=size%3ALarge%2Clicense%3AModifyCommercially`)
     // await loadUrl(page, `https://duckduckgo.com/?q=${queryEncode}&t=h_&iar=images&iax=images&ia=images&iaf=license%3AModifyCommercially`)
     // await loadUrl(page, `https://www.google.com/search?q=${queryEncode}&udm=2&source=lnt&tbs=isz:l&sa=X`)
 

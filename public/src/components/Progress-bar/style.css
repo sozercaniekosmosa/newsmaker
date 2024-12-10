@@ -1,0 +1,21 @@
+.progress-bar-container {
+  width: 100%;
+  background-color: rgba(224, 224, 224, 0);
+  border-radius: 5px;
+  overflow: hidden;
+  margin: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.progress-bar {
+  height: 2px;
+  background-color: #00ddff;
+  text-align: center;
+  color: white;
+  transition: width 0.5s ease;
+}
+
+/*# sourceMappingURL=style.css.map */

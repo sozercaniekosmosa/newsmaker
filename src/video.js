@@ -1,5 +1,5 @@
 // const DIR_CONTENT = '../public/public/news/24.11.07/tg-nodJVO9st/img/';
-import {CreateVideo, findExtFiles, pathResolveRoot} from "./utils.js";
+import {CreateVideo, findExtFiles} from "./utils.js";
 
 const DIR_CONTENT = '../public/public/news/24.11.28/tg-c6Hxu7RJ3/';
 const DIR_IMG = '../content/img/';
@@ -58,17 +58,18 @@ const pathAudio = 'out.mp3';
 
 export const buildAnNews = async ({dir_ffmpeg, dir_content, pathBridge, pathLogoMini}) => {
     const video = new CreateVideo({dir_ffmpeg, dir_content});
+    const durationSpeech = await video.getDuration('speech.mp3')
     await video.addAudioToAudio({pathAudioSrc: 'speech.mp3', pathAudioAdded: pathBridge, pathAudioOut: pathAudio})
     const duration = await video.getDuration(pathAudio)
     await video.imageToVideo({arrPathImg: await findExtFiles(dir_content, 'png'), duration, pathOut: pathVideo})
     await video.joinVideoAudio({pathVideo, pathAudio});
-    await video.addSubtitles({pathSubtitles, duration, pathVideo});
-    await video.addImg({pathVideo, pathImg: pathLogoMini, y: '10', w: 100, h: 75});
+    await video.addSubtitles({pathSubtitles, duration: durationSpeech, pathVideo});
+    await video.addImg({pathVideo, pathImg: pathLogoMini, y: '10', w: 100, h: 70});
 // -----------
 }
 export const test = async ({dir_ffmpeg, pathVideo, dir_content, pathLogoMini, pathOut}) => {
     const video = new CreateVideo({dir_ffmpeg, dir_content});
-    await video.addImg({pathVideo, pathImg: pathLogoMini, pathOut, y: '10', w: 100, h: 75});
+    await video.addImg({pathVideo, pathImg: pathLogoMini, pathOut, y: '10', w: 100, h: 70});
 // -----------
 }
 
