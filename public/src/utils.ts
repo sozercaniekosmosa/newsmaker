@@ -1,3 +1,31 @@
+export function camelToKebab(camelCaseString: string): string {
+    return camelCaseString.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()
+}
+
+// EventBus.dispatchEvent('evb-key', {event, combine, nodeFocus}))
+class EventBus {
+    private bus: HTMLElement;
+
+    constructor() {
+        this.bus = document.createElement('eventbus');
+    }
+
+    addEventListener(event, callback) {
+        this.bus.addEventListener(event, e => callback(...e.detail));
+    }
+
+    removeEventListener(event, callback) {
+        this.bus.removeEventListener(event, callback);
+    }
+
+    dispatchEvent(event, ...data) {
+        this.bus.dispatchEvent(new CustomEvent(event, {detail: data}));
+    }
+}
+
+//@ts-ignore
+export const eventBus = window.EventBus = new EventBus;
+
 const base64Language = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 export const toShortString = (value, language = base64Language) => {
     const len = language.length;
@@ -210,3 +238,65 @@ export function getSelelected(node): { selectedText: string; startPos: number; e
 }
 
 export const insertAt = (str, sub, pos) => `${str.slice(0, pos)}${sub}${str.slice(pos)}`;//вставить подстроку в позицию внутри строки
+
+export function webSocket(
+    {host, port, protocol = 'json', clbOpen = null, clbMessage = null, clbClose = null, clbError = null, timeReconnect = 1000}) {
+
+    let isConnected = false;
+    const reconnect = (param) => {
+        if (isConnected) return;
+        isConnected = true;
+        setTimeout(() => {
+            isConnected = false;
+            console.log('попытка соединения с сервером ...')
+            _webSocket(param)
+        }, timeReconnect);
+    }
+
+    function _webSocket(param) {
+        const ws = new WebSocket(`ws://${host}:${port}`, protocol) as WebSocket;
+
+
+        ws.onopen = () => {
+            isConnected = false;
+            try {
+                if (clbOpen) {
+                    const objSend = clbOpen();
+                    if (objSend) {
+                        ws.send(objSend);
+                    }
+                }
+                console.log('WebSocket соединение открыто')
+            } catch (e) {
+                // console.log(e)
+            }
+        };
+        ws.onmessage = (message) => {
+            try {
+                clbMessage && clbMessage(message);
+            } catch (e) {
+                // console.log(e)
+            }
+        };
+
+        ws.onclose = (ev) => {
+            try {
+                clbClose && clbClose(ev);
+                console.log('WebSocket соединение закрыто')
+                // ws.terminate()
+            } catch (e) {
+                // console.log(e)
+            } finally {
+                reconnect(arguments);
+            }
+        };
+        ws.onerror = err => {
+            // console.log(err)
+            return clbError && clbError(err);
+        };
+
+        return ws
+    }
+
+    return _webSocket(arguments);
+}

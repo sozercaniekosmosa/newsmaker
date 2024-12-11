@@ -438,11 +438,6 @@ export class NewsUpdater {
 
     }
 
-    getCurrentProgress() {
-        if (this.counter === -1) return false;
-        return this.counter / this.max * 100;
-    }
-
     async updateTG(typeNews) {
         this.counter = 0;
         const listTask = {
@@ -501,6 +496,7 @@ export class NewsUpdater {
             console.error(e);
         } finally {
             this.counter = -1;
+            if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: -1})
         }
     }
 
@@ -542,6 +538,7 @@ export class NewsUpdater {
             console.log(e, url);
         } finally {
             this.counter++;
+            if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: this.counter / this.max * 100})
         }
     }
 }

@@ -7,7 +7,7 @@ import {config} from "dotenv";
 import bodyParser from "body-parser";
 import translate from "@mgcodeur/super-translator";
 import axios from "axios";
-import {findExtFiles, pathResolveRoot, readFileAsync, saveTextToFile, writeFileAsync} from "./utils.js";
+import {findExtFiles, pathResolveRoot, readFileAsync, saveTextToFile, WEBSocket, writeFileAsync} from "./utils.js";
 import {buildAnNews} from "./video.js";
 import {getArrTags, getArrUrlOfType, getTextContent, getTitle, getUnfDate, isExistID,} from "./theGuardian.js";
 import {Mistral} from "@mistralai/mistralai";
@@ -181,13 +181,6 @@ function createWebServer(port) {
 
     });
 
-    router.get('/progress', async (req, res) => {
-        const prc = newsUpdater.getCurrentProgress();
-        if (prc !== false)
-            res.send({prc})
-        else
-            res.send({stop: true})
-    })
     router.get('/lm', async (req, res) => {
 
         try {
@@ -284,6 +277,17 @@ function createWebServer(port) {
         }
 
     });
+
+    //@ts-ignore
+    global.messageSocket = new WEBSocket(webServ, {
+        clbAddConnection: async ({arrActiveConnection}) => {
+            try {
+                console.log('новый клиент')
+            } catch (e) {
+                console.log(e)
+            }
+        }
+    })
 }
 
 const getIAM = async () => { //для работы нужен AIM для его получения нужен OAUTH его можно взять тут: https://oauth.yandex.ru/verification_code
@@ -329,20 +333,3 @@ const getIAM = async () => { //для работы нужен AIM для его 
 // console.log(await getIAM())
 
 createWebServer(global.port);
-
-// async function run() {
-//     const mistral = new Mistral({
-//         apiKey: MISTRAL_API_KEY ?? "",
-//     });
-//     const result = await mistral.chat.complete({
-//         model: "mistral-small-latest",
-//         messages: [
-//             {role: "system", content: "Ты будешь помогать программировать js"},
-//             {role: "user", content: "напиши hello world программу"},
-//         ],
-//     });
-//
-//     console.log(result.choices[0].message.content);
-// }
-//
-// run();

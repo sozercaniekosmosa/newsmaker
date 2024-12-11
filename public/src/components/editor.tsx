@@ -2,11 +2,15 @@ import React, {useEffect, useRef, useState} from 'react'
 import './style.css'
 import {Pane, ResizablePanes} from "resizable-panes-react";
 import axios from "axios";
-import {addDay, formatDateTime, getSelelected, insertAt, toShortString} from "../utils";
+import {addDay, eventBus, formatDateTime, getSelelected, insertAt, toShortString} from "../utils";
 import iconTG from "../assets/tg.svg";
 import ButtonSpinner from "./Button-spinner";
 import {Button, ButtonGroup} from "react-bootstrap";
-import ProgressBar from './Progress-bar/Progress-bar';
+import Progressbar from './Progress-bar';
+import LightGallery from 'lightgallery/react';
+import lgZoom from 'lightgallery/plugins/zoom';
+import 'lightgallery/css/lightgallery.css';
+import 'lightgallery/fonts/lg.woff2';
 
 const listHost = {'www.theguardian.com': iconTG}
 
@@ -43,6 +47,20 @@ function getNameAndDate(dt, url, id) {
     return {date, name};
 }
 
+const updateImageSizes = async (arrImg, setArrImg) => {
+    const updatedImages = await Promise.all(
+        arrImg.map(async (src) => {
+            const img = new Image();
+            img.src = src;
+            await img.decode();
+            return {
+                src,
+                size: `${img.width}-${img.height}`,
+            };
+        })
+    );
+    setArrImg(updatedImages);
+};
 
 function Editor() {
     const [dtFrom, setDtFrom] = useState(formatDateTime(addDay(-1, new Date()), 'yyyy-mm-dd'))
@@ -63,9 +81,22 @@ function Editor() {
     const [typeNews, setTypeNews] = useState('')
     const [progress, setProgress] = useState(0)
 
+    const [easing, setEasing] = useState('0.680, -0.550, 0.265, 1.550');
+
+    // Handler for when the select value changes
+    const handleEasingChange = (event) => {
+        setEasing(event.target.value);
+    };
+
     const refImg: React.MutableRefObject<HTMLImageElement> = useRef();
     const refTags: React.MutableRefObject<HTMLTextAreaElement> = useRef();
     const refAudio: React.MutableRefObject<HTMLVideoElement> = useRef();
+
+    useEffect(() => {
+        eventBus.addEventListener('message-socket', ({type, data}) => {
+            if (type === 'progress') setProgress(data)
+        });
+    }, [])
 
     useEffect(() => {
         (async (): Promise<void> => setArrNews(await getData(dtFrom, dtTo)))();
@@ -77,12 +108,12 @@ function Editor() {
         try {
             const {id, url, title, tags, text, dt} = news;
             const {date, name} = getNameAndDate(dt, url, id);
-            const {data: arrNames} = await axios.get(HOST + 'loc-images', {
+            const {data: arrSrc} = await axios.get(HOST + 'loc-images', {
                 params: {name, date}
             });
-
+            await updateImageSizes(arrSrc, setArrImg);
             // refImg.current.innerHTML = '';
-            setArrImg(arrNames);
+            // setArrImg(arrSrc);
             setStateImageLoad(0)
         } catch (e) {
             console.log(e)
@@ -120,47 +151,21 @@ function Editor() {
         setFilterTags('')
     }
 
-    async function getProgress() {
-        while (true) {
-            try {
-                const response = await axios.get(HOST + 'progress');
-                const data = response.data;
-
-                // Проверяем, если в ответе есть ключ 'stop'
-                if (data.stop) {
-                    setProgress(0);
-                    break;
-                }
-
-                setProgress(data.prc);
-
-                // Добавляем задержку между запросами, если необходимо
-                await new Promise(resolve => setTimeout(resolve, 500));
-            } catch (error) {
-                console.error('Error occurred:', error);
-                break;
-            }
-        }
-    }
-
     async function updateAllNews() {
         setStateNewsUpdate(1)
         try {
-            axios.post(HOST + 'update', {typeNews}).then(async (data) => {
-                const from = formatDateTime(addDay(-1, new Date()), 'yyyy-mm-dd');
-                let to = formatDateTime(new Date(), 'yyyy-mm-dd');
+            await axios.post(HOST + 'update', {typeNews})
+            const from = formatDateTime(addDay(-1, new Date()), 'yyyy-mm-dd');
+            let to = formatDateTime(new Date(), 'yyyy-mm-dd');
 
-                if (from + to != dtFrom + dtTo) {
-                    setDtFrom(from)
-                    setDtTo(to)
-                } else {
-                    setArrNews(await getData(dtFrom, dtTo))
-                }
+            if (from + to != dtFrom + dtTo) {
+                setDtFrom(from)
+                setDtTo(to)
+            } else {
+                setArrNews(await getData(dtFrom, dtTo))
+            }
 
-
-                setStateNewsUpdate(0)
-            });
-            getProgress();
+            setStateNewsUpdate(0)
 
         } catch (e) {
             console.log(e)
@@ -212,11 +217,12 @@ function Editor() {
             const {id, url, title, tags, text, dt} = news;
             const prompt = refTags.current.textContent
             const {date, name} = getNameAndDate(dt, url, id);
-            const {data: arrNames} = await axios.get(HOST + 'images', {
+            const {data: arrSrc} = await axios.get(HOST + 'images', {
                 params: {prompt, name, max: 10, date}
             });
-            await setArrImg(arrNames);
-            console.log(arrNames)
+            await updateImageSizes(arrSrc, setArrImg);
+            // setArrImg(arrSrc.map(src => ({src, size: ''})));
+            console.log(arrSrc)
             setStateImageLoad(0)
         } catch (e) {
             console.log(e)
@@ -271,8 +277,7 @@ function Editor() {
 
     return (
         <div className="editor d-flex flex-column h-100">
-            {progress != 0 && <ProgressBar progress={progress}/>}
-            {/*<ProgressBar progress={75}/>*/}
+            {progress >= 0 && <Progressbar progress={progress}/>}
             <div className="type-filters" onClick={selectSrcNews}>
                 <ButtonGroup>{Object.entries(listPolitics).map(([key, val], index) => {
                     return <Button key={index} variant="secondary btn-sm notranslate" data-src={key}>{val}</Button>;
@@ -343,7 +348,19 @@ function Editor() {
                                       onChange={({target}) => setNews(was => ({...was, text: target.value}))}/>
                         </div>
                         <div className="options__img">
-                            {arrImg.map((path, idi) => <a key={idi} href={path} target="_blank"><img src={path}/></a>)}
+                            {/*{arrImg.map((path, idi) => <a key={idi} href={path} target="_blank"><img src={path}/></a>)}*/}
+                            <LightGallery
+                                plugins={[lgZoom]}
+                                elementClassNames={'gallery'}
+                                easing={easing}
+                                speed={1000}
+                            >
+                                {arrImg.map((image, index) => (
+                                    <a key={index} data-lg-size={image.size} data-src={image.src} className="gallery-item">
+                                        <img src={image.src} alt={`Thumbnail ${index}`} className="img-fluid"/>
+                                    </a>
+                                ))}
+                            </LightGallery>
                         </div>
                         <div className="options__control d-flex flex-row align-items-center">
                             <ButtonSpinner className="btn-secondary btn-sm notranslate" state={stateImageLoad}

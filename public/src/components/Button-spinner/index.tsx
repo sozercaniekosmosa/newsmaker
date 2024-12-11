@@ -1,11 +1,3 @@
-import {useEffect, useRef, useState} from 'react'
-import './style.css'
-import {Pane, ResizablePanes} from "resizable-panes-react";
-import axios from "axios";
-import {addDay, formatDateTime, getID, toShortString} from "../utils";
-import iconTG from "../assets/tg.svg";
-import {Accordion} from "react-bootstrap";
-
 //0-ok, 1-processing, 2-error
 export default function ({state, className, onClick, children}) {
     return (
