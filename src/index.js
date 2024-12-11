@@ -1,4 +1,4 @@
-import {downloadImages, getArrUrlsImageDDG2, getNewsList} from "./parser.js";
+import {connectDB, downloadImages, getArrUrlsImageDDG2, getNewsList, NewsUpdater} from "./parser.js";
 import express from "express";
 import {fileURLToPath} from 'url';
 import path, {dirname} from 'path';
@@ -9,7 +9,8 @@ import translate from "@mgcodeur/super-translator";
 import axios from "axios";
 import {findExtFiles, pathResolveRoot, readFileAsync, saveTextToFile, writeFileAsync} from "./utils.js";
 import {buildAnNews} from "./video.js";
-import {getCurrentProgress, updateTG} from "./theGuardian.js";
+import {getArrTags, getArrUrlOfType, getTextContent, getTitle, getUnfDate, isExistID,} from "./theGuardian.js";
+import {Mistral} from "@mistralai/mistralai";
 
 // import global from "./global";
 
@@ -17,7 +18,7 @@ let iamToken, dtExpMs;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const {parsed: {PORT, OAUTH_TOKEN, FOLDER_ID, ARLIAI_API_KEY}} = config();
+const {parsed: {PORT, OAUTH_TOKEN, FOLDER_ID, ARLIAI_API_KEY, MISTRAL_API_KEY}} = config();
 const port = +process.env.PORT || +PORT;
 
 global.port = port
@@ -38,6 +39,11 @@ function createWebServer(port) {
 
     const webServ = app.listen(port, () => {
         console.log(`API is listening on port ${port}`);
+    });
+
+    const newsUpdater = new NewsUpdater({
+        host: 'https://www.theguardian.com',
+        connectDB, getArrTags, getArrUrlOfType, getTextContent, getTitle, getUnfDate, isExistID
     });
 
     // Настройка статических файлов
@@ -93,7 +99,8 @@ function createWebServer(port) {
     router.post('/update', async (req, res) => {
         try {
             const {body: {typeNews}} = req;
-            await updateTG(typeNews);
+
+            await newsUpdater.updateTG(typeNews);
             res.send('ok');
         } catch (error) {
             res.status(error.status || 500).send({error: error?.message || error},);
@@ -161,7 +168,8 @@ function createWebServer(port) {
         }
         try {
             const {data} = await axios.post(url, promptData, {
-                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${iam_token}`}, params: {folderId: FOLDER_ID,},
+                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${iam_token}`},
+                params: {folderId: FOLDER_ID,},
             })
 
             console.log(data.result)
@@ -174,7 +182,7 @@ function createWebServer(port) {
     });
 
     router.get('/progress', async (req, res) => {
-        const prc = getCurrentProgress();
+        const prc = newsUpdater.getCurrentProgress();
         if (prc !== false)
             res.send({prc})
         else
@@ -210,6 +218,30 @@ function createWebServer(port) {
         }
 
     });
+    router.get('/mistral', async (req, res) => {
+
+        try {
+            const mistral = new Mistral({
+                apiKey: MISTRAL_API_KEY ?? "",
+            });
+            const result = await mistral.chat.complete({
+                model: "mistral-large-latest",
+                messages: [
+                    {role: "system", content: "Ты будешь помогать программировать js"},
+                    {role: "user", content: "напиши hello world программу"},
+                ],
+            });
+
+            // console.log(result.choices[0].message.content);
+
+            res.send(result.choices[0].message.content);
+        } catch (error) {
+            console.log(error)
+            res.status(error.status || 500).send({error: error?.message || error},);
+        }
+
+    });
+
     router.post('/tospeech', async (req, res) => {
         const {body: {text, name, date}} = req;
 
@@ -297,3 +329,20 @@ const getIAM = async () => { //для работы нужен AIM для его 
 // console.log(await getIAM())
 
 createWebServer(global.port);
+
+// async function run() {
+//     const mistral = new Mistral({
+//         apiKey: MISTRAL_API_KEY ?? "",
+//     });
+//     const result = await mistral.chat.complete({
+//         model: "mistral-small-latest",
+//         messages: [
+//             {role: "system", content: "Ты будешь помогать программировать js"},
+//             {role: "user", content: "напиши hello world программу"},
+//         ],
+//     });
+//
+//     console.log(result.choices[0].message.content);
+// }
+//
+// run();

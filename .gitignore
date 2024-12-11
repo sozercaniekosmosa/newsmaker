@@ -32,3 +32,4 @@ dist-ssr
 /_urls.json
 /news.db
 /content/
+/public/public/news/

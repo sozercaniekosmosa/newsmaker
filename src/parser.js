@@ -4,7 +4,7 @@ import axios from "axios";
 import puppeteer from "puppeteer";
 import {JSDOM, VirtualConsole} from "jsdom";
 import randUserAgent from "random-useragent";
-import {CreateVideo} from "./utils.js";
+import {CreateVideo, cyrb53, removeFragmentsFromUrl, writeData} from "./utils.js";
 import {HttpsProxyAgent} from "https-proxy-agent";
 import {Database} from "./db.js";
 
@@ -412,4 +412,136 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     await promises.writeFile('./sb.ass', acc);
 
     console.log(acc)
+}
+
+export class NewsUpdater {
+    counter = 0;
+    max = 1;
+    HOST;
+    connectDB = () => console.error('not init db method');
+    getArrUrlOfType = () => console.error('not init getArrUrlOfType method');
+    getUnfDate = () => console.error('not init getUnfDate method');
+    getTitle = () => console.error('not init getTitle method');
+    getArrTags = () => console.error('not init getArrTags method');
+    getTextContent = () => console.error('not init getTextContent method');
+    isExistID = () => console.error('not init isExistID method');
+
+    constructor({host, connectDB, getArrUrlOfType, getUnfDate, getTitle, getArrTags, getTextContent, isExistID}) {
+        this.HOST = host;
+        this.connectDB = connectDB;
+        this.getArrUrlOfType = getArrUrlOfType;
+        this.getUnfDate = getUnfDate;
+        this.getTitle = getTitle;
+        this.getArrTags = getArrTags;
+        this.getTextContent = getTextContent;
+        this.isExistID = isExistID;
+
+    }
+
+    getCurrentProgress() {
+        if (this.counter === -1) return false;
+        return this.counter / this.max * 100;
+    }
+
+    async updateTG(typeNews) {
+        this.counter = 0;
+        const listTask = {
+            international: '/international',
+            world: '/world',
+            europeNews: '/world/europe-news',
+            usNews: '/us-news',
+            americas: '/world/americas',
+            asia: '/world/asia',
+            australia: '/australia-news',
+            africa: '/world/africa',
+            middleeast: '/world/middleeast',
+            science: '/science',
+            technology: '/uk/technology',
+            business: '/uk/business',
+            football: '/football',
+            cycling: '/sport/cycling',
+            formulaone: '/sport/formulaone',
+            books: '/books',
+            tvRadio: '/uk/tv-and-radio',
+            art: '/artanddesign',
+            film: '/uk/film',
+            games: '/games',
+            classical: '/music/classical-music-and-opera',
+            stage: '/stage'
+        };
+
+        try {
+            const db = await this.connectDB();
+
+            const arrTask = Object.entries(typeNews ? {[typeNews]: listTask[typeNews]} : listTask);
+            const promiseArrUrl = arrTask.map(([type, url]) => this.getArrUrlOfType(type, this.HOST + url));
+            const arrListUrl = await Promise.allSettled(promiseArrUrl);
+
+            await writeData('./_urls.json', JSON.stringify(arrListUrl));
+
+            const _DEBUG_ = false;
+            let promises = [];
+
+            for (let i = 0; i < arrListUrl.length; i++) {
+                let it = arrListUrl[i].value;
+                if (!it) console.error(`Индекс с ошибкой ${i}`);
+                const {type, arrUrl} = it;
+                this.max += arrUrl.length;
+                for (let i = 0; i < arrUrl.length; i++) {
+                    const url = arrUrl[i];
+                    let promiseFetchData = this.#fetchData({type, url, db, host: this.HOST});
+                    if (_DEBUG_) await promiseFetchData; else promises.push(promiseFetchData);
+                }
+            }
+
+            if (!_DEBUG_) await Promise.allSettled(promises);
+
+            await db.close();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            this.counter = -1;
+        }
+    }
+
+    async #fetchData({type, url, host, db}) {
+        try {
+            if (url.startsWith('/')) url = host + url;
+            if (!url.startsWith(host)) return;
+
+            url = removeFragmentsFromUrl(url);
+
+            const id = cyrb53(url);
+
+            if (await this.isExistID(db, id)) {
+                console.error(url, type);
+                return null;
+            }
+
+            const html = await getHtmlUrl(url);
+            const doc = getDocument(html);
+
+            const titleEn = this.getTitle(doc);
+
+            const tagsEn = this.getArrTags(doc);
+            if (tagsEn.length === 0) return null;
+
+            const date = this.getUnfDate(doc);
+
+            let paragraphText = this.getTextContent(doc);
+            if (paragraphText === null) return null;
+
+            const title = titleEn;
+            const tags = tagsEn;
+            const text = paragraphText;
+
+            if (!text || !text.length || text.length < 50 || !title.length || !tags || !tags.length || !date) return;
+
+            await db.run(`INSERT INTO news (id, url, title, tags, text, dt, type) VALUES (?, ?, ?, ?, ?, ?, ?)`, [cyrb53(url), url, title, tags, text, date, type]);
+        } catch (e) {
+            console.log(e, url);
+        } finally {
+            this.counter++;
+        }
+    }
 }
