@@ -415,6 +415,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 }
 
 export class NewsUpdater {
+    MIN_WORDS_TOPIC = 200;
     counter = 0;
     max = 1;
     HOST;
@@ -444,7 +445,7 @@ export class NewsUpdater {
             international: '/international',
             world: '/world',
             europeNews: '/world/europe-news',
-            usNews: '/us-news',
+            usa: '/us-news',
             americas: '/world/americas',
             asia: '/world/asia',
             australia: '/australia-news',
@@ -531,14 +532,17 @@ export class NewsUpdater {
             const tags = tagsEn;
             const text = paragraphText;
 
-            if (!text || !text.length || text.length < 50 || !title.length || !tags || !tags.length || !date) return;
+            if (!text || !text.length || text.length < this.MIN_WORDS_TOPIC || !title || !title.length || !tags || !tags.length || !date) return;
 
             await db.run(`INSERT INTO news (id, url, title, tags, text, dt, type) VALUES (?, ?, ?, ?, ?, ?, ?)`, [cyrb53(url), url, title, tags, text, date, type]);
         } catch (e) {
             console.log(e, url);
         } finally {
             this.counter++;
-            if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: this.counter / this.max * 100})
+            if (global.messageSocket) (global.messageSocket).send({
+                type: 'progress',
+                data: this.counter / this.max * 100
+            })
         }
     }
 }

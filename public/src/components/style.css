@@ -27,7 +27,7 @@
   height: 100vh;
 }
 
-.selected-news-src {
+.selected-news-type {
   color: var(--bs-btn-active-color);
   background-color: var(--bs-btn-active-bg);
   border-color: var(--bs-btn-active-border-color);
@@ -136,7 +136,7 @@
   height: 3em;
 }
 .options__img {
-  height: 100px;
+  min-height: 100px;
   overflow: auto;
   border: 1px solid #dee2e6;
   border-radius: 0.18em;

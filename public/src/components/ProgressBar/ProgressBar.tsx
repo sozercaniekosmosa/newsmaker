@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import './style.css';
 
-const Progressbar = ({progress}) => {
+const ProgressBar = ({progress}) => {
     return (
         <div className="progress-bar-container">
             <div className="progress-bar" style={{width: `${progress}%`}}>
@@ -12,8 +12,8 @@ const Progressbar = ({progress}) => {
     );
 };
 
-Progressbar.propTypes = {
+ProgressBar.propTypes = {
     progress: PropTypes.number.isRequired,
 };
 
-export default Progressbar;
+export default ProgressBar;

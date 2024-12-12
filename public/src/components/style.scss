@@ -31,7 +31,7 @@
   height: 100vh;
 }
 
-.selected-news-src {
+.selected-news-type {
   //outline: 1px solid #000000 !important;
   //outline-offset: -2px;
 
@@ -164,7 +164,7 @@
   }
 
   &__img {
-    height: 100px;
+    min-height: 100px;
     overflow: auto;
     border: 1px solid #dee2e6;
     border-radius: 0.18em;
