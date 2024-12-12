@@ -4,7 +4,7 @@ import {formatDateTime} from "../../utils";
 
 export default function ListNews({arrTypes, filterTags, arrNews, typeNews, listHostToIcon, onShowNews, onSelectTag}) {
 
-    const toTranslate = arrTypes.flat()
+    const toTranslate = arrTypes.reduce((acc,val)=>({...acc,...val}),{})
 
     return (
         <div className="scroll-wrapper">
