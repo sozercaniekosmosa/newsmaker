@@ -1,8 +1,10 @@
 import React from 'react';
 import 'photoswipe/style.css';
 import {formatDateTime} from "../../utils";
+import Gallery from "../Gallery/Gallery";
+import ButtonSpinner from "../ButtonSpinner/ButtonSpinner";
 
-export default function News({setNews, news, refTags}) {
+export default function News({setNews, news, refTags, arrImg}) {
     return (
         <div className="options d-flex flex-column h-100">
                         <textarea className="options__title d-flex flex-row input-text" value={news?.title || ''}
@@ -12,6 +14,9 @@ export default function News({setNews, news, refTags}) {
             <div className="editor-text flex-stretch d-flex flex-column">
                             <textarea className="flex-stretch options__text" value={news?.text || ''}
                                       onChange={({target}) => setNews(was => ({...was, text: target.value}))}/>
+            </div>
+            <div className="operation__img">
+                <Gallery galleryID="my-test-gallery" images={arrImg}/>
             </div>
         </div>
     );

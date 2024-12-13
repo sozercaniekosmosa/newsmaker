@@ -2,14 +2,13 @@
   padding-right: 16px;
 }
 .operation__img {
-  min-height: 100px;
+  height: 240px;
   overflow: auto;
   border: 1px solid #dee2e6;
   border-radius: 0.18em;
   display: flex;
   flex-wrap: wrap;
   flex-direction: column;
-  flex: 1;
   justify-content: space-between;
 }
 .operation__img img {

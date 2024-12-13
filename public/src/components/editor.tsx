@@ -7,11 +7,6 @@ import iconTG from "../assets/tg.svg";
 import ButtonSpinner from "./ButtonSpinner/ButtonSpinner";
 import {Button, ButtonGroup} from "react-bootstrap";
 import ProgressBar from './ProgressBar/ProgressBar';
-import LightGallery from 'lightgallery/react';
-import lgZoom from 'lightgallery/plugins/zoom';
-import 'lightgallery/css/lightgallery.css';
-import 'lightgallery/fonts/lg.woff2';
-import Gallery from "./Gallery/Gallery";
 import HeaderMenu from "./HeaderMenu/HeaderMenu";
 import ListNews from "./ListNews/ListNews";
 import News from "./News/News";
@@ -27,13 +22,8 @@ const listPolitics = {
 const listScience = {science: "Наука", technology: "Технологии",}
 const listSport = {business: "Бизнес", football: "Футбол", cycling: "Велоспорт", formulaone: "F1",}
 const listCulture = {
-    books: "Книги",
-    tvRadio: "ТВ-Радио",
-    art: "АРТ",
-    film: "Фильмы",
-    games: "Игры",
-    classical: "Классика",
-    stage: "Сцена"
+    books: "Книги", tvRadio: "ТВ-Радио", art: "АРТ", film: "Фильмы",
+    games: "Игры", classical: "Классика", stage: "Сцена"
 };
 let arrTypes = [listPolitics, listScience, listCulture, listSport];
 
@@ -263,14 +253,17 @@ function Editor() {
                     />
                 </Pane>
                 <Pane id="P1" size={9}>
-                    <News news={news} setNews={setNews} refTags={refTags}/>
+                    <News news={news} setNews={setNews} refTags={refTags}
+                          arrImg={arrImg}
+                    />
                 </Pane>
                 <Pane id="P2" size={4}>
                     <Operation
                         onBuild={build} stateNewsBuild={stateNewsBuild}
                         onGPT={gpt} prompt={prompt} setPrompt={setPrompt} stateLoadGPT={stateLoadGPT}
                         toSpeech={toSpeech} refAudio={refAudio} stateLoadText2Speech={stateText2Speech}
-                        arrImg={arrImg} requestImages={requestImages} stateImageLoad={stateImageLoad}
+                        onRequestImages={requestImages} stateImageLoad={stateImageLoad}
+                        news={news}
                     />
                 </Pane>
             </ResizablePanes>
