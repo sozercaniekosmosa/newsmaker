@@ -1,0 +1,65 @@
+.flex-stretch {
+  flex: 1;
+}
+
+.options {
+  margin: 0 .2em;
+
+  & > * {
+    margin: .1em;
+  }
+
+  div.tab-content {
+    display: contents !important;
+  }
+
+  div.tab-content > .active {
+    display: flex
+  }
+
+  &__title {
+    font-weight: 500;
+    border-radius: 0.18em;
+    border: 1px solid #dee2e6;
+    //font-size: .8em;
+  }
+
+  &__tags {
+    border: 1px solid #dee2e6;
+    border-radius: 0.18em;
+    font-style: italic;
+    color: #0024d7;
+    //resize: none;
+    height: 3em;
+    //font-size: .8em;
+  }
+
+  &__img {
+    min-height: 100px;
+    overflow: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.18em;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+
+    & img {
+      height: 100px;
+    }
+  }
+
+  &__text {
+    border: 1px solid #dee2e6;
+    border-radius: 0.18em;
+    resize: none;
+    //font-size: .8em;
+  }
+
+  &__control > * {
+    margin: 0.1em 0.2em;
+  }
+
+  &__prompt {
+    font-size: 1em !important;
+  }
+}

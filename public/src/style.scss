@@ -3,8 +3,12 @@
   margin: 1px;
 }
 
-body{
+body {
   height: 100vh;
   overflow: hidden;
   font-size: .8em;
+}
+
+.no-scroll {
+  overflow: hidden;
 }

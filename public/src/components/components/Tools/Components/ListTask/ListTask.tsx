@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {Button, ListGroup, Modal} from 'react-bootstrap';
 import {DragDropContext, Droppable, Draggable} from 'react-beautiful-dnd';
+import './style.css'
 
 const ListComponent = ({arrData, onChangeData}) => {
     const [showModal, setShowModal] = useState(false);
@@ -45,15 +46,11 @@ const ListComponent = ({arrData, onChangeData}) => {
                         <ListGroup{...provided.droppableProps} ref={provided.innerRef}>
                             {arrData.map(({title, id}, index) => (
                                 <Draggable key={index} draggableId={`item-${index}`} index={index}>
-                                    {(provided) => (
-                                        <ListGroup.Item
-                                            ref={provided.innerRef}{...provided.draggableProps}{...provided.dragHandleProps}
-                                            className="d-flex justify-content-between align-items-center px-2 py-2 m-0"
-                                        >
-                                            {title}
-                                            <Button variant="secondary btn-sm" onClick={() => handleDelete(index)}>
-                                                X
-                                            </Button>
+                                    {provided => (
+                                        <ListGroup.Item ref={provided.innerRef}{...provided.draggableProps}{...provided.dragHandleProps} я
+                                                        className="d-flex justify-content-between align-items-center px-1 py-1 m-0">
+                                            <div className="text-truncate" title={title}>{title}</div>
+                                            <Button variant="secondary btn-sm" onClick={() => handleDelete(index)}>X</Button>
                                         </ListGroup.Item>
                                     )}
                                 </Draggable>
@@ -64,16 +61,20 @@ const ListComponent = ({arrData, onChangeData}) => {
                 </Droppable>
             </DragDropContext>
 
-            <Modal show={showModal} onHide={handleCloseModal}>
+            <Modal show={showModal} onHide={handleCloseModal} size="sm">
                 <Modal.Header closeButton>
-                    <Modal.Title>Удаление</Modal.Title>
+                    <Modal.Title><h5>Удаление</h5></Modal.Title>
                 </Modal.Header>
-                <Modal.Body>Уверены?</Modal.Body>
+                <Modal.Body>
+                    <h6>
+                        <center>Уверены?</center>
+                    </h6>
+                </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={handleCloseModal}>
+                    <Button variant="secondary" onClick={handleCloseModal} size="sm">
                         Отмена
                     </Button>
-                    <Button variant="danger" onClick={confirmDelete}>
+                    <Button variant="danger" onClick={confirmDelete} size="sm">
                         Удалить
                     </Button>
                 </Modal.Footer>

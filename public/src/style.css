@@ -8,4 +8,8 @@ body {
   font-size: 0.8em;
 }
 
+.no-scroll {
+  overflow: hidden;
+}
+
 /*# sourceMappingURL=style.css.map */

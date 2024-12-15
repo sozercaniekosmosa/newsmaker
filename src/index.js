@@ -62,6 +62,7 @@ function createWebServer(port) {
                 arrUrl, outputDir: `./public/public/news/${date}/${name}/`, pfx: '', ext: '.png', max: +max
             })
             // res.send(arrNames)
+            res.status(200).send('ok')
         } catch (error) {
             res.status(error.status || 500).send({error: error?.message || error},);
         }
@@ -115,6 +116,17 @@ function createWebServer(port) {
             res.status(error.status || 500).send({error: error?.message || error},);
         }
     });
+    router.post('/save', async (req, res) => {
+        try {
+
+        const {body: {path, data}} = req;
+        let filePath = `./public/public/${path}`
+        await saveTextToFile(filePath, data)
+            res.status(200).send('ok');
+        }catch (e) {
+            res.status(error.status || 500).send({error: error?.message || error},);
+        }
+    })
     router.post('/build', async (req, res) => {
         try {
             const {body: {title, tags, text, name, date}} = req;
@@ -122,7 +134,7 @@ function createWebServer(port) {
             let filePath = `./public/public/news/${date}/${name}/`
             await saveTextToFile(filePath + 'title.txt', title)
             await saveTextToFile(filePath + 'tags.txt', tags)
-            await saveTextToFile(filePath + 'news.txt', text)
+            // await saveTextToFile(filePath + 'news.txt', text)
 
             await buildAnNews({
                 dir_ffmpeg: './content/ffmpeg/',
@@ -139,18 +151,23 @@ function createWebServer(port) {
         }
     });
 
-    router.get('/loc-images', async (req, res) => {
+    router.get('/local-data', async (req, res) => {
+        let arrImgUrls;
+        let textContent;
         try {
-            const {title, tags, text, name, date} = req.query;
+            const {name, date} = req.query;
             let filePath = `./public/public/news/${date}/${name}/`
 
             // http://localhost:5173/news/24.11.30/tg-av9jWaxxA/1.png
             // await updateTG()
-            let arrImgUrls = await findExtFiles(filePath, 'png');
+            arrImgUrls = await findExtFiles(filePath, 'png');
             arrImgUrls = arrImgUrls.map(path => path.split('\\').splice(2).join('\\'))
-            res.status(200).send(arrImgUrls);
+            textContent = (await readFileAsync(filePath + 'news.txt')).toString();
         } catch (error) {
-            res.status(error.status || 500).send({error: error?.message || error},);
+            // res.status(error.status || 500).send({error: error?.message || error},);
+            console.log(error)
+        } finally {
+            res.status(200).send({arrImgUrls, textContent});
         }
     });
 

@@ -1,6 +1,7 @@
 import React, {useEffect} from 'react';
 import PhotoSwipeLightbox from 'photoswipe/lightbox';
 import 'photoswipe/style.css';
+import './style.css'
 
 export default function Gallery(props) {
     useEffect(() => {

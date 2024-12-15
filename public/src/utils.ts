@@ -161,7 +161,7 @@ export const getRandomRange = (min, max, fix = 2) => {
  * @param ms
  * @returns {(function(): void)|*}
  */
-export const debounce = (func, ms) => {
+export const debounce = (func: (setTextGPT, news, text, host) => Promise<void>, ms: number) => {
     let timeout;
     return function () {
         clearTimeout(timeout);

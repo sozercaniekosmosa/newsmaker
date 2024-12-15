@@ -1,20 +1,65 @@
-import React, {useEffect} from 'react';
-import PhotoSwipeLightbox from 'photoswipe/lightbox';
+import React, {useEffect, useState} from 'react';
 import 'photoswipe/style.css';
 import ButtonSpinner from "../ButtonSpinner/ButtonSpinner";
 import {Button, ButtonGroup} from "react-bootstrap";
+import {addDay, formatDateTime} from "../../../utils.ts";
+import {getData} from "../../utils.ts";
+import axios from "axios";
+import './style.css'
 
 export default function HeaderMenu({
-                                       onSelectSrcNews, arrButtonSelect,
-                                       stateNewsUpdate, onUpdateAllNews,
-                                       dtFrom, setDtFrom, setDtTo, dtTo,
-                                       onResetSelectedTag,
-                                       filterTags
+                                       arrButtonSelect,
+                                       setArrNews,
+                                       filterTags,
+                                       typeNews, setTypeNews,
+                                       host, setFilterTags
                                    }) {
 
-    const [listPolitics, listScience, listCulture, listSport] = arrButtonSelect;
+    const [listPolitics, listScience, listCulture, listSport] = arrButtonSelect as Object[];
+    const [dtFrom, setDtFrom] = useState(formatDateTime(addDay(-1, new Date()), 'yyyy-mm-dd'))
+    const [dtTo, setDtTo] = useState(formatDateTime(new Date(), 'yyyy-mm-dd'))
+    const [stateNewsUpdate, setStateNewsUpdate] = useState(0)
 
-    return (<>
+    useEffect(() => {
+        (async (): Promise<void> => setArrNews(await getData(host, dtFrom, dtTo)))();
+    }, [dtFrom, dtTo])
+
+    function onResetSelectedTag() {
+        setFilterTags('')
+    }
+
+    function onSelectSrcNews({target, currentTarget}) {
+        const {dataset: {type}} = target;
+        currentTarget.querySelector('.type-filters .selected-news-type')?.classList.remove('selected-news-type')
+        target.classList.add('selected-news-type')
+        setTypeNews(type)
+        console.log(type)
+    }
+
+    async function onUpdateAllNews() {
+        setStateNewsUpdate(1)
+        try {
+            await axios.post(host + 'update', {typeNews})
+            const from = formatDateTime(addDay(-1, new Date()), 'yyyy-mm-dd');
+            let to = formatDateTime(new Date(), 'yyyy-mm-dd');
+
+            if (from + to != dtFrom + dtTo) {
+                setDtFrom(from)
+                setDtTo(to)
+            } else {
+                setArrNews(await getData(host, dtFrom, dtTo))
+            }
+
+            setStateNewsUpdate(0)
+
+        } catch (e) {
+            console.log(e)
+            setStateNewsUpdate(2)
+        }
+
+    }
+
+    return <>
         <div className="type-filters" onClick={onSelectSrcNews}>
             <ButtonGroup>
                 {Object.entries(listPolitics).map(([key, val], index) => {
@@ -47,5 +92,5 @@ export default function HeaderMenu({
                    onChange={e => setDtTo(e.target.value)}/>
             <div className="selected-filters" onClick={onResetSelectedTag}>{filterTags ? '#' + filterTags : ''}</div>
         </div>
-    </>);
+    </>;
 }
