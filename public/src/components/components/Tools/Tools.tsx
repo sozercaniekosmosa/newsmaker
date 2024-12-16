@@ -10,7 +10,10 @@ import {getSelelected, insertAt} from "../../../utils.ts";
 
 export default function Tools({news, setArrImg, host, setNews, textGPT, setTextGPT}) {
 
-    const [arrTaskList, setArrTaskList] = useState([{id: 0, title: 'aaa'}, {id: 0, title: 'bbb'}, {id: 0, title: 'ccc'}]);
+    const [arrTaskList, setArrTaskList] = useState([{id: 0, title: 'aaa'}, {id: 0, title: 'bbb'}, {
+        id: 0,
+        title: 'ccc'
+    }]);
     const [stateImageLoad, setStateImageLoad] = useState(0)
     const [stateText2Speech, setStateText2Speech] = useState(0)
     const [stateNewsBuild, setStateNewsBuild] = useState(0)
@@ -35,8 +38,10 @@ export default function Tools({news, setArrImg, host, setNews, textGPT, setTextG
             const {selectedText, startPos, endPos} = getSelelected(nodeNewsTextContainer)
             const textContent = selectedText ?? nodeNewsTextContainer.textContent;
 
-            const {data} = await axios.post(host + 'gpt', {text: textContent, prompt});
-            let text = data.alternatives.map(({message: {text}}) => text).join('\n')
+            // const {data} = await axios.post(host + 'gpt', {text: textContent, prompt});
+            // const {data} = await axios.post(host + 'lm', {text: textContent, prompt});
+            const {data} = await axios.post(host + 'mistral', {text: textContent, prompt});
+            let text = data;
 
             if (selectedText) {
                 text = insertAt(nodeNewsTextContainer.textContent, '\n==>\n' + text + '\n<==\n', endPos)
@@ -64,10 +69,10 @@ export default function Tools({news, setArrImg, host, setNews, textGPT, setTextG
             const prompt = news.tagsEn;
             const {date, name} = getNameAndDate(dt, url, id);
             const {data: arrSrc} = await axios.get(host + 'images', {params: {prompt, name, max: 10, date}});
+            setStateImageLoad(0)
             setArrImg(arrSrc.map(src => ({src, width: undefined, height: undefined,})))
             await updateImageSizes(arrSrc, setArrImg);
             // console.log(arrSrc)
-            setStateImageLoad(0)
         } catch (e) {
             console.log(e)
             setStateImageLoad(2)
@@ -105,14 +110,16 @@ export default function Tools({news, setArrImg, host, setNews, textGPT, setTextG
 
     return (
         <div className="operation d-flex flex-column h-100">
-
             <div className="d-flex flex-row">
-                <textarea className="form-control me-1 operation__prompt" value={prompt} onChange={e => setPrompt(e.target.value)}/>
-                <ButtonSpinner className="btn-secondary btn-sm notranslate" state={stateLoadGPT} onClick={onGPT}>GPT</ButtonSpinner>
+                <textarea className="form-control me-1 operation__prompt" value={prompt}
+                          onChange={e => setPrompt(e.target.value)}/>
+                <ButtonSpinner className="btn-secondary btn-sm notranslate" state={stateLoadGPT}
+                               onClick={onGPT}>GPT</ButtonSpinner>
             </div>
 
             <div className="d-flex flex-column">
-                <ButtonSpinner className="btn-secondary btn-sm notranslate" state={stateImageLoad} onClick={requestImages}>
+                <ButtonSpinner className="btn-secondary btn-sm notranslate" state={stateImageLoad}
+                               onClick={requestImages}>
                     Загрузить изображения
                 </ButtonSpinner>
             </div>

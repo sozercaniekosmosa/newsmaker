@@ -26,7 +26,9 @@ global.port = port
 
 // createWebSocketServer(webServer);
 
-function createWebServer(port) {
+async function createWebServer(port) {
+    const db = await connectDB();
+
     const app = express();
     const router = express.Router();
 
@@ -53,16 +55,34 @@ function createWebServer(port) {
         res.sendFile(path.join(__dirname, dir, 'index.html')); // Укажите путь к вашей HTML странице
     })
 
+    router.post('/update-db', async (req, res) => {
+        const {body: {table, values, condition, typeCond}} = req;
+        try {
+            const lop = typeCond ? typeCond : 'AND'
+            const paramSet = Object.keys(values).join(' = ? ') + ' = ?'
+            const arrSet = Object.values(values)
+            const paramWhere = Object.keys(condition).join(' = ? ' + lop) + ' = ?'
+            const arrWhere = Object.values(condition)
+            const arrVal = [].concat(arrSet, arrWhere)
+            let reqSQL = `UPDATE ${table?table:'news'} SET ${paramSet} WHERE ${paramWhere}`;
+
+            const result = await db.run(reqSQL, arrVal);
+            console.log(result)
+
+            res.status(200).send('ok')
+        } catch (error) {
+            res.status(error.status || 500).send({error: error?.message || error},);
+        }
+    });
+
     router.get('/images', async (req, res) => {
         const {prompt, max, name, date} = req.query;
         try {
             const arrUrl = await getArrUrlsImageDDG2(prompt)
-            res.send(arrUrl)
-            const arrNames = await downloadImages({
+            res.status(200).send(arrUrl)
+            await downloadImages({
                 arrUrl, outputDir: `./public/public/news/${date}/${name}/`, pfx: '', ext: '.png', max: +max
             })
-            // res.send(arrNames)
-            res.status(200).send('ok')
         } catch (error) {
             res.status(error.status || 500).send({error: error?.message || error},);
         }
@@ -119,11 +139,11 @@ function createWebServer(port) {
     router.post('/save', async (req, res) => {
         try {
 
-        const {body: {path, data}} = req;
-        let filePath = `./public/public/${path}`
-        await saveTextToFile(filePath, data)
+            const {body: {path, data}} = req;
+            let filePath = `./public/public/${path}`
+            await saveTextToFile(filePath, data)
             res.status(200).send('ok');
-        }catch (e) {
+        } catch (e) {
             res.status(error.status || 500).send({error: error?.message || error},);
         }
     })
@@ -189,8 +209,9 @@ function createWebServer(port) {
                 params: {folderId: FOLDER_ID,},
             })
 
-            console.log(data.result)
-            res.send(data.result);
+            let text = data.result.alternatives.map(({message: {text}}) => text).join('\n')
+
+            res.send(text);
         } catch (error) {
             console.log(error)
             res.status(error.status || 500).send({error: error?.message || error},);
@@ -198,14 +219,14 @@ function createWebServer(port) {
 
     });
 
-    router.get('/lm', async (req, res) => {
-
+    router.post('/lm', async (req, res) => {
+        const {body: {text, prompt}} = req;
         try {
             const {data} = await axios.post("https://api.arliai.com/v1/chat/completions", {
                 model: "Mistral-Nemo-12B-Instruct-2407",
-                messages: [{role: "system", content: "Ты будешь помогать программировать js"}, {
+                messages: [{role: "system", content: prompt}, {
                     role: "user",
-                    content: "напиши hello world программу"
+                    content: text
                 },],
                 repetition_penalty: 1.1,
                 temperature: 0.7,
@@ -218,33 +239,38 @@ function createWebServer(port) {
                     "Authorization": `Bearer ${ARLIAI_API_KEY}`, "Content-Type": "application/json"
                 }
             })
-
-            // const data = removeFragmentsFromUrl('https://www.theguardian.com/science/2024/dec/09/can-you-solve-it-that-sally-rooney-hat-puzzle#comments')
-
-            res.send(data);
+            const text = data.choices.map(({message: {content}}) => content).join('\n');
+            res.send(text);
         } catch (error) {
             console.log(error)
             res.status(error.status || 500).send({error: error?.message || error},);
         }
 
     });
-    router.get('/mistral', async (req, res) => {
-
+    router.post('/mistral', async (req, res) => {
+        const {body: {text, prompt}} = req;
         try {
             const mistral = new Mistral({
                 apiKey: MISTRAL_API_KEY ?? "",
             });
-            const result = await mistral.chat.complete({
-                model: "mistral-large-latest",
+            // const data = await mistral.chat.complete({
+            //     model: "mistral-large-latest",
+            //     messages: [
+            //         {role: "system", content: prompt},
+            //         {role: "user", content: text},
+            //     ],
+            // });
+            const data = await mistral.chat.complete({
+                model: "mistral-small-latest",
+                // messages: [
+                //     {role: "user", content: "Who is the best French painter? Answer in one short sentence.",},
+                // ],
                 messages: [
-                    {role: "system", content: "Ты будешь помогать программировать js"},
-                    {role: "user", content: "напиши hello world программу"},
+                    {role: "user", content: prompt + '\n' + text},
                 ],
             });
-
-            // console.log(result.choices[0].message.content);
-
-            res.send(result.choices[0].message.content);
+            const text = data.choices.map(({message: {content}}) => content).join('\n');
+            res.status(200).send(text);
         } catch (error) {
             console.log(error)
             res.status(error.status || 500).send({error: error?.message || error},);
@@ -258,13 +284,6 @@ function createWebServer(port) {
         try {
             const iam_token = await getIAM();
             const url = 'https://tts.api.cloud.yandex.net/speech/v1/tts:synthesize';
-
-            //     const text = `
-            //     Я Яндекс Спичк+ит.
-            //     Я могу превратить любой текст в речь.
-            //     Теперь и в+ы — можете!
-            // `;
-
 
             const {data} = await axios({
                 method: 'POST', url, headers: {
@@ -280,12 +299,6 @@ function createWebServer(port) {
 
             await writeFileAsync(`./public/public/news/${date}/${name}/speech.mp3`, data);
             console.log('Аудиофайл успешно создан.');
-
-
-            // const {data} = await axios.post(url, promptData, {
-            //     headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${iam_token}`},
-            //     params: {folderId: FOLDER_ID,},
-            // })
 
             res.send('ok');
         } catch (error) {
@@ -326,12 +339,6 @@ const getIAM = async () => { //для работы нужен AIM для его 
     if (dtExpMs && dtExpMs > dtNowMs) return iamToken; //если файл есть и время не истекло, то выход
 
     try {
-        // curl \
-        //   --request POST \
-        //   --data '{"yandexPassportOauthToken":"<OAuth-токен>"}' \
-        //   https://iam.api.cloud.yandex.net/iam/v1/tokens
-
-        // OAUTH_TOKEN дается на 1 год срок выйдет 03 ноя 2025
         const resp = await axios.post('https://iam.api.cloud.yandex.net/iam/v1/tokens', {yandexPassportOauthToken: OAUTH_TOKEN})
         console.log(resp)
         const {data} = resp;
@@ -349,4 +356,4 @@ const getIAM = async () => { //для работы нужен AIM для его 
 
 // console.log(await getIAM())
 
-createWebServer(global.port);
+await createWebServer(global.port);

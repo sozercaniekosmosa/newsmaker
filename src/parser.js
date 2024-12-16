@@ -23,7 +23,8 @@ export async function connectDB() {
                 tags TEXT,
                 text TEXT,
                 dt INTEGER,
-                type TEXT
+                type TEXT,
+                option TEXT
             )
         `);
     return db;

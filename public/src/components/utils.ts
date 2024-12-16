@@ -24,11 +24,15 @@ export function getNameAndDate(dt, url, id) {
 }
 
 export let getData = async (host, from, to) => {
-    const {data} = await axios.get(host + 'news', {
+    let {data} = await axios.get(host + 'news', {
         params: {
             from: (new Date(from)).getTime(),
             to: (new Date(to)).getTime()
         }
     });
+    data = data.map(it => {
+        it.option = JSON.parse(it.option)
+        return it;
+    })
     return data;
 }

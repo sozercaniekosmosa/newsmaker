@@ -47,7 +47,7 @@ const ListComponent = ({arrData, onChangeData}) => {
                             {arrData.map(({title, id}, index) => (
                                 <Draggable key={index} draggableId={`item-${index}`} index={index}>
                                     {provided => (
-                                        <ListGroup.Item ref={provided.innerRef}{...provided.draggableProps}{...provided.dragHandleProps} я
+                                        <ListGroup.Item ref={provided.innerRef}{...provided.draggableProps}{...provided.dragHandleProps}
                                                         className="d-flex justify-content-between align-items-center px-1 py-1 m-0">
                                             <div className="text-truncate" title={title}>{title}</div>
                                             <Button variant="secondary btn-sm" onClick={() => handleDelete(index)}>X</Button>

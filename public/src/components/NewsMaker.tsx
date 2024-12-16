@@ -1,13 +1,14 @@
 import React, {useEffect, useState} from 'react'
 import './style.css'
 import {Pane, ResizablePanes} from "resizable-panes-react";
-import {eventBus} from "../utils";
+import {debounce, eventBus} from "../utils";
 import iconTG from "../assets/tg.svg";
 import ProgressBar from './components/ProgressBar/ProgressBar';
 import HeaderMenu from "./components/HeaderMenu/HeaderMenu";
 import ListNews from "./components/ListNews/ListNews";
 import Editor from "./components/Editor/Editor.tsx";
 import Tools from "./components/Tools/Tools.tsx";
+import axios from "axios";
 
 const host = 'http://localhost:3000/api/v1/';
 const listHostToIcon = {'www.theguardian.com': iconTG}
@@ -24,6 +25,19 @@ const listCulture = {
 };
 let arrTypes = [listPolitics, listScience, listCulture, listSport];
 
+type UpdateDBParams = {
+    table?: any;
+    values?: any;
+    condition?: any;
+    typeCond?: any;
+};
+const updateDB: (params: UpdateDBParams) => void = debounce(async ({table = null, values, condition = null, typeCond = null}) => {
+    try {
+        await axios.post(host + 'update-db',  {table, values, condition, typeCond});
+    } catch (e) {
+        console.log(e)
+    }
+}, 500);
 
 function NewsMaker() {
 
@@ -34,6 +48,8 @@ function NewsMaker() {
     const [typeNews, setTypeNews] = useState('')
     const [progress, setProgress] = useState(0)
     const [textGPT, setTextGPT] = useState('')
+    const [currentIndex, setCurrentIndex] = useState(-1)
+    const [mapOpportunity, setMapOpportunity] = useState({})
 
     useEffect(() => {
         eventBus.addEventListener('message-socket', ({type, data}) => {
@@ -41,9 +57,25 @@ function NewsMaker() {
         });
     }, [])
 
-    // useEffect(() => {
-    //     console.log(textGPT)
-    // }, [textGPT]);
+    useEffect(() => {
+        if (!news) return;
+
+        // debugger
+        const newNews = {...news, ...{option: {image: !!arrImg.length, text: !!textGPT?.length}}}
+        setNews(newNews);
+
+        const arrNewNews = [...arrNews];
+        arrNewNews[currentIndex] = newNews;
+        setArrNews(arrNewNews);
+
+        (async () => {
+            await updateDB({
+                values: {option: JSON.stringify(newNews.option)},
+                condition: {id: newNews.id}
+            });
+        })()
+
+    }, [arrImg, textGPT]);
 
     return (
         <div className="editor d-flex flex-column h-100">
@@ -66,6 +98,7 @@ function NewsMaker() {
                         typeNews={typeNews}
                         listHostToIcon={listHostToIcon}
                         setFilterTags={setFilterTags}
+                        setCurrentIndex={setCurrentIndex}
                     />
                 </Pane>
                 <Pane id="P1" size={9}>
