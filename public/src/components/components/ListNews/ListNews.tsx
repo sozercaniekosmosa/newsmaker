@@ -1,4 +1,3 @@
-import React from 'react';
 import 'photoswipe/style.css';
 import {formatDateTime} from "../../../utils";
 import './style.css'
@@ -60,6 +59,7 @@ export default function ListNews(
                                 <span>{toTranslate[type]}</span>
                                 <span className="notranslate">{option?.image ? '🖼️' : ''}</span>
                                 <span className="notranslate">{option?.text ? '📄' : ''}</span>
+                                <span className="notranslate">{option?.audio ? '🎵' : ''}</span>
                                 <div className="n-list__title title-ru">{title}</div>
                             </div>
                             {/*<div className="n-list__tags notranslate" onClick={onSelectTag}>*/}

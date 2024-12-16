@@ -33,7 +33,7 @@ type UpdateDBParams = {
 };
 const updateDB: (params: UpdateDBParams) => void = debounce(async ({table = null, values, condition = null, typeCond = null}) => {
     try {
-        await axios.post(host + 'update-db',  {table, values, condition, typeCond});
+        await axios.post(host + 'update-db', {table, values, condition, typeCond});
     } catch (e) {
         console.log(e)
     }
@@ -49,7 +49,7 @@ function NewsMaker() {
     const [progress, setProgress] = useState(0)
     const [textGPT, setTextGPT] = useState('')
     const [currentIndex, setCurrentIndex] = useState(-1)
-    const [mapOpportunity, setMapOpportunity] = useState({})
+    const [isExistAudio, setIsExistAudio] = useState(false)
 
     useEffect(() => {
         eventBus.addEventListener('message-socket', ({type, data}) => {
@@ -61,7 +61,10 @@ function NewsMaker() {
         if (!news) return;
 
         // debugger
-        const newNews = {...news, ...{option: {image: !!arrImg.length, text: !!textGPT?.length}}}
+        const newNews = {
+            ...news,
+            ...{option: {image: !!arrImg.length, text: !!textGPT?.length, audio: isExistAudio}}
+        }
         setNews(newNews);
 
         const arrNewNews = [...arrNews];
@@ -75,7 +78,7 @@ function NewsMaker() {
             });
         })()
 
-    }, [arrImg, textGPT]);
+    }, [arrImg, textGPT, isExistAudio]);
 
     return (
         <div className="editor d-flex flex-column h-100">
@@ -103,11 +106,12 @@ function NewsMaker() {
                 </Pane>
                 <Pane id="P1" size={9}>
                     <Editor news={news} setNews={setNews} arrImg={arrImg} setArrImg={setArrImg} host={host}
-                            textGPT={textGPT} setTextGPT={setTextGPT}
+                            textGPT={textGPT} setTextGPT={setTextGPT} setIsExistAudio={setIsExistAudio}
                     />
                 </Pane>
                 <Pane id="P2" size={4}>
                     <Tools
+                        setIsExistAudio={setIsExistAudio}
                         setNews={setNews}
                         setArrImg={setArrImg} host={host}
                         news={news}

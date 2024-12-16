@@ -16,7 +16,7 @@ const writeChange: (news, text, host) => void = debounce(async (news, text, host
     await axios.post(host + 'save', {path: `news\\${date}\\${name}\\news.txt`, data: text});
 }, 1000)
 
-export default function Editor({setNews, news, arrImg, setArrImg, host, textGPT, setTextGPT}) {
+export default function Editor({setNews, news, arrImg, setArrImg, host, textGPT, setTextGPT, setIsExistAudio}) {
     useEffect(() => {
         if (!news) return;
         if (currID === news.id) return;
@@ -35,9 +35,9 @@ export default function Editor({setNews, news, arrImg, setArrImg, host, textGPT,
         try {
             const {id, url, title, tags, text, dt} = news;
             const {date, name} = getNameAndDate(dt, url, id);
-            const {data: {arrImgUrls: arrSrc, textContent}} = await axios.get(host + 'local-data', {params: {name, date}});
-            // setNews({...news, text: textContent});
+            const {data: {arrImgUrls: arrSrc, textContent, isExistAudio}} = await axios.get(host + 'local-data', {params: {name, date}});
             setTextGPT(textContent);
+            setIsExistAudio(isExistAudio)
             setArrImg(arrSrc.map(src => ({src, width: undefined, height: undefined,})))
             await updateImageSizes(arrSrc, setArrImg);
         } catch (e) {

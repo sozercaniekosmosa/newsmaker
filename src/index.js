@@ -7,7 +7,7 @@ import {config} from "dotenv";
 import bodyParser from "body-parser";
 import translate from "@mgcodeur/super-translator";
 import axios from "axios";
-import {findExtFiles, pathResolveRoot, readFileAsync, saveTextToFile, WEBSocket, writeFileAsync} from "./utils.js";
+import {checkFileExists, findExtFiles, pathResolveRoot, readFileAsync, saveTextToFile, WEBSocket, writeFileAsync} from "./utils.js";
 import {buildAnNews} from "./video.js";
 import {getArrTags, getArrUrlOfType, getTextContent, getTitle, getUnfDate, isExistID,} from "./theGuardian.js";
 import {Mistral} from "@mistralai/mistralai";
@@ -44,8 +44,7 @@ async function createWebServer(port) {
     });
 
     const newsUpdater = new NewsUpdater({
-        host: 'https://www.theguardian.com',
-        connectDB, getArrTags, getArrUrlOfType, getTextContent, getTitle, getUnfDate, isExistID
+        host: 'https://www.theguardian.com', connectDB, getArrTags, getArrUrlOfType, getTextContent, getTitle, getUnfDate, isExistID
     });
 
     // Настройка статических файлов
@@ -172,22 +171,25 @@ async function createWebServer(port) {
     });
 
     router.get('/local-data', async (req, res) => {
-        let arrImgUrls;
-        let textContent;
+        let arrImgUrls, textContent, isExistAudio;
         try {
             const {name, date} = req.query;
             let filePath = `./public/public/news/${date}/${name}/`
 
             // http://localhost:5173/news/24.11.30/tg-av9jWaxxA/1.png
             // await updateTG()
-            arrImgUrls = await findExtFiles(filePath, 'png');
-            arrImgUrls = arrImgUrls.map(path => path.split('\\').splice(2).join('\\'))
-            textContent = (await readFileAsync(filePath + 'news.txt')).toString();
+            const promArrImgUrls = findExtFiles(filePath, 'png');
+            const promTextContent = readFileAsync(filePath + 'news.txt');
+            const promIsExistAudio = checkFileExists(filePath + 'speech.mp3');
+
+            [arrImgUrls, textContent, isExistAudio] = await Promise.allSettled([promArrImgUrls, promTextContent, promIsExistAudio])
+            arrImgUrls = arrImgUrls.value.map(path => path.split('\\').splice(2).join('\\'))
+
         } catch (error) {
             // res.status(error.status || 500).send({error: error?.message || error},);
             console.log(error)
         } finally {
-            res.status(200).send({arrImgUrls, textContent});
+            res.status(200).send({arrImgUrls: arrImgUrls, textContent: textContent?.value?.toString() ?? '', isExistAudio: isExistAudio.value});
         }
     });
 
@@ -205,8 +207,7 @@ async function createWebServer(port) {
         }
         try {
             const {data} = await axios.post(url, promptData, {
-                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${iam_token}`},
-                params: {folderId: FOLDER_ID,},
+                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${iam_token}`}, params: {folderId: FOLDER_ID,},
             })
 
             let text = data.result.alternatives.map(({message: {text}}) => text).join('\n')
@@ -223,17 +224,9 @@ async function createWebServer(port) {
         const {body: {text, prompt}} = req;
         try {
             const {data} = await axios.post("https://api.arliai.com/v1/chat/completions", {
-                model: "Mistral-Nemo-12B-Instruct-2407",
-                messages: [{role: "system", content: prompt}, {
-                    role: "user",
-                    content: text
-                },],
-                repetition_penalty: 1.1,
-                temperature: 0.7,
-                top_p: 0.9,
-                top_k: 40,
-                max_tokens: 1024,
-                stream: false
+                model: "Mistral-Nemo-12B-Instruct-2407", messages: [{role: "system", content: prompt}, {
+                    role: "user", content: text
+                },], repetition_penalty: 1.1, temperature: 0.7, top_p: 0.9, top_k: 40, max_tokens: 1024, stream: false
             }, {
                 headers: {
                     "Authorization": `Bearer ${ARLIAI_API_KEY}`, "Content-Type": "application/json"
@@ -250,27 +243,20 @@ async function createWebServer(port) {
     router.post('/mistral', async (req, res) => {
         const {body: {text, prompt}} = req;
         try {
-            const mistral = new Mistral({
-                apiKey: MISTRAL_API_KEY ?? "",
-            });
-            // const data = await mistral.chat.complete({
-            //     model: "mistral-large-latest",
-            //     messages: [
-            //         {role: "system", content: prompt},
-            //         {role: "user", content: text},
-            //     ],
-            // });
-            const data = await mistral.chat.complete({
-                model: "mistral-small-latest",
-                // messages: [
-                //     {role: "user", content: "Who is the best French painter? Answer in one short sentence.",},
-                // ],
+            const {data} = await axios.post('https://api.mistral.ai/v1/chat/completions', {
+                model: 'mistral-large-latest',//'mistral-small-latest',
                 messages: [
-                    {role: "user", content: prompt + '\n' + text},
+                    {role: "system", content: prompt},
+                    {role: "user", content: text}
                 ],
+            }, {
+                headers: {
+                    'Content-Type': 'application/json', 'Authorization': `Bearer ${MISTRAL_API_KEY}`  // Замените на ваш API ключ
+                }
             });
-            const text = data.choices.map(({message: {content}}) => content).join('\n');
-            res.status(200).send(text);
+
+            const respText = data.choices.map(({message: {content}}) => content).join('\n');
+            res.status(200).send(respText);
         } catch (error) {
             console.log(error)
             res.status(error.status || 500).send({error: error?.message || error},);

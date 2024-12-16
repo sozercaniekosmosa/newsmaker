@@ -8,7 +8,7 @@ import {getNameAndDate, updateImageSizes} from "../../utils.ts";
 import axios from "axios";
 import {getSelelected, insertAt} from "../../../utils.ts";
 
-export default function Tools({news, setArrImg, host, setNews, textGPT, setTextGPT}) {
+export default function Tools({news, setArrImg, host, setNews, textGPT, setTextGPT, setIsExistAudio}) {
 
     const [arrTaskList, setArrTaskList] = useState([{id: 0, title: 'aaa'}, {id: 0, title: 'bbb'}, {
         id: 0,
@@ -26,8 +26,12 @@ export default function Tools({news, setArrImg, host, setNews, textGPT, setTextG
         if (!news) return;
         const {id, url, title, tags, text, dt} = news;
         const {date, name} = getNameAndDate(dt, url, id);
-        refAudio.current.querySelector('source').src = `news\\${date}\\${name}\\speech.mp3`
-        refAudio.current.load()
+        const src = `news\\${date}\\${name}\\speech.mp3`;
+        refAudio.current.querySelector('source').src = src;
+        refAudio.current.load();
+        refAudio.current.addEventListener('canplay', e => setIsExistAudio(true))
+        // refAudio.current.addEventListener('error', e => setAudio(''))
+
     }, [news])
 
     async function onGPT({target}) {
