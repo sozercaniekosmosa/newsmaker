@@ -3,16 +3,7 @@ import {formatDateTime} from "../../../utils";
 import './style.css'
 
 export default function ListNews(
-    {
-        arrTypes,
-        filterTags,
-        arrNews,
-        typeNews,
-        listHostToIcon,
-        onShowNews,
-        setFilterTags,
-        setCurrentIndex
-    }) {
+    {arrTypes, filterTags, arrNews, typeNews, listHostToIcon, setNews, setFilterTags,}) {
 
     function onSelectTag({target}) {
         if (!target?.dataset?.tag) return
@@ -24,18 +15,19 @@ export default function ListNews(
 
     function onClickNews({target}) {
         if (!target?.dataset?.index) return
-        // console.log(target.dataset.index)
+
         let title_ru = target.querySelector('.title-ru').textContent;
         let text_ru = target.querySelector('.text-ru').textContent
         let tags_ru = target.querySelector('.tags-ru').textContent
-        // text_ru = text_ru.replaceAll(/%@%/g, '\n')
+
         const {id, url, title, tags, text, dt, option, type} = arrNews[target.dataset.index]
         target.parentNode.parentNode.querySelector('.selected')?.classList.remove('selected')
         target.parentNode.classList.add('selected')
 
-        setCurrentIndex(target.dataset.index)
-
-        onShowNews({id, url, title: title_ru, tags: tags_ru, text: text_ru, dt, tagsEn: tags, option, type});
+        setNews({
+            id, url, title: title_ru, tags: tags_ru, text: text_ru,
+            dt, tagsEn: tags, option, type, index: target.dataset.index
+        });
     }
 
     return (

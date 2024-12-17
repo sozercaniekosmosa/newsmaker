@@ -20,6 +20,7 @@ export default function Gallery(props) {
 
     return (
         <div className="pswp-gallery" id={props.galleryID}>
+            {props.images.length===0&&<div><center>Пусто</center></div>}
             {props.images.map((image, index) => (
                 <a href={image.src}
                    data-pswp-width={image.width}

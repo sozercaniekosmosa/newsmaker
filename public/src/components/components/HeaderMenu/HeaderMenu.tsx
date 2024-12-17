@@ -6,6 +6,7 @@ import {addDay, formatDateTime} from "../../../utils.ts";
 import {getData} from "../../utils.ts";
 import axios from "axios";
 import './style.css'
+import globals from "globals";
 
 export default function HeaderMenu({
                                        arrButtonSelect,
@@ -39,7 +40,7 @@ export default function HeaderMenu({
     async function onUpdateAllNews() {
         setStateNewsUpdate(1)
         try {
-            await axios.post(host + 'update', {typeNews})
+            await axios.post(globals.host + 'update-news-type', {typeNews})
             const from = formatDateTime(addDay(-1, new Date()), 'yyyy-mm-dd');
             let to = formatDateTime(new Date(), 'yyyy-mm-dd');
 

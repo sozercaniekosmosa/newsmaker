@@ -7,18 +7,26 @@ import {config} from "dotenv";
 import bodyParser from "body-parser";
 import translate from "@mgcodeur/super-translator";
 import axios from "axios";
-import {checkFileExists, findExtFiles, pathResolveRoot, readFileAsync, saveTextToFile, WEBSocket, writeFileAsync} from "./utils.js";
+import {
+    checkFileExists,
+    findExtFiles,
+    pathResolveRoot,
+    readFileAsync,
+    saveTextToFile,
+    WEBSocket,
+    writeFileAsync
+} from "./utils.js";
 import {buildAnNews} from "./video.js";
 import {getArrTags, getArrUrlOfType, getTextContent, getTitle, getUnfDate, isExistID,} from "./theGuardian.js";
 import {Mistral} from "@mistralai/mistralai";
+import {arliGPT, mistralGPT, yandexGPT, yandexToSpeech} from "./ai.js";
 
 // import global from "./global";
 
-let iamToken, dtExpMs;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const {parsed: {PORT, OAUTH_TOKEN, FOLDER_ID, ARLIAI_API_KEY, MISTRAL_API_KEY}} = config();
+const {parsed: {PORT}} = config();
 const port = +process.env.PORT || +PORT;
 
 global.port = port
@@ -44,7 +52,8 @@ async function createWebServer(port) {
     });
 
     const newsUpdater = new NewsUpdater({
-        host: 'https://www.theguardian.com', connectDB, getArrTags, getArrUrlOfType, getTextContent, getTitle, getUnfDate, isExistID
+        host: 'https://www.theguardian.com', db,
+        getArrTags, getArrUrlOfType, getTextContent, getTitle, getUnfDate, isExistID
     });
 
     // Настройка статических файлов
@@ -116,7 +125,7 @@ async function createWebServer(port) {
             res.status(error.status || 500).send({error: error?.message || error},);
         }
     });
-    router.post('/update', async (req, res) => {
+    router.post('/update-news-type', async (req, res) => {
         try {
             const {body: {typeNews}} = req;
 
@@ -126,18 +135,17 @@ async function createWebServer(port) {
             res.status(error.status || 500).send({error: error?.message || error},);
         }
     });
-    router.get('/news', async (req, res) => {
+    router.get('/list-news', async (req, res) => {
         const {from, to} = req.query;
         try {
-            let result = await getNewsList(from, to);
+            let result = await getNewsList(db, from, to);
             res.send(result)
         } catch (error) {
             res.status(error.status || 500).send({error: error?.message || error},);
         }
     });
-    router.post('/save', async (req, res) => {
+    router.post('/save-text', async (req, res) => {
         try {
-
             const {body: {path, data}} = req;
             let filePath = `./public/public/${path}`
             await saveTextToFile(filePath, data)
@@ -149,11 +157,8 @@ async function createWebServer(port) {
     router.post('/build', async (req, res) => {
         try {
             const {body: {title, tags, text, name, date}} = req;
-            // let filePath = `./public/public/news/24.11.29/tg-2V8DsGq2u/`
             let filePath = `./public/public/news/${date}/${name}/`
             await saveTextToFile(filePath + 'title.txt', title)
-            await saveTextToFile(filePath + 'tags.txt', tags)
-            // await saveTextToFile(filePath + 'news.txt', text)
 
             await buildAnNews({
                 dir_ffmpeg: './content/ffmpeg/',
@@ -171,126 +176,54 @@ async function createWebServer(port) {
     });
 
     router.get('/local-data', async (req, res) => {
-        let arrImgUrls, textContent, isExistAudio;
+        let arrImgUrls, textContent, isExistAudio, isExistVideo;
         try {
             const {name, date} = req.query;
             let filePath = `./public/public/news/${date}/${name}/`
 
-            // http://localhost:5173/news/24.11.30/tg-av9jWaxxA/1.png
-            // await updateTG()
             const promArrImgUrls = findExtFiles(filePath, 'png');
             const promTextContent = readFileAsync(filePath + 'news.txt');
             const promIsExistAudio = checkFileExists(filePath + 'speech.mp3');
+            const promIsExistVideo = checkFileExists(filePath + 'news.mp4');
 
-            [arrImgUrls, textContent, isExistAudio] = await Promise.allSettled([promArrImgUrls, promTextContent, promIsExistAudio])
+            [arrImgUrls, textContent, isExistAudio, isExistVideo] = await Promise.allSettled([promArrImgUrls, promTextContent, promIsExistAudio, promIsExistVideo])
             arrImgUrls = arrImgUrls.value.map(path => path.split('\\').splice(2).join('\\'))
 
         } catch (error) {
             // res.status(error.status || 500).send({error: error?.message || error},);
             console.log(error)
         } finally {
-            res.status(200).send({arrImgUrls: arrImgUrls, textContent: textContent?.value?.toString() ?? '', isExistAudio: isExistAudio.value});
+            res.status(200).send({
+                arrImgUrls: arrImgUrls,
+                textContent: textContent?.value?.toString() ?? '',
+                isExistAudio: isExistAudio.value,
+                isExistVideo: isExistVideo.value
+            });
         }
     });
 
     router.post('/gpt', async (req, res) => {
-        const {body: {text, prompt}} = req;
+        const {body: {type, text, prompt}} = req;
 
-        const iam_token = await getIAM();
-        const url = 'https://llm.api.cloud.yandex.net/foundationModels/v1/completion';
-
-        const promptData = {
-            // modelUri: `gpt://${FOLDER_ID}/yandexgpt-lite`,
-            modelUri: `gpt://${FOLDER_ID}/yandexgpt/rc`,//
-            completionOptions: {stream: false, "temperature": 0, "maxTokens": "15000"},
-            messages: [{role: "system", "text": prompt ?? "Упрости текст до 30 слов"}, {role: "user", text}]
+        switch (type) {
+            case 'yandex':
+                await yandexGPT(prompt, text, res);
+                break;
+            case 'arli':
+                await arliGPT(prompt, text, res);
+                break;
+            case 'mistral':
+                await mistralGPT(prompt, text, res);
+                break;
+            default:
+                await arliGPT(prompt, text, res);
         }
-        try {
-            const {data} = await axios.post(url, promptData, {
-                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${iam_token}`}, params: {folderId: FOLDER_ID,},
-            })
-
-            let text = data.result.alternatives.map(({message: {text}}) => text).join('\n')
-
-            res.send(text);
-        } catch (error) {
-            console.log(error)
-            res.status(error.status || 500).send({error: error?.message || error},);
-        }
-
     });
 
-    router.post('/lm', async (req, res) => {
-        const {body: {text, prompt}} = req;
-        try {
-            const {data} = await axios.post("https://api.arliai.com/v1/chat/completions", {
-                model: "Mistral-Nemo-12B-Instruct-2407", messages: [{role: "system", content: prompt}, {
-                    role: "user", content: text
-                },], repetition_penalty: 1.1, temperature: 0.7, top_p: 0.9, top_k: 40, max_tokens: 1024, stream: false
-            }, {
-                headers: {
-                    "Authorization": `Bearer ${ARLIAI_API_KEY}`, "Content-Type": "application/json"
-                }
-            })
-            const text = data.choices.map(({message: {content}}) => content).join('\n');
-            res.send(text);
-        } catch (error) {
-            console.log(error)
-            res.status(error.status || 500).send({error: error?.message || error},);
-        }
-
-    });
-    router.post('/mistral', async (req, res) => {
-        const {body: {text, prompt}} = req;
-        try {
-            const {data} = await axios.post('https://api.mistral.ai/v1/chat/completions', {
-                model: 'mistral-large-latest',//'mistral-small-latest',
-                messages: [
-                    {role: "system", content: prompt},
-                    {role: "user", content: text}
-                ],
-            }, {
-                headers: {
-                    'Content-Type': 'application/json', 'Authorization': `Bearer ${MISTRAL_API_KEY}`  // Замените на ваш API ключ
-                }
-            });
-
-            const respText = data.choices.map(({message: {content}}) => content).join('\n');
-            res.status(200).send(respText);
-        } catch (error) {
-            console.log(error)
-            res.status(error.status || 500).send({error: error?.message || error},);
-        }
-
-    });
-
-    router.post('/tospeech', async (req, res) => {
+    router.post('/to-speech', async (req, res) => {
         const {body: {text, name, date}} = req;
 
-        try {
-            const iam_token = await getIAM();
-            const url = 'https://tts.api.cloud.yandex.net/speech/v1/tts:synthesize';
-
-            const {data} = await axios({
-                method: 'POST', url, headers: {
-                    'Authorization': `Bearer ${iam_token}`
-                }, responseType: 'arraybuffer',  // Получаем данные как бинарный массив
-                data: new URLSearchParams({
-                    text, lang: 'ru-RU', voice: 'jane', // voice: 'ermil',
-                    // voice: 'filipp',
-                    // voice: 'lera',
-                    speed: '1.4', folderId: FOLDER_ID, format: 'mp3', sampleRateHertz: '48000'
-                })
-            })
-
-            await writeFileAsync(`./public/public/news/${date}/${name}/speech.mp3`, data);
-            console.log('Аудиофайл успешно создан.');
-
-            res.send('ok');
-        } catch (error) {
-            console.log(error)
-            res.status(error.status || 500).send({error: error?.message || error},);
-        }
+        await yandexToSpeech(text, date, name, res);
 
     });
 
@@ -305,41 +238,5 @@ async function createWebServer(port) {
         }
     })
 }
-
-const getIAM = async () => { //для работы нужен AIM для его получения нужен OAUTH его можно взять тут: https://oauth.yandex.ru/verification_code
-    let expiresAt, dtNowMs = (new Date()).getTime();
-    const filePath = path.join('./', 'iam.json');
-
-    if (dtExpMs && dtExpMs > dtNowMs) return iamToken; //dtExpMs-заиничен и время не истекло, то выход
-
-    if (!dtExpMs) {//dtExpMs - не заиничен
-        try {
-            const raw = await readFileAsync(filePath);
-            ({iamToken, expiresAt} = JSON.parse(raw.toString()));
-            dtExpMs = (new Date(expiresAt)).getTime();
-        } catch (error) {
-            console.log(error)
-        }
-    }
-
-    if (dtExpMs && dtExpMs > dtNowMs) return iamToken; //если файл есть и время не истекло, то выход
-
-    try {
-        const resp = await axios.post('https://iam.api.cloud.yandex.net/iam/v1/tokens', {yandexPassportOauthToken: OAUTH_TOKEN})
-        console.log(resp)
-        const {data} = resp;
-        ({iamToken, expiresAt} = data);
-        await writeFileAsync(filePath, JSON.stringify(data))
-
-    } catch (error) {
-        console.log(error)
-    }
-
-    return iamToken;
-}
-
-//добавлять в конце: ты умеешь упрощать текст до 100 слов
-
-// console.log(await getIAM())
 
 await createWebServer(global.port);

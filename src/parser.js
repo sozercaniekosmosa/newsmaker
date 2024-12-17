@@ -46,8 +46,7 @@ console.log(arr)
 const result = await db.run(`UPDATE users SET email = ? WHERE id = ?`, [newEmail, userId]);
 console.log(`Updated ${result.changes} row(s)`);
 */
-export async function getNewsList(from, to) {
-    const db = await connectDB();
+export async function getNewsList(db, from, to) {
     let res;
     try {
         if (from && to) {
@@ -57,10 +56,7 @@ export async function getNewsList(from, to) {
         }
     } catch (e) {
         console.error(e)
-    } finally {
-        db.close();
     }
-
     return res;
 }
 
@@ -420,7 +416,7 @@ export class NewsUpdater {
     counter = 0;
     max = 1;
     HOST;
-    connectDB = () => console.error('not init db method');
+    db;
     getArrUrlOfType = () => console.error('not init getArrUrlOfType method');
     getUnfDate = () => console.error('not init getUnfDate method');
     getTitle = () => console.error('not init getTitle method');
@@ -428,9 +424,9 @@ export class NewsUpdater {
     getTextContent = () => console.error('not init getTextContent method');
     isExistID = () => console.error('not init isExistID method');
 
-    constructor({host, connectDB, getArrUrlOfType, getUnfDate, getTitle, getArrTags, getTextContent, isExistID}) {
+    constructor({host, db, getArrUrlOfType, getUnfDate, getTitle, getArrTags, getTextContent, isExistID}) {
         this.HOST = host;
-        this.connectDB = connectDB;
+        this.db = db;
         this.getArrUrlOfType = getArrUrlOfType;
         this.getUnfDate = getUnfDate;
         this.getTitle = getTitle;
@@ -468,7 +464,6 @@ export class NewsUpdater {
         };
 
         try {
-            const db = await this.connectDB();
 
             const arrTask = Object.entries(typeNews ? {[typeNews]: listTask[typeNews]} : listTask);
             const promiseArrUrl = arrTask.map(([type, url]) => this.getArrUrlOfType(type, this.HOST + url));
@@ -486,14 +481,13 @@ export class NewsUpdater {
                 this.max += arrUrl.length;
                 for (let i = 0; i < arrUrl.length; i++) {
                     const url = arrUrl[i];
-                    let promiseFetchData = this.#fetchData({type, url, db, host: this.HOST});
+                    let promiseFetchData = this.#fetchData({type, url, host: this.HOST});
                     if (_DEBUG_) await promiseFetchData; else promises.push(promiseFetchData);
                 }
             }
 
             if (!_DEBUG_) await Promise.allSettled(promises);
 
-            await db.close();
         } catch (e) {
             console.error(e);
         } finally {
@@ -502,7 +496,7 @@ export class NewsUpdater {
         }
     }
 
-    async #fetchData({type, url, host, db}) {
+    async #fetchData({type, url, host}) {
         try {
             if (url.startsWith('/')) url = host + url;
             if (!url.startsWith(host)) return;
@@ -511,7 +505,7 @@ export class NewsUpdater {
 
             const id = cyrb53(url);
 
-            if (await this.isExistID(db, id)) {
+            if (await this.isExistID(this.db, id)) {
                 console.error(url, type);
                 return null;
             }
@@ -535,7 +529,7 @@ export class NewsUpdater {
 
             if (!text || !text.length || text.length < this.MIN_WORDS_TOPIC || !title || !title.length || !tags || !tags.length || !date) return;
 
-            await db.run(`INSERT INTO news (id, url, title, tags, text, dt, type) VALUES (?, ?, ?, ?, ?, ?, ?)`, [cyrb53(url), url, title, tags, text, date, type]);
+            await this.db.run(`INSERT INTO news (id, url, title, tags, text, dt, type) VALUES (?, ?, ?, ?, ?, ?, ?)`, [cyrb53(url), url, title, tags, text, date, type]);
         } catch (e) {
             console.log(e, url);
         } finally {
