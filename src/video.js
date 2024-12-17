@@ -57,14 +57,28 @@ const pathAudio = 'out.mp3';
 //.\ffmpeg.exe -y -i .\middle.mp4 -i .\news.mp4 -filter_complex "[0:v][1:v]overlay=320:180:shortest=1[v];[0:a][1:a]amix=inputs=2[a]" -map "[v]" -map "[a]" -shortest output.mp4
 
 export const buildAnNews = async ({dir_ffmpeg, dir_content, pathBridge, pathLogoMini}) => {
+    if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: 14})
     const video = new CreateVideo({dir_ffmpeg, dir_content});
     const durationSpeech = await video.getDuration('speech.mp3')
+
+    if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: 28})
     await video.addAudioToAudio({pathAudioSrc: 'speech.mp3', pathAudioAdded: pathBridge, pathAudioOut: pathAudio})
+
+    if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: 42})
     const duration = await video.getDuration(pathAudio)
+
+    if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: 56})
     await video.imageToVideo({arrPathImg: await findExtFiles(dir_content, 'png'), duration, pathOut: pathVideo})
+
+    if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: 70})
     await video.joinVideoAudio({pathVideo, pathAudio});
+    if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: 84})
     await video.addSubtitles({pathSubtitles, duration: durationSpeech, pathVideo});
+
+    if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: 96})
     await video.addImg({pathVideo, pathImg: pathLogoMini, y: '10', w: 100, h: 70});
+
+    if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: -1})
 // -----------
 }
 export const test = async ({dir_ffmpeg, pathVideo, dir_content, pathLogoMini, pathOut}) => {

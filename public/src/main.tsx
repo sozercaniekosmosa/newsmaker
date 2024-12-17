@@ -14,6 +14,9 @@ async function createMessageSocket() {
     try {
         webSocket({
             host: 'localhost', port: 3000, timeReconnect: 1500,
+            clbOpen: () => {
+                eventBus.dispatchEvent('connect-to-srv')
+            },
             clbMessage: ({data: mess}) => {
                 // console.log("Получены данные: " + mess);
                 const {type, data} = JSON.parse(mess);

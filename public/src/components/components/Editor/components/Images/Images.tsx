@@ -4,6 +4,7 @@ import Gallery from "../Gallery/Gallery";
 import {getNameAndDate, updateImageSizes} from "../../../../utils";
 import axios from "axios";
 import globals from "globals";
+import glob from "../../../../../global.ts";
 
 export default function Images({news, setNews,arrImg,setArrImg}) {
     const [stateImageLoad, setStateImageLoad] = useState(0)
@@ -15,7 +16,7 @@ export default function Images({news, setNews,arrImg,setArrImg}) {
             const {id, url, title, tags, text, dt} = news;
             const prompt = news.tagsEn;
             const {date, name} = getNameAndDate(dt, url, id);
-            const {data: arrSrc} = await axios.get(globals.host + 'images', {params: {prompt, name, max: 10, date}});
+            const {data: arrSrc} = await axios.get(glob.host + 'images', {params: {prompt, name, max: 10, date}});
             setStateImageLoad(0)
             setArrImg(arrSrc.map(src => ({src, width: undefined, height: undefined,})))
             await updateImageSizes(arrSrc, setArrImg);

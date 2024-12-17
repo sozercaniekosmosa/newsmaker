@@ -52,6 +52,7 @@ export default function ListNews(
                                 <span className="notranslate">{option?.image ? '🖼️' : ''}</span>
                                 <span className="notranslate">{option?.text ? '📄' : ''}</span>
                                 <span className="notranslate">{option?.audio ? '🎵' : ''}</span>
+                                <span className="notranslate">{option?.video ? '🎥' : ''}</span>
                                 <div className="n-list__title title-ru">{title}</div>
                             </div>
                             {/*<div className="n-list__tags notranslate" onClick={onSelectTag}>*/}

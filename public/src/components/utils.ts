@@ -1,6 +1,7 @@
 import {debounce, formatDateTime, toShortString} from "../utils.ts";
 import axios from "axios";
 import globals from "globals";
+import glob from "../global.ts";
 
 export const updateImageSizes = async (arrImg, setArrImg) => {
     const updatedImages = await Promise.all(
@@ -25,7 +26,7 @@ export function getNameAndDate(dt, url, id) {
 }
 
 export let getData = async (host, from, to) => {
-    let {data} = await axios.get(globals.host + 'list-news', {
+    let {data} = await axios.get(glob.host + 'list-news', {
         params: {
             from: (new Date(from)).getTime(),
             to: (new Date(to)).getTime()
@@ -47,7 +48,7 @@ type UpdateDBParams = {
 export const updateDB: (params: UpdateDBParams) => void =
     debounce(async ({table = null, values, condition = null, typeCond = null}) => {
         try {
-            await axios.post(globals.host + 'update-db', {table, values, condition, typeCond});
+            await axios.post(glob.host + 'update-db', {table, values, condition, typeCond});
         } catch (e) {
             console.log(e)
         }

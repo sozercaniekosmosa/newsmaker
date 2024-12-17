@@ -2,18 +2,18 @@ import React, {useEffect, useState} from 'react';
 import 'photoswipe/style.css';
 import ButtonSpinner from "../ButtonSpinner/ButtonSpinner";
 import {Button, ButtonGroup} from "react-bootstrap";
-import {addDay, formatDateTime} from "../../../utils.ts";
+import {addDay, eventBus, formatDateTime} from "../../../utils.ts";
 import {getData} from "../../utils.ts";
 import axios from "axios";
 import './style.css'
-import globals from "globals";
+import glob from "../../../global.ts";
 
 export default function HeaderMenu({
                                        arrButtonSelect,
                                        setArrNews,
                                        filterTags,
                                        typeNews, setTypeNews,
-                                       host, setFilterTags
+                                       setFilterTags
                                    }) {
 
     const [listPolitics, listScience, listCulture, listSport] = arrButtonSelect as Object[];
@@ -22,7 +22,15 @@ export default function HeaderMenu({
     const [stateNewsUpdate, setStateNewsUpdate] = useState(0)
 
     useEffect(() => {
-        (async (): Promise<void> => setArrNews(await getData(host, dtFrom, dtTo)))();
+        eventBus.addEventListener('connect-to-srv', () => {
+            console.log('!!!');
+            (async (): Promise<void> => setArrNews(await getData(glob.host, dtFrom, dtTo)))();
+        });
+
+    }, []);
+
+    useEffect(() => {
+        (async (): Promise<void> => setArrNews(await getData(glob.host, dtFrom, dtTo)))();
     }, [dtFrom, dtTo])
 
     function onResetSelectedTag() {
@@ -40,7 +48,7 @@ export default function HeaderMenu({
     async function onUpdateAllNews() {
         setStateNewsUpdate(1)
         try {
-            await axios.post(globals.host + 'update-news-type', {typeNews})
+            await axios.post(glob.host + 'update-news-type', {typeNews})
             const from = formatDateTime(addDay(-1, new Date()), 'yyyy-mm-dd');
             let to = formatDateTime(new Date(), 'yyyy-mm-dd');
 
@@ -48,7 +56,7 @@ export default function HeaderMenu({
                 setDtFrom(from)
                 setDtTo(to)
             } else {
-                setArrNews(await getData(host, dtFrom, dtTo))
+                setArrNews(await getData(glob.host, dtFrom, dtTo))
             }
 
             setStateNewsUpdate(0)

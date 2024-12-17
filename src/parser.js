@@ -189,7 +189,10 @@ export const getDocument = (html) => {
  * @param ext
  * @param max
  */
-export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.jfif', max = 10}) {
+export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.jfif', count = 10}) {
+    let counter = 0.01
+    let max = arrUrl.length;
+
     // Создаем директорию, если она не существует
     if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir, {recursive: true});
@@ -199,7 +202,7 @@ export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.j
     const arrOutNames = [];
     const cv = new CreateVideo({dir_content: outputDir})
     for (let i = 0; i < arrUrl.length; i++) {
-        if (i >= max) break;
+        if (i >= count) break;
         const url = arrUrl[i];
 
         const fileName = path.basename(url);
@@ -213,6 +216,12 @@ export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.j
             // console.log(`Загружено: ${fileName}`);
         } catch (error) {
             console.error(`Ошибка при загрузке ${url}: ${error.message}`);
+        } finally {
+            counter++;
+            if (global.messageSocket) (global.messageSocket).send({
+                type: 'progress',
+                data: counter / max * 100
+            })
         }
     }
     const targetWidth = 1920; // Ширина
@@ -220,6 +229,8 @@ export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.j
     const backgroundColor = {r: 32, g: 32, b: 32, alpha: 0};
     await cv.packageResizeImage({numImages: arrUrl.length, ext: 'png', targetWidth, targetHeight, backgroundColor})
     console.log(`Загружено!!!`);
+
+    if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: -1})
 
     return arrOutNames;
 }

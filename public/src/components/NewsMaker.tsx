@@ -1,17 +1,16 @@
 import React, {useEffect, useState} from 'react'
 import './style.css'
 import {Pane, ResizablePanes} from "resizable-panes-react";
-import {debounce, eventBus} from "../utils";
+import {eventBus} from "../utils";
 import iconTG from "../assets/tg.svg";
 import ProgressBar from './components/ProgressBar/ProgressBar';
 import HeaderMenu from "./components/HeaderMenu/HeaderMenu";
 import ListNews from "./components/ListNews/ListNews";
 import Editor from "./components/Editor/Editor.tsx";
 import Tools from "./components/Tools/Tools.tsx";
-import axios from "axios";
-import globals from "globals";
+import glob from "../global.ts";
 
-globals.host = 'http://localhost:3000/api/v1/';
+glob.host = 'http://localhost:3000/api/v1/'
 const listHostToIcon = {'www.theguardian.com': iconTG}
 
 const listPolitics = {
@@ -46,10 +45,7 @@ function NewsMaker() {
         <div className="editor d-flex flex-column h-100">
             {progress >= 0 && <ProgressBar progress={progress}/>}
             <HeaderMenu
-                setTypeNews={setTypeNews}
-                arrButtonSelect={arrTypes}
-                typeNews={typeNews}
-                host={globals.host}
+                setTypeNews={setTypeNews} arrButtonSelect={arrTypes} typeNews={typeNews}
                 setArrNews={setArrNews}
                 filterTags={filterTags}
                 setFilterTags={setFilterTags}
@@ -74,7 +70,8 @@ function NewsMaker() {
                     />
                 </Pane>
                 <Pane id="P2" size={4}>
-                    <Tools setNews={setNews} news={news}/></Pane>
+                    <Tools news={news}/>
+                </Pane>
             </ResizablePanes>
         </div>
     )

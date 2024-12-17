@@ -8,8 +8,8 @@ import {ButtonGroup, Image, Tab, Tabs} from "react-bootstrap";
 import {debounce, getSelelected, insertAt} from "../../../utils.ts";
 import ButtonSpinner from "../ButtonSpinner/ButtonSpinner";
 import GPT from "./components/GPT/GPT";
-import globals from "globals";
 import Images from "./components/Images/Images";
+import glob from "../../../global.ts";
 
 let currID;
 
@@ -17,7 +17,7 @@ const writeChange: (news, text, host) => void = debounce(async (news, text, host
     if (!news) return;
     const {id, url, dt} = news;
     const {date, name} = getNameAndDate(dt, url, id);
-    await axios.post(globals.host + 'save', {path: `news\\${date}\\${name}\\news.txt`, data: text});
+    await axios.post(glob.host + 'save-text', {path: `news\\${date}\\${name}\\news.txt`, data: text});
 }, 1000)
 
 export default function Editor(
@@ -38,7 +38,7 @@ export default function Editor(
 
         const newNews = {
             ...news,
-            ...{option: {image: !!arrImg.length, text: !!textGPT?.length, audio: isExistAudio}}
+            ...{option: {image: !!arrImg.length, text: !!textGPT?.length, audio: isExistAudio, video: isExistVideo}}
         }
         setNews(newNews);
 
@@ -53,10 +53,10 @@ export default function Editor(
             });
         })()
 
-    }, [arrImg, textGPT, isExistAudio]);
+    }, [arrImg, textGPT, isExistAudio, isExistVideo]);
 
     useEffect(() => {
-        writeChange(news, textGPT, globals.host)
+        writeChange(news, textGPT, glob.host)
     }, [textGPT]);
 
     useEffect(() => {
@@ -85,7 +85,7 @@ export default function Editor(
         try {
             const {id, url, title, tags, text, dt} = news;
             const {date, name} = getNameAndDate(dt, url, id);
-            await axios.post(globals.host + 'build', {title: news.title, tags: news.tags, text: news.text, date, name});
+            await axios.post(glob.host + 'build', {title: news.title, tags: news.tags, text: news.text, date, name});
 
             refVideo.current.querySelector('source').src = `/public/news/${date}/${name}/news.mp4?upd=` + new Date().getTime()
             refVideo.current.load()
@@ -102,7 +102,7 @@ export default function Editor(
         try {
             const {id, url, title, tags, text, dt} = news;
             const {date, name} = getNameAndDate(dt, url, id);
-            await axios.post(globals.host + 'to-speech', {text: textGPT, date, name});
+            await axios.post(glob.host + 'to-speech', {text: textGPT, date, name});
             refAudio.current.querySelector('source').src = `/public/news/${date}/${name}/speech.mp3?upd=` + new Date().getTime()
             refAudio.current.load()
             setStateText2Speech(0);
@@ -115,16 +115,14 @@ export default function Editor(
         try {
             const {id, url, title, tags, text, dt} = news;
             const {date, name} = getNameAndDate(dt, url, id);
-            const {
-                data: {
-                    arrImgUrls: arrSrc,
-                    textContent,
-                    isExistAudio
-                }
-            } = await axios.get(globals.host + 'local-data', {params: {name, date}});
+            const {data: {arrImgUrls: arrSrc, textContent, isExistAudio, isExistVideo,}} =
+                await axios.get(glob.host + 'local-data', {params: {name, date}});
+
             setTextGPT(textContent);
             setIsExistAudio(isExistAudio)
+            setIsExistVideo(isExistVideo)
             setArrImg(arrSrc.map(src => ({src, width: undefined, height: undefined,})))
+
             await updateImageSizes(arrSrc, setArrImg);
         } catch (e) {
             setArrImg([])
@@ -160,10 +158,12 @@ export default function Editor(
                 <Tab eventKey="build" title="Сборка">
                     <div className="flex-stretch" style={{flex: 1}}>
                         <div className="d-flex flex-column w-100">
-                            <ButtonSpinner className="btn-secondary btn-sm mb-1 notranslate" state={stateNewsBuild}
-                                           onClick={onBuild}>Собрать</ButtonSpinner>
+                            <ButtonSpinner className="btn-secondary btn-sm mb-1 notranslate" state={stateNewsBuild} onClick={onBuild}>
+                                Собрать
+                            </ButtonSpinner>
                             <video controls ref={refVideo} className="w-100">
-                                <source type="video/mpeg"/>
+                                <source type="video/mp4"/>
+                                Ваш браузер не поддерживает тег video.
                             </video>
                         </div>
                     </div>

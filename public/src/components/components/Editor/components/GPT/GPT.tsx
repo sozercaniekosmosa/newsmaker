@@ -5,6 +5,7 @@ import axios from "axios";
 import {getNameAndDate} from "../../../../utils";
 import globals from "globals";
 import {ButtonGroup} from "react-bootstrap";
+import glob from "../../../../../global.ts";
 
 export default function GPT({news, textGPT, setTextGPT}) {
     const [prompt, setPrompt] = useState('Выдели основные мысли и сократи текст до 30 слов')
@@ -23,7 +24,7 @@ export default function GPT({news, textGPT, setTextGPT}) {
             const {selectedText, startPos, endPos} = getSelelected(nodeNewsTextContainer)
             const textContent = selectedText ?? nodeNewsTextContainer.textContent;
 
-            const {data} = await axios.post(globals.host + 'gpt', {type, text: textContent, prompt});
+            const {data} = await axios.post(glob.host + 'gpt', {type, text: textContent, prompt});
             let text = data;
 
             if (selectedText) {
@@ -35,7 +36,7 @@ export default function GPT({news, textGPT, setTextGPT}) {
 
             const {id, url, dt} = news;
             const {date, name} = getNameAndDate(dt, url, id);
-            await axios.post(globals.host + 'save-text', {path: `news\\${date}\\${name}\\news.txt`, data: news.text});
+            await axios.post(glob.host + 'save-text', {path: `news\\${date}\\${name}\\news.txt`, data: news.text});
 
             type === 'yandex' && setStateLoadYaGPT(0)
             type === 'arli' && setStateLoadArliGPT(0)

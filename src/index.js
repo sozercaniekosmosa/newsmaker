@@ -6,19 +6,9 @@ import path, {dirname} from 'path';
 import {config} from "dotenv";
 import bodyParser from "body-parser";
 import translate from "@mgcodeur/super-translator";
-import axios from "axios";
-import {
-    checkFileExists,
-    findExtFiles,
-    pathResolveRoot,
-    readFileAsync,
-    saveTextToFile,
-    WEBSocket,
-    writeFileAsync
-} from "./utils.js";
+import {checkFileExists, findExtFiles, pathResolveRoot, readFileAsync, saveTextToFile, WEBSocket} from "./utils.js";
 import {buildAnNews} from "./video.js";
 import {getArrTags, getArrUrlOfType, getTextContent, getTitle, getUnfDate, isExistID,} from "./theGuardian.js";
-import {Mistral} from "@mistralai/mistralai";
 import {arliGPT, mistralGPT, yandexGPT, yandexToSpeech} from "./ai.js";
 
 // import global from "./global";
@@ -47,6 +37,7 @@ async function createWebServer(port) {
 // app.use(express.raw({ type: 'application/octet-stream' }));
     app.use('/api/v1', router);
 
+    console.log(port)
     const webServ = app.listen(port, () => {
         console.log(`API is listening on port ${port}`);
     });
