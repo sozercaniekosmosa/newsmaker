@@ -1,3 +1,32 @@
+.operation {
+  //padding-right: 16px;
+
+  //& > * {
+  //  margin: .1em;
+  //}
+
+  &__img {
+    //height: 240px;
+    overflow: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.18em;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    justify-content: space-between;
+
+    & img {
+      height: 100px;
+    }
+  }
+
+  &__prompt {
+    font-size: 1em !important;
+    border-radius: 0.18em;
+
+  }
+}
+
 .flex-stretch {
   flex: 1;
 }

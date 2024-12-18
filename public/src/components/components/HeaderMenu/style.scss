@@ -28,24 +28,10 @@
   border-color: var(--bs-btn-active-border-color);
 }
 
-.control-filters {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: center;
+header {
+  margin: .1em;
 
-  > *:not(:first-child) {
-    margin: .1em .2em;
-  }
-
-  .selected-filters {
-    cursor: pointer;
-    //font-size: .8em;
-    margin: 0 .5em;
-    font-style: italic;
-
-    :hover {
-      background-color: rgb(184, 181, 255) !important;;
-    }
+  > * > * {
+    margin: .1em;
   }
 }

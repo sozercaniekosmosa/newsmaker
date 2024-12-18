@@ -427,7 +427,11 @@ export class WEBSocket {
 
             this.activeConnections.push(ws);
             clbAddConnection && clbAddConnection({ws, arrActiveConnection: this.activeConnections});
-            this.arrSubscriber.forEach(clbSub => clbSub({type: 'connection', ws, arrActiveConnection: this.activeConnections}));
+            this.arrSubscriber.forEach(clbSub => clbSub({
+                type: 'connection',
+                ws,
+                arrActiveConnection: this.activeConnections
+            }));
 
             ws.on('message', (mess) => { // Слушатель для входящих сообщений
                 try {
@@ -452,7 +456,11 @@ export class WEBSocket {
                     this.activeConnections.splice(index, 1);
                 }
                 clbClose && clbClose({ws, arrActiveConnection: this.activeConnections})
-                this.arrSubscriber.forEach(clbSub => clbSub({type: 'close', ws, arrActiveConnection: this.activeConnections}));
+                this.arrSubscriber.forEach(clbSub => clbSub({
+                    type: 'close',
+                    ws,
+                    arrActiveConnection: this.activeConnections
+                }));
                 console.log('Соединение закрыто');
             });
         });
@@ -885,11 +893,19 @@ export class CreateVideo {
     }
 
     async packageResizeImage({numImages, ext = 'jfif', targetWidth, targetHeight, backgroundColor}) {
-        for (let i = 0; i < numImages; i++) {
-            const pathImg = i + '.';
+        const arrPromiseHandling = []
+
+        async function handledImage(pathImg) {
             await this.resizeImage(pathImg + ext, pathImg + 'png', targetWidth, targetHeight, backgroundColor)
             await this.remove('_' + pathImg + ext)
         }
+
+        for (let i = 0; i < numImages; i++) {
+            const pathImg = i + '.';
+            arrPromiseHandling.push(handledImage.call(this, pathImg));
+        }
+
+        await Promise.allSettled(arrPromiseHandling)
     }
 
     async resizeImage(inputFilePath, outputFilePath, targetWidth, targetHeight, backgroundColor) {

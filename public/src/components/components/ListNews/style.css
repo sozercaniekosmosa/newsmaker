@@ -37,11 +37,6 @@
 .n-list__tags a:hover {
   background-color: rgb(184, 181, 255) !important;
 }
-.n-list__icon {
-  height: 14px;
-  width: 14px;
-  padding: 0;
-}
 
 .text-ru, .tags-ru {
   opacity: 0;

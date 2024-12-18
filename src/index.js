@@ -82,6 +82,7 @@ async function createWebServer(port) {
             await downloadImages({
                 arrUrl, outputDir: `./public/public/news/${date}/${name}/`, pfx: '', ext: '.png', max: +max
             })
+            global?.messageSocket && global.messageSocket.send({type: 'update-news'})
         } catch (error) {
             res.status(error.status || 500).send({error: error?.message || error},);
         }
@@ -182,7 +183,7 @@ async function createWebServer(port) {
 
         } catch (error) {
             // res.status(error.status || 500).send({error: error?.message || error},);
-            console.log(error)
+            console.error(error.message)
         } finally {
             res.status(200).send({
                 arrImgUrls: arrImgUrls,

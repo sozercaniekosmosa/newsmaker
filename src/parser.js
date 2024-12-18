@@ -199,20 +199,13 @@ export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.j
     }
 
     // Загружаем изображения по каждому URL
-    const arrOutNames = [];
+    const arrOutNames = [], arrPromiseTask = [];
     const cv = new CreateVideo({dir_content: outputDir})
-    for (let i = 0; i < arrUrl.length; i++) {
-        if (i >= count) break;
-        const url = arrUrl[i];
 
-        const fileName = path.basename(url);
-        const filePath = path.join(outputDir, pfx + i + ext);
-        arrOutNames.push(pfx + i + ext)
+    async function loadAndSaveImage(url, outPath) {
         try {
             const {data} = await axios.get(url, {responseType: 'arraybuffer',});
-            // Сохраняем файл на диск
-            // await writeFileAsync(filePath, data);
-            cv.toPng({arrayBuffer: data, outputPath: pfx + i + ext})
+            await cv.toPng({arrayBuffer: data, outputPath: outPath})
             // console.log(`Загружено: ${fileName}`);
         } catch (error) {
             console.error(`Ошибка при загрузке ${url}: ${error.message}`);
@@ -224,6 +217,18 @@ export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.j
             })
         }
     }
+
+    for (let i = 0; i < arrUrl.length; i++) {
+        if (i >= count) break;
+
+        const url = arrUrl[i];
+        let outPath = pfx + i + ext;
+        arrOutNames.push(outPath)
+        arrPromiseTask.push(loadAndSaveImage(url, outPath))
+    }
+
+    await Promise.allSettled(arrPromiseTask)
+
     const targetWidth = 1920; // Ширина
     const targetHeight = 1080; // Высота
     const backgroundColor = {r: 32, g: 32, b: 32, alpha: 0};

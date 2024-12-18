@@ -45,7 +45,7 @@ export default function ListNews(
                                 {/*<div className="text-ru">{text.replaceAll(/\n/g, '%@%')}</div>*/}
                                 <div className="text-ru">{text}</div>
                                 <div className="tags-ru">{tags}</div>
-                                <img src={icon} className="n-list__icon" alt={icon}/>
+                                <img src={icon} className="news-icon" alt={icon}/>
                                 <span>{formatDateTime(new Date(dt), 'dd.mm.yy hh:MM')}</span>&nbsp;
                                 <a href={url || ''} target="_blank">ссылка</a>&nbsp;
                                 <span>{toTranslate[type]}</span>

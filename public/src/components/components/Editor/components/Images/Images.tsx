@@ -27,7 +27,7 @@ export default function Images({news, setNews,arrImg,setArrImg}) {
         }
     }
 
-    return <div className="d-flex flex-column w-100">
+    return <div className="d-flex flex-column w-100 notranslate">
                         <textarea className="options__tags d-flex flex-row notranslate" value={news?.tagsEn || ''}
                                   onChange={({target}) => setNews(was => ({...was, tagsEn: target.value}))}/>
         <ButtonSpinner className="btn-secondary btn-sm mb-1" state={stateImageLoad}

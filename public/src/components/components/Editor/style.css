@@ -1,3 +1,20 @@
+.operation__img {
+  overflow: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 0.18em;
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.operation__img img {
+  height: 100px;
+}
+.operation__prompt {
+  font-size: 1em !important;
+  border-radius: 0.18em;
+}
+
 .flex-stretch {
   flex: 1;
 }

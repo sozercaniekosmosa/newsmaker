@@ -1,24 +1,3 @@
-.operation {
-  padding-right: 16px;
-}
-.operation__img {
-  overflow: auto;
-  border: 1px solid #dee2e6;
-  border-radius: 0.18em;
-  display: flex;
-  flex-wrap: wrap;
-  flex-direction: column;
-  justify-content: space-between;
-}
-.operation__img img {
-  height: 100px;
-}
-.operation__control > * {
-  margin: 0.1em 0.2em;
-}
-.operation__prompt {
-  font-size: 1em !important;
-  border-radius: 0.18em;
-}
+
 
 /*# sourceMappingURL=style.css.map */

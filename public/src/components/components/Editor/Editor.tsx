@@ -5,7 +5,7 @@ import axios from "axios";
 import {getNameAndDate, updateDB, updateImageSizes} from "../../utils.ts";
 import './style.css'
 import {ButtonGroup, Image, Tab, Tabs} from "react-bootstrap";
-import {debounce, getSelelected, insertAt} from "../../../utils.ts";
+import {debounce, eventBus, getSelelected, insertAt} from "../../../utils.ts";
 import ButtonSpinner from "../ButtonSpinner/ButtonSpinner";
 import GPT from "./components/GPT/GPT";
 import Images from "./components/Images/Images";
@@ -29,9 +29,16 @@ export default function Editor(
     const [isExistAudio, setIsExistAudio] = useState(false)
     const [isExistVideo, setIsExistVideo] = useState(false)
     const [stateNewsBuild, setStateNewsBuild] = useState(0)
+    const [update, setUpdate] = useState((new Date()).getTime())
 
     const refAudio: React.MutableRefObject<HTMLAudioElement> = useRef();
     const refVideo: React.MutableRefObject<HTMLVideoElement> = useRef();
+
+    useEffect(() => {
+        eventBus.addEventListener('message-socket', ({type}) => {
+            if (type === 'update-news') setUpdate((new Date()).getTime());
+        })
+    }, [])
 
     useEffect(() => {
         if (!news) return;
@@ -61,6 +68,7 @@ export default function Editor(
 
     useEffect(() => {
         if (!news) return;
+
         if (currID === news.id) return;
         currID = news.id;
         setTextGPT('')
@@ -78,6 +86,10 @@ export default function Editor(
         refVideo.current.addEventListener('canplay', e => setIsExistVideo(true))
 
     }, [news])
+
+    useEffect(() => {
+        getLocalSource(news);
+    }, [update])
 
     async function onBuild() {
         //TODO:
@@ -113,6 +125,8 @@ export default function Editor(
 
     const getLocalSource = async (news): Promise<void> => {
         try {
+            console.log(news)
+
             const {id, url, title, tags, text, dt} = news;
             const {date, name} = getNameAndDate(dt, url, id);
             const {data: {arrImgUrls: arrSrc, textContent, isExistAudio, isExistVideo,}} =
@@ -130,10 +144,10 @@ export default function Editor(
     }
 
     return (
-        <div className="options d-flex flex-column h-100 notranslate">
+        <div className="options d-flex flex-column h-100" upd={update}>
             <textarea className="options__title d-flex flex-row input-text" value={news?.title || ''}
                       onChange={({target}) => setNews(was => ({...was, title: target.value}))}/>
-            <Tabs defaultActiveKey="original" className="mb-3">
+            <Tabs defaultActiveKey="original" className="mb-1">
                 <Tab eventKey="original" title="Оригинал" style={{flex: 1}} className="">
                     <textarea className="flex-stretch options__text" value={news?.text || ''}
                               onChange={({target}) => setNews(was => ({...was, text: target.value}))}/>

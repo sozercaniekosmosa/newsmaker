@@ -1,7 +1,8 @@
-import React, {useEffect, useState} from 'react';
-import {Button, ListGroup, Modal} from 'react-bootstrap';
-import {DragDropContext, Droppable, Draggable} from 'react-beautiful-dnd';
+import React, {useState} from 'react';
+import {Button, ListGroup} from 'react-bootstrap';
+import {DragDropContext, Draggable, Droppable} from 'react-beautiful-dnd';
 import './style.css'
+import Dialog from "../../../Dialog/Dialog";
 
 const ListComponent = ({arrData, onChangeData}) => {
     const [showModal, setShowModal] = useState(false);
@@ -44,13 +45,16 @@ const ListComponent = ({arrData, onChangeData}) => {
                 <Droppable droppableId="droppable">
                     {(provided) => (
                         <ListGroup{...provided.droppableProps} ref={provided.innerRef}>
+                            {!arrData.length && (<center>Пусто</center>)}
                             {arrData.map(({title, id}, index) => (
                                 <Draggable key={index} draggableId={`item-${index}`} index={index}>
                                     {provided => (
-                                        <ListGroup.Item ref={provided.innerRef}{...provided.draggableProps}{...provided.dragHandleProps}
-                                                        className="d-flex justify-content-between align-items-center px-1 py-1 m-0">
-                                            <div className="text-truncate" title={title}>{title}</div>
-                                            <Button variant="secondary btn-sm" onClick={() => handleDelete(index)}>X</Button>
+                                        <ListGroup.Item
+                                            ref={provided.innerRef}{...provided.draggableProps}{...provided.dragHandleProps}
+                                            className="d-flex justify-content-between align-items-center px-1 py-1 m-0">
+                                            <div className="text-truncate pe-1" title={title}>{title}</div>
+                                            <Button variant="secondary btn-sm p-0" style={{height:'27px', width:'27px', flex:'none'}}
+                                                    onClick={() => handleDelete(index)}>X</Button>
                                         </ListGroup.Item>
                                     )}
                                 </Draggable>
@@ -61,24 +65,8 @@ const ListComponent = ({arrData, onChangeData}) => {
                 </Droppable>
             </DragDropContext>
 
-            <Modal show={showModal} onHide={handleCloseModal} size="sm">
-                <Modal.Header closeButton>
-                    <Modal.Title><h5>Удаление</h5></Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <h6>
-                        <center>Уверены?</center>
-                    </h6>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={handleCloseModal} size="sm">
-                        Отмена
-                    </Button>
-                    <Button variant="danger" onClick={confirmDelete} size="sm">
-                        Удалить
-                    </Button>
-                </Modal.Footer>
-            </Modal>
+            <Dialog title="Удалить" message="Уверены?" show={showModal} setShow={setShowModal} onConfirm={confirmDelete}
+                    props={{className: 'modal-sm'}}/>
         </div>
     );
 };

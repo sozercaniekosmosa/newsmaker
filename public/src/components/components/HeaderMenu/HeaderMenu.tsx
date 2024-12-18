@@ -7,6 +7,8 @@ import {getData} from "../../utils.ts";
 import axios from "axios";
 import './style.css'
 import glob from "../../../global.ts";
+import iconTG from "../../../assets/tg.svg";
+import iconRT from "../../../assets/rt.png";
 
 export default function HeaderMenu({
                                        arrButtonSelect,
@@ -23,7 +25,6 @@ export default function HeaderMenu({
 
     useEffect(() => {
         eventBus.addEventListener('connect-to-srv', () => {
-            console.log('!!!');
             (async (): Promise<void> => setArrNews(await getData(glob.host, dtFrom, dtTo)))();
         });
 
@@ -39,7 +40,7 @@ export default function HeaderMenu({
 
     function onSelectSrcNews({target, currentTarget}) {
         const {dataset: {type}} = target;
-        currentTarget.querySelector('.type-filters .selected-news-type')?.classList.remove('selected-news-type')
+        currentTarget.querySelector('.header-type-flt .selected-news-type')?.classList.remove('selected-news-type')
         target.classList.add('selected-news-type')
         setTypeNews(type)
         console.log(type)
@@ -68,8 +69,8 @@ export default function HeaderMenu({
 
     }
 
-    return <>
-        <div className="type-filters" onClick={onSelectSrcNews}>
+    return <header>
+        <div className="header-type-flt" onClick={onSelectSrcNews}>
             <ButtonGroup>
                 {Object.entries(listPolitics).map(([key, val], index) => {
                     return <Button key={index} variant="secondary btn-sm notranslate" data-type={key}>{val}</Button>;
@@ -91,9 +92,14 @@ export default function HeaderMenu({
                 })}
             </ButtonGroup>
         </div>
-        <div className="control-filters d-flex flex-row notranslate">
-            <ButtonSpinner className="btn-secondary btn-sm notranslate" state={stateNewsUpdate} onClick={onUpdateAllNews}>
-                Обновить
+        <div className="header-control-flt d-flex flex-row notranslate">
+            <ButtonSpinner className="btn-secondary btn-sm notranslate d-flex align-items-center" state={stateNewsUpdate}
+                           onClick={onUpdateAllNews}>
+                <img src={iconTG} className="news-icon" alt={iconTG}/>&nbsp;<span>Обновить</span>
+            </ButtonSpinner>
+            <ButtonSpinner className="btn-secondary btn-sm notranslate d-flex align-items-center" state={stateNewsUpdate}
+                           onClick={onUpdateAllNews}>
+                <img src={iconRT} className="news-icon" alt={iconRT}/>&nbsp;<span>Обновить</span>
             </ButtonSpinner>
             <input type="date" className="form-control" style={{width: '8em', height: '2em'}} value={dtFrom}
                    onChange={e => setDtFrom(e.target.value)}/>
@@ -101,5 +107,5 @@ export default function HeaderMenu({
                    onChange={e => setDtTo(e.target.value)}/>
             <div className="selected-filters" onClick={onResetSelectedTag}>{filterTags ? '#' + filterTags : ''}</div>
         </div>
-    </>;
+    </header>;
 }
