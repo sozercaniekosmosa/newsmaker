@@ -15,15 +15,20 @@
     flex-direction: column;
     justify-content: space-between;
 
+    > * {
+      text-align: center;
+    }
+
     & img {
       height: 100px;
+      margin: .2rem;
+      background-color: rgba(0, 0, 0, 0.8);
+      border-radius: .375rem;
     }
   }
 
   &__prompt {
     font-size: 1em !important;
-    border-radius: 0.18em;
-
   }
 }
 
@@ -48,8 +53,8 @@
 
   &__title {
     font-weight: 500;
-    border-radius: 0.18em;
-    border: 1px solid #dee2e6;
+    //border-radius: 0.18em;
+    //border: 1px solid #dee2e6;
     //font-size: .8em;
   }
 
@@ -75,13 +80,6 @@
     & img {
       height: 100px;
     }
-  }
-
-  &__text {
-    border: 1px solid #dee2e6;
-    border-radius: 0.18em;
-    resize: none;
-    //font-size: .8em;
   }
 
   &__control > * {

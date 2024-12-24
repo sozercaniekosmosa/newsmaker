@@ -1,6 +1,5 @@
 import {debounce, formatDateTime, toShortString} from "../utils.ts";
 import axios from "axios";
-import globals from "globals";
 import glob from "../global.ts";
 
 export const updateImageSizes = async (arrImg, setArrImg) => {
@@ -15,21 +14,23 @@ export const updateImageSizes = async (arrImg, setArrImg) => {
     setArrImg(updatedImages);
 };
 
-export function getSourcePrefix(str) {
-    if (str.includes('theguardian')) return 'tg'
-}
-
-export function getNameAndDate(dt, url, id) {
+export function getNameAndDate(dt, url, id, listData, title) {
     const date = formatDateTime(new Date(dt), 'yy.mm.dd');
-    const name = getSourcePrefix(url) + '-' + toShortString(id);
+    const _title = title.replaceAll(/[^A-Za-zА-Яа-я ]/g, '').toLocaleLowerCase().split(' ').map(it => it.slice(0, 3)).map(it => it.charAt(0).toUpperCase() + it.slice(1)).slice(0, 3).join('')
+    const name = listData[(new URL(url)).host].short + '-' + _title + '-' + toShortString(id);
     return {date, name};
 }
 
-export let getData = async (host, from, to) => {
+export let getArrTask = async () => {
+    let {data} = await axios.get(glob.host + 'list-task');
+    return data;
+}
+
+export let getData = async (from, to) => {
     let {data} = await axios.get(glob.host + 'list-news', {
         params: {
             from: (new Date(from)).getTime(),
-            to: (new Date(to)).getTime()
+            to: (new Date(to)).getTime() + 3600 * 24 * 1000
         }
     });
     data = data.map(it => {

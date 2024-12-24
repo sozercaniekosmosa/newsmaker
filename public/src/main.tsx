@@ -3,12 +3,33 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import './style.css'
 import NewsMaker from './components/NewsMaker.tsx'
 import {eventBus, webSocket} from "./utils.ts";
+import glob from "./global.ts";
 
-createRoot(document.getElementById('root')!).render(
+let nodeRoot = document.getElementById('root');
+createRoot(nodeRoot!).render(
     // <StrictMode>
     <NewsMaker/>
     // </StrictMode>,
 )
+
+nodeRoot.addEventListener('dblclick', () => {
+    glob.selectedText = undefined;
+})
+nodeRoot.addEventListener('mouseup', () => {
+    const text = window.getSelection().toString()
+    if (text.length) glob.selectedText = text
+})
+
+// @ts-ignore
+document.addEventListener('onmouseup', () => {
+    const text = window.getSelection().toString()
+    console.log(text)
+    if (text.length) {
+        glob.selectedText = text
+        // @ts-ignore
+        window.selectedText = text
+    }
+})
 
 async function createMessageSocket() {
     try {

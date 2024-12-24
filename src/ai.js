@@ -33,9 +33,12 @@ export async function yandexGPT(prompt, text, res) {
 export async function arliGPT(prompt, text, res) {
     try {
         const {data} = await axios.post("https://api.arliai.com/v1/chat/completions", {
-            model: "Mistral-Nemo-12B-Instruct-2407", messages: [{role: "system", content: prompt}, {
-                role: "user", content: text
-            },], repetition_penalty: 1.1, temperature: 0.7, top_p: 0.9, top_k: 40, max_tokens: 1024, stream: false
+            model: "Mistral-Nemo-12B-Instruct-2407",
+            messages: [
+                {role: "system", content: prompt},
+                {role: "user", content: text}
+            ]
+            , repetition_penalty: 1.1, temperature: 0.7, top_p: 0.9, top_k: 40, max_tokens: 1024, stream: false
         }, {
             headers: {
                 "Authorization": `Bearer ${ARLIAI_API_KEY}`, "Content-Type": "application/json"
@@ -71,7 +74,7 @@ export async function mistralGPT(prompt, text, res) {
     }
 }
 
-export async function yandexToSpeech(text, date, name, res) {
+export async function yandexToSpeech({text, date, name, voice = 'marina', speed = 1.4}) {
     try {
         const iam_token = await getIAM();
         const url = 'https://tts.api.cloud.yandex.net/speech/v1/tts:synthesize';
@@ -81,20 +84,19 @@ export async function yandexToSpeech(text, date, name, res) {
                 'Authorization': `Bearer ${iam_token}`
             }, responseType: 'arraybuffer',  // Получаем данные как бинарный массив
             data: new URLSearchParams({
-                text, lang: 'ru-RU', voice: 'jane', // voice: 'ermil',
+                text, lang: 'ru-RU', voice,
+                //voice: 'jane', // voice: 'ermil',
                 // voice: 'filipp',
                 // voice: 'lera',
-                speed: '1.4', folderId: FOLDER_ID, format: 'mp3', sampleRateHertz: '48000'
+                speed, folderId: FOLDER_ID, format: 'mp3', sampleRateHertz: '48000'
             })
         })
 
         await writeFileAsync(`./public/public/news/${date}/${name}/speech.mp3`, data);
         console.log('Аудиофайл успешно создан.');
-
-        res.send('ok');
     } catch (error) {
         console.log(error)
-        res.status(error.status || 500).send({error: error?.message || error},);
+        throw error;
     }
 }
 

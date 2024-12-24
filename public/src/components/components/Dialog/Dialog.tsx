@@ -1,4 +1,3 @@
-import React from "react";
 import {Button, Modal} from "react-bootstrap";
 
 export default ({
@@ -7,8 +6,8 @@ export default ({
                     title = 'Заголовок',
                     message = 'Сообщение',
                     onConfirm,
-                    children,
-                    onClose,
+                    children = undefined,
+                    onClose = undefined,
                     confirmName = 'Да',
                     props
                 }) => {

@@ -1,5 +1,5 @@
 //0-ok, 1-processing, 2-error
-export default function ({state, className, onClick, children, style = {}}) {
+export default function ({state, className='', onClick, children, style = {}}) {
     return (
         <button className={className + ' btn'} onClick={onClick} disabled={state == 1}
                 style={{outline: state == 2 ? '1px solid #cc0000' : 'none', ...style}}>

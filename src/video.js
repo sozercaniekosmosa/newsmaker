@@ -1,5 +1,5 @@
 // const DIR_CONTENT = '../public/public/news/24.11.07/tg-nodJVO9st/img/';
-import {CreateVideo, findExtFiles} from "./utils.js";
+import {CreateVideo, findExtFiles, pathResolveRoot} from "./utils.js";
 
 const DIR_CONTENT = '../public/public/news/24.11.28/tg-c6Hxu7RJ3/';
 const DIR_IMG = '../content/img/';
@@ -56,29 +56,35 @@ const pathAudio = 'out.mp3';
 
 //.\ffmpeg.exe -y -i .\middle.mp4 -i .\news.mp4 -filter_complex "[0:v][1:v]overlay=320:180:shortest=1[v];[0:a][1:a]amix=inputs=2[a]" -map "[v]" -map "[a]" -shortest output.mp4
 
-export const buildAnNews = async ({dir_ffmpeg, dir_content, pathBridge, pathLogoMini}) => {
-    if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: 14})
+export const buildAnNews = async ({dir_ffmpeg, dir_content, pathBridge, pathLogoMini, from}) => {
+    let prc = 100 / 7, currPrc = 0;
+
+    global.messageSocket.send({type: 'progress', data: currPrc += prc})
     const video = new CreateVideo({dir_ffmpeg, dir_content});
     const durationSpeech = await video.getDuration('speech.mp3')
 
-    if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: 28})
+    global.messageSocket.send({type: 'progress', data: currPrc += prc})
     await video.addAudioToAudio({pathAudioSrc: 'speech.mp3', pathAudioAdded: pathBridge, pathAudioOut: pathAudio})
 
-    if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: 42})
+    global.messageSocket.send({type: 'progress', data: currPrc += prc})
     const duration = await video.getDuration(pathAudio)
 
-    if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: 56})
+    global.messageSocket.send({type: 'progress', data: currPrc += prc})
     await video.imageToVideo({arrPathImg: await findExtFiles(dir_content, 'png'), duration, pathOut: pathVideo})
 
-    if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: 70})
-    await video.joinVideoAudio({pathVideo, pathAudio});
-    if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: 84})
-    await video.addSubtitles({pathSubtitles, duration: durationSpeech, pathVideo});
+    global.messageSocket.send({type: 'progress', data: currPrc += prc})
+    await video.addTextVideoAudio({pathVideo, text: 'источник\\\: ' + from, pos: {x: '10', y: 'H-th-10'}, param: {size: 20, color: 'white'}})
 
-    if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: 96})
+
+    global.messageSocket.send({type: 'progress', data: currPrc += prc})
+    await video.joinVideoAudio({pathVideo, pathAudio});
+    // global.messageSocket.send({type: 'progress', data: currPrc += prc})
+    // await video.addSubtitles({pathSubtitles, duration: durationSpeech, pathVideo});
+
+    global.messageSocket.send({type: 'progress', data: currPrc += prc})
     await video.addImg({pathVideo, pathImg: pathLogoMini, y: '10', w: 100, h: 70});
 
-    if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: -1})
+    global.messageSocket.send({type: 'progress', data: -1})
 // -----------
 }
 export const test = async ({dir_ffmpeg, pathVideo, dir_content, pathLogoMini, pathOut}) => {
@@ -92,6 +98,22 @@ export const test = async ({dir_ffmpeg, pathVideo, dir_content, pathLogoMini, pa
 // await cv.changeVolume({pathFile: pathVideoEnd, volume: 0});
 // -----------
 
+export const buildAllNews = async ({dir_ffmpeg, dir_content, arrPathVideo, pathBackground, pathIntro, pathEnd, pathOut}) => {
+    const video = new CreateVideo({dir_ffmpeg, dir_content});
+// seq video news
+    await video.concatVideo({
+        arrPathVideo,
+        pathOut: '_news.mp4'
+    })
+    await video.joinVideoAudio({pathVideo: '_news.mp4', pathAudio: pathBackground, replace: false});
+
+    await video.concatVideo({
+        arrPathVideo: [pathIntro, '_news.mp4', pathEnd],
+        pathOut
+    })
+    await video.dry('_news.mp4')
+}
+
 // seq video news
 // await cv.concatVideo({
 //     arrPathVideo: [
@@ -102,7 +124,7 @@ export const test = async ({dir_ffmpeg, pathVideo, dir_content, pathLogoMini, pa
 //     pathOut: 'out-news.mp4'
 // })
 // await cv.joinVideoAudio({pathVideo: 'out-news.mp4', pathAudio: pathAudioBackLowVol, replace: false});
-//
+
 // await cv.concatVideo({
 //     arrPathVideo: [
 //         pathVideoIntro,

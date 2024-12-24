@@ -3,7 +3,7 @@ import {formatDateTime} from "../../../utils";
 import './style.css'
 
 export default function ListNews(
-    {arrTypes, filterTags, arrNews, typeNews, listHostToIcon, setNews, setFilterTags,}) {
+    {arrTypes, filterTags, arrNews, typeNews, listHostToData, setNews, setFilterTags,}) {
 
     function onSelectTag({target}) {
         if (!target?.dataset?.tag) return
@@ -25,22 +25,22 @@ export default function ListNews(
         target.parentNode.classList.add('selected')
 
         setNews({
-            id, url, title: title_ru, tags: tags_ru, text: text_ru,
+            id, url, title: title_ru, tags: tags_ru, text: text_ru, titleEn: title,
             dt, tagsEn: tags, option, type, index: target.dataset.index
         });
     }
 
     return (
         <div className="scroll-wrapper">
-            <div className="n-list">
+            <div className="n-list ms-1 mb-1">
                 {arrNews.map(({id, url, title, tags, text, dt, type, option}, idx) => {
 
                     if (filterTags && !tags.includes(filterTags)) return '';
                     if (typeNews && !type.includes(typeNews)) return '';
-                    const icon = listHostToIcon[(new URL(url)).host];
+                    const icon = listHostToData[(new URL(url)).host].icon;
 
                     return (
-                        <div className="n-list__item" key={idx}>
+                        <div className="n-list__item ps-1" key={idx}>
                             <div data-index={idx} data-id={id} onClick={onClickNews}>
                                 {/*<div className="text-ru">{text.replaceAll(/\n/g, '%@%')}</div>*/}
                                 <div className="text-ru">{text}</div>
@@ -50,7 +50,7 @@ export default function ListNews(
                                 <a href={url || ''} target="_blank">ссылка</a>&nbsp;
                                 <span>{toTranslate[type]}</span>
                                 <span className="notranslate">{option?.image ? '🖼️' : ''}</span>
-                                <span className="notranslate">{option?.text ? '📄' : ''}</span>
+                                <span className="notranslate">{option?.text ? '📝' : ''}</span>
                                 <span className="notranslate">{option?.audio ? '🎵' : ''}</span>
                                 <span className="notranslate">{option?.video ? '🎥' : ''}</span>
                                 <div className="n-list__title title-ru">{title}</div>

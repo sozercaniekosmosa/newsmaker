@@ -8,7 +8,7 @@ import sharp from "sharp";
 import * as util from "node:util";
 
 const base64Language = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-const toShortString = (value, language = base64Language) => {
+export const toShortString = (value, language = base64Language) => {
     const len = language.length;
     let acc = "";
     while (value > 0) {
@@ -526,6 +526,13 @@ export const throttle = (clb, ms) => {
 const pathRoot = process.cwd();
 export const pathResolveRoot = (path) => path.startsWith('.') ? resolve(pathRoot, ...path.split(/\\|\//)) : path;
 
+export const removeFile = async (path) => {
+    try {
+        await fsPromises.unlink(path);
+    } catch (error) {
+        throw error;
+    }
+};
 export const readData = async (path, options) => {
     try {
         const data = await readFileAsync(path, options);
@@ -553,13 +560,17 @@ export async function checkFileExists(filePath) {
     }
 }
 
+export async function createAndCheckDir(filePath) {
+    // Получаем директорию из пути
+    const dir = PATH.dirname(filePath);
+
+    // Проверяем, существует ли директория, если нет - создаем
+    await fsPromises.mkdir(dir, {recursive: true});
+}
+
 export async function saveTextToFile(filePath, text) {
     try {
-        // Получаем директорию из пути
-        const dir = PATH.dirname(filePath);
-
-        // Проверяем, существует ли директория, если нет - создаем
-        await fsPromises.mkdir(dir, {recursive: true});
+        await createAndCheckDir(filePath);
 
         // Записываем текст в файл
         await fsPromises.writeFile(filePath, text, 'utf8');
@@ -607,6 +618,27 @@ export const findExtFiles = async (directory, ext = 'png') => {
             if (itemStats.isDirectory()) {
                 await traverseDirectory(itemPath);
             } else if (itemStats.isFile() && PATH.extname(itemPath) === '.' + ext) {
+                files.push(itemPath);
+            }
+        }
+    }
+
+    await traverseDirectory(directory);
+    return files;
+};
+
+export const findExtFilesAbs = async (directory, ext = 'png') => {
+    let files = [];
+
+    async function traverseDirectory(currentPath) {
+        const items = await readdir(currentPath, {withFileTypes: true});
+
+        for (const item of items) {
+            const itemPath = PATH.resolve(currentPath, item.name);
+
+            if (item.isDirectory()) {
+                await traverseDirectory(itemPath);
+            } else if (item.isFile() && PATH.extname(item.name) === '.' + ext) {
                 files.push(itemPath);
             }
         }
@@ -688,7 +720,7 @@ export class CreateVideo {
 
         await this.execCmd('ren ' + this.dir_content + pathVideo + ' _' + pathVideo);
 
-        const cmdAddSub = `${this.dir_ffmpeg}ffmpeg.exe -y -i ${this.dir_content}${'_' + pathVideo} -vf ass=subtitle.ass ${this.dir_content}${pathVideo}`;
+        const cmdAddSub = `${this.dir_ffmpeg}ffmpeg.exe -y -i ${this.dir_content}${'_' + pathVideo} -vf ass=${this.setDir('subtitle.ass')} ${this.dir_content}${pathVideo}`;
         await this.execCmd(cmdAddSub);
 
         await this.execCmd('del ' + this.dir_content + '_' + pathVideo);
@@ -747,6 +779,15 @@ export class CreateVideo {
         if (pathOut === pathVideo) await this.dry(pathVideo);
 
         console.log(`fit: ${pathVideo} (${duration} sec)`)
+    }
+
+    async addTextVideoAudio({pathVideo, text, pos = {x: '10', y: 'H-th-10'}, param = {size: 14, color: 'white'}, pathVideoOut = pathVideo}) {
+        const cmd = `${this.dir_ffmpeg}ffmpeg.exe -y -hwaccel auto -i ${this.setDir(pathVideo)} -vf "drawtext=text='${text}':font='Arial':fontcolor=${param.color}:fontsize=${param.size}:x=${pos.x}:y=${pos.y}" -codec:a copy ${this.setDir(pathVideoOut, pathVideoOut === pathVideo ? '_' : '')}`;
+        await this.execCmd(cmd);
+
+        if (pathVideoOut === pathVideo) await this.dry(pathVideo)
+
+        console.log(`text added: ${pathVideo}`)
     }
 
     async joinVideoAudio({pathVideo, pathAudio, pathVideoOut = pathVideo, replace = true}) {
@@ -828,6 +869,15 @@ export class CreateVideo {
         console.log(`reverse video: ${pathVideo}`)
     }
 
+    async normalizeVideoAudio({pathVideo, pathOut = pathVideo}) {
+        const cmd = `${this.dir_ffmpeg}ffmpeg.exe -y -hwaccel auto -i ${this.setDir(pathVideo)} -af "loudnorm=I=-12:TP=-1.5:LRA=11:measured_I=-12:measured_TP=-1.5:measured_LRA=11:measured_thresh=-32.0:offset=0.0:linear=true:print_format=summary" -c:v copy ${this.setDir(pathVideo, pathVideo === pathVideo ? '_' : '')}`;
+        await this.execCmd(cmd);
+
+        if (pathVideo === pathOut) await this.dry(pathVideo)
+
+        console.log(`normalize video: ${pathVideo}`)
+    }
+
     async normalizeAudio({pathAudio, pathOut = pathAudio}) {
         const cmd = `${this.dir_ffmpeg}ffmpeg.exe -y -hwaccel auto -i ${this.setDir(pathAudio)} -af "loudnorm=I=-14:TP=-1.0:LRA=11" -ar 44100 -ac 2 -b:a 192k ${this.setDir(pathAudio, pathAudio === pathAudio ? '_' : '')}`;
         await this.execCmd(cmd);
@@ -892,7 +942,7 @@ export class CreateVideo {
         }
     }
 
-    async packageResizeImage({numImages, ext = 'jfif', targetWidth, targetHeight, backgroundColor}) {
+    async packageResizeImage({arrPathImage, ext = 'jfif', targetWidth, targetHeight, backgroundColor}) {
         const arrPromiseHandling = []
 
         async function handledImage(pathImg) {
@@ -900,30 +950,77 @@ export class CreateVideo {
             await this.remove('_' + pathImg + ext)
         }
 
-        for (let i = 0; i < numImages; i++) {
-            const pathImg = i + '.';
-            arrPromiseHandling.push(handledImage.call(this, pathImg));
+        for (let i = 0; i < arrPathImage.length; i++) {
+            // const pathImg = i + '.';
+            const pathImg = arrPathImage[i].split('.')[0] + '.';
+            // arrPromiseHandling.push(handledImage.call(this, pathImg));
+            await this.resizeImage(pathImg + ext, pathImg + 'png', targetWidth, targetHeight, backgroundColor)
+            await this.remove('_' + pathImg + ext)
         }
 
-        await Promise.allSettled(arrPromiseHandling)
+        // await Promise.allSettled(arrPromiseHandling)
     }
 
-    async resizeImage(inputFilePath, outputFilePath, targetWidth, targetHeight, backgroundColor) {
+    // async resizeImage(inputFilePath, outputFilePath, targetWidth, targetHeight, backgroundColor) {
+    //     try {
+    //         let outputPng = this.setDir(inputFilePath.split('.').slice(0, -1).join('.') + '.png', '_');
+    //         await this.toPng({inputPath: this.setDir(inputFilePath), outputPath: outputPng})
+    //         let sh = await sharp(this.setDir(outputPng))
+    //         await sh.resize({
+    //             width: targetWidth, height: targetHeight, fit: 'contain', // Сохраняет пропорции, добавляя отступы
+    //             background: backgroundColor // Цвет заполнения
+    //         })
+    //         await sh.toFile(this.setDir(outputFilePath));
+    //         // console.log('Изображение успешно обработано и сохранено в', outputFilePath);
+    //         await this.dry(outputPng)
+    //     } catch (error) {
+    //         console.error('Ошибка при обработке изображения:', error);
+    //     }
+    // }
+
+    async resizeImage(inputFilePath, outputFilePath, targetWidth, targetHeight) {
         try {
-            let outputPng = this.setDir(inputFilePath.split('.').slice(0, -1).join('.') + '.png', '_');
-            await this.toPng({inputPath: this.setDir(inputFilePath), outputPath: outputPng})
-            let sh = await sharp(this.setDir(outputPng))
-            await sh.resize({
-                width: targetWidth, height: targetHeight, fit: 'contain', // Сохраняет пропорции, добавляя отступы
-                background: backgroundColor // Цвет заполнения
-            })
-            await sh.toFile(this.setDir(outputFilePath));
+            // Прочитать входное изображение
+            let pathFile = this.setDir(inputFilePath);
+
+            if (!await checkFileExists(pathFile)) return;
+
+            const inputImage = sharp(pathFile);
+            const inputImage2 = sharp(pathFile);
+
+            // Если изображение выше, чем целевое соотношение сторон
+            const resizeImage = inputImage.resize({
+                width: targetWidth,
+                height: targetHeight,
+                // fit: sharp.fit.cover, // Заполнение с обрезкой
+            });
+
+            const blurredBackground = await resizeImage.blur(50).toBuffer()
+
+            // Создать основное изображение с учётом "contain"
+            const foregroundImage = await inputImage2
+                .resize({
+                    width: targetWidth,
+                    height: targetHeight,
+                    fit: 'contain',
+                    background: {r: 128, g: 200, b: 255, alpha: 0.5}, // Прозрачный фон
+                })
+                .toBuffer();
+
+            // Скомбинировать изображения
+            await sharp(blurredBackground)
+                .composite([{input: foregroundImage, gravity: 'center'}])
+                .toFile(this.setDir(outputFilePath));
+
             // console.log('Изображение успешно обработано и сохранено в', outputFilePath);
-            await this.dry(outputPng)
+            // await this.dry(outputPng)
+
+            console.log('Изображение успешно обработано и сохранено в', outputFilePath);
         } catch (error) {
             console.error('Ошибка при обработке изображения:', error);
         }
     }
+
 
     async toPng({inputPath, outputPath, arrayBuffer}) {
         arrayBuffer = inputPath ? await fsPromises.readFile(inputPath) : arrayBuffer;

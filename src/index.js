@@ -1,4 +1,4 @@
-import {connectDB, downloadImages, getArrUrlsImageDDG2, getNewsList, NewsUpdater} from "./parser.js";
+import {connectDB, downloadImages, getArrUrlsImageDDG2, getListNews, getListTask, NewsUpdater} from "./parser.js";
 import express from "express";
 import {fileURLToPath} from 'url';
 import path, {dirname} from 'path';
@@ -6,10 +6,23 @@ import path, {dirname} from 'path';
 import {config} from "dotenv";
 import bodyParser from "body-parser";
 import translate from "@mgcodeur/super-translator";
-import {checkFileExists, findExtFiles, pathResolveRoot, readFileAsync, saveTextToFile, WEBSocket} from "./utils.js";
-import {buildAnNews} from "./video.js";
-import {getArrTags, getArrUrlOfType, getTextContent, getTitle, getUnfDate, isExistID,} from "./theGuardian.js";
+import {
+    checkFileExists,
+    createAndCheckDir,
+    findExtFiles,
+    formatDateTime,
+    pathResolveRoot,
+    readFileAsync,
+    removeFile,
+    saveTextToFile,
+    WEBSocket,
+    writeFileAsync
+} from "./utils.js";
+import {buildAllNews, buildAnNews} from "./video.js";
+import theGuardian from "./theGuardian.js";
+import russiaToday from "./russiaToday.js";
 import {arliGPT, mistralGPT, yandexGPT, yandexToSpeech} from "./ai.js";
+import axios from "axios";
 
 // import global from "./global";
 
@@ -42,10 +55,10 @@ async function createWebServer(port) {
         console.log(`API is listening on port ${port}`);
     });
 
-    const newsUpdater = new NewsUpdater({
-        host: 'https://www.theguardian.com', db,
-        getArrTags, getArrUrlOfType, getTextContent, getTitle, getUnfDate, isExistID
-    });
+    const listNewsSrc = {
+        TG: new NewsUpdater({host: 'https://www.theguardian.com', db, ...theGuardian}),
+        RT: new NewsUpdater({host: 'https://russian.rt.com', db, ...russiaToday}),
+    }
 
     // Настройка статических файлов
     const dir = '../public/dist'
@@ -74,6 +87,15 @@ async function createWebServer(port) {
         }
     });
 
+    router.get('/images-remove', async (req, res) => {
+        try {
+            const {path} = req.query;
+            await removeFile('./public/public/' + path)
+            global?.messageSocket && global.messageSocket.send({type: 'update-news'})
+        } catch (e) {
+            res.status(error.status || 500).send({error: error?.message || error},);
+        }
+    })
     router.get('/images', async (req, res) => {
         const {prompt, max, name, date} = req.query;
         try {
@@ -117,12 +139,39 @@ async function createWebServer(port) {
             res.status(error.status || 500).send({error: error?.message || error},);
         }
     });
+    router.post('/update-one-news-type', async (req, res) => {
+        try {
+            const {body: {typeNews, newsSrc, url}} = req;
+            const data = await listNewsSrc[newsSrc].updateOneNewsType(typeNews, url);
+            res.status(200).send(data)
+        } catch (error) {
+            res.status(error.status || 500).send({error: error?.message || error},);
+        }
+    });
+    router.post('/remove-news', async (req, res) => {
+        try {
+            const {body: {id}} = req;
+            const data = await db.run('DELETE FROM news WHERE ID = ?', [id]);
+            res.send(data);
+            global?.messageSocket?.send({type: 'update-list-news'})
+        } catch (error) {
+            res.status(error.status || 500).send({error: error?.message || error},);
+        }
+    });
     router.post('/update-news-type', async (req, res) => {
         try {
-            const {body: {typeNews}} = req;
-
-            await newsUpdater.updateTG(typeNews);
+            const {body: {typeNews, newsSrc}} = req;
+            await listNewsSrc[newsSrc].updateByType(typeNews);
             res.send('ok');
+        } catch (error) {
+            res.status(error.status || 500).send({error: error?.message || error},);
+        }
+    });
+    router.get('/list-task', async (req, res) => {
+        const {from, to} = req.query;
+        try {
+            let result = await getListTask(db);
+            res.status(200).send(result)
         } catch (error) {
             res.status(error.status || 500).send({error: error?.message || error},);
         }
@@ -130,7 +179,7 @@ async function createWebServer(port) {
     router.get('/list-news', async (req, res) => {
         const {from, to} = req.query;
         try {
-            let result = await getNewsList(db, from, to);
+            let result = await getListNews(db, from, to);
             res.send(result)
         } catch (error) {
             res.status(error.status || 500).send({error: error?.message || error},);
@@ -146,9 +195,9 @@ async function createWebServer(port) {
             res.status(error.status || 500).send({error: error?.message || error},);
         }
     })
-    router.post('/build', async (req, res) => {
+    router.post('/build-an-news', async (req, res) => {
         try {
-            const {body: {title, tags, text, name, date}} = req;
+            const {body: {title, tags, text, name, date, from}} = req;
             let filePath = `./public/public/news/${date}/${name}/`
             await saveTextToFile(filePath + 'title.txt', title)
 
@@ -158,9 +207,37 @@ async function createWebServer(port) {
                 pathBridge: pathResolveRoot('./content/audio/bridge.mp3'),
                 pathVideoOut: filePath + 'news.mp4',
                 pathLogoMini: pathResolveRoot('./content/img/logo-mini.png'),
+                from
             })
 
-            // await updateTG()
+            res.status(200).send('Ok');
+        } catch (error) {
+            res.status(error.status || 500).send({error: error?.message || error},);
+        }
+    });
+    router.post('/build-all-news', async (req, res) => {
+        try {
+            const {body: arrTask} = req;
+
+            const arrPath = arrTask.map(({id, title, name, date}) => {
+                const filePath = `./public/public/news/${date}/${name}/`
+                return pathResolveRoot(filePath + 'news.mp4')
+            })
+            let filePathOut = `./public/public/done/` + formatDateTime(new Date(), 'yy-mm-dd_hh_MM_ss.mp4');
+            let filePathIntro = pathResolveRoot('./content/video/intro.mp4');
+            let filePathEnd = pathResolveRoot('./content/video/end.mp4');
+
+            await createAndCheckDir(filePathOut);
+
+            await buildAllNews({
+                dir_ffmpeg: './content/ffmpeg/',
+                dir_content: `./public/public/done/`,
+                arrPathVideo: arrPath,
+                pathIntro: filePathIntro,
+                pathEnd: filePathEnd,
+                pathBackground: pathResolveRoot('./content/audio/back-05.mp3'),
+                pathOut: filePathOut
+            })
             res.status(200).send('Ok');
         } catch (error) {
             res.status(error.status || 500).send({error: error?.message || error},);
@@ -213,9 +290,18 @@ async function createWebServer(port) {
     });
 
     router.post('/to-speech', async (req, res) => {
-        const {body: {text, name, date}} = req;
 
-        await yandexToSpeech(text, date, name, res);
+        try {
+            const {body: {text, name, date, voice, speed}} = req;
+
+            await yandexToSpeech({text, date, name, voice: voice ?? 'marina', speed: speed ?? 1.4});
+
+            res.send('ok');
+        } catch (error) {
+            console.log(error)
+            res.status(error.status || 500).send({error: error?.message || error},);
+        }
+
 
     });
 

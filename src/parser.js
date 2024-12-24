@@ -7,6 +7,8 @@ import randUserAgent from "random-useragent";
 import {CreateVideo, cyrb53, removeFragmentsFromUrl, writeData} from "./utils.js";
 import {HttpsProxyAgent} from "https-proxy-agent";
 import {Database} from "./db.js";
+import {isDate} from "jsdom/lib/jsdom/living/helpers/dates-and-times.js";
+import {toShortString} from "./utils.js";
 
 function getUserAgent() {
     return randUserAgent.getRandom()
@@ -15,7 +17,8 @@ function getUserAgent() {
 export async function connectDB() {
     const db = new Database('./news.db')
     await db.connect();
-    await db.run(`
+    try {
+        await db.run(`
             CREATE TABLE IF NOT EXISTS news (
                 id INTEGER PRIMARY KEY,
                 url TEXT,
@@ -27,6 +30,19 @@ export async function connectDB() {
                 option TEXT
             )
         `);
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS tasks (
+                id INTEGER PRIMARY KEY,
+                arrTask TEXT
+            )
+        `);
+
+        const res = await db.get(`SELECT id FROM tasks WHERE id = ?`, [0]);
+        if (!res) await db.run(`INSERT INTO tasks (id, arrTask) VALUES (?, ?)`, [0, '[]']);
+
+    } catch (e) {
+        console.log(e)
+    }
     return db;
 }
 
@@ -46,7 +62,18 @@ console.log(arr)
 const result = await db.run(`UPDATE users SET email = ? WHERE id = ?`, [newEmail, userId]);
 console.log(`Updated ${result.changes} row(s)`);
 */
-export async function getNewsList(db, from, to) {
+
+export async function getListTask(db) {
+    let res;
+    try {
+        res = await db.all(`SELECT * FROM tasks`);
+    } catch (e) {
+        console.error(e)
+    }
+    return res;
+}
+
+export async function getListNews(db, from, to) {
     let res;
     try {
         if (from && to) {
@@ -222,7 +249,8 @@ export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.j
         if (i >= count) break;
 
         const url = arrUrl[i];
-        let outPath = pfx + i + ext;
+        // let outPath = pfx + i + ext;
+        let outPath = pfx + toShortString(cyrb53(url)) + ext;
         arrOutNames.push(outPath)
         arrPromiseTask.push(loadAndSaveImage(url, outPath))
     }
@@ -232,10 +260,10 @@ export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.j
     const targetWidth = 1920; // Ширина
     const targetHeight = 1080; // Высота
     const backgroundColor = {r: 32, g: 32, b: 32, alpha: 0};
-    await cv.packageResizeImage({numImages: arrUrl.length, ext: 'png', targetWidth, targetHeight, backgroundColor})
+    await cv.packageResizeImage({arrPathImage: arrOutNames, ext: 'png', targetWidth, targetHeight, backgroundColor})
     console.log(`Загружено!!!`);
 
-    if (global.messageSocket) (global.messageSocket).send({type: 'progress', data: -1})
+    global?.messageSocket?.send({type: 'progress', data: -1})
 
     return arrOutNames;
 }
@@ -434,56 +462,41 @@ export class NewsUpdater {
     HOST;
     db;
     getArrUrlOfType = () => console.error('not init getArrUrlOfType method');
-    getUnfDate = () => console.error('not init getUnfDate method');
+    getDateAsMls = () => console.error('not init getDateAsMls method');
     getTitle = () => console.error('not init getTitle method');
     getArrTags = () => console.error('not init getArrTags method');
     getTextContent = () => console.error('not init getTextContent method');
-    isExistID = () => console.error('not init isExistID method');
+    listTask;
 
-    constructor({host, db, getArrUrlOfType, getUnfDate, getTitle, getArrTags, getTextContent, isExistID}) {
+    constructor({host, listTask, db, getArrUrlOfType, getDateAsMls, getTitle, getArrTags, getTextContent}) {
         this.HOST = host;
         this.db = db;
         this.getArrUrlOfType = getArrUrlOfType;
-        this.getUnfDate = getUnfDate;
+        this.getDateAsMls = getDateAsMls;
         this.getTitle = getTitle;
         this.getArrTags = getArrTags;
         this.getTextContent = getTextContent;
-        this.isExistID = isExistID;
+        this.listTask = listTask;
 
     }
 
-    async updateTG(typeNews) {
+    async isExistID(db, id) {
+        return (await db.all(`SELECT * FROM news WHERE id = ?`, [id])).length > 0;
+    }
+
+    async updateOneNewsType(typeNews, url) {
+        return await this.#fetchData({type: typeNews, url, host: this.HOST, isUpdate: true});
+    }
+
+    async updateByType(typeNews) {
         this.counter = 0;
-        const listTask = {
-            international: '/international',
-            world: '/world',
-            europeNews: '/world/europe-news',
-            usa: '/us-news',
-            americas: '/world/americas',
-            asia: '/world/asia',
-            australia: '/australia-news',
-            africa: '/world/africa',
-            middleeast: '/world/middleeast',
-            science: '/science',
-            technology: '/uk/technology',
-            business: '/uk/business',
-            football: '/football',
-            cycling: '/sport/cycling',
-            formulaone: '/sport/formulaone',
-            books: '/books',
-            tvRadio: '/uk/tv-and-radio',
-            art: '/artanddesign',
-            film: '/uk/film',
-            games: '/games',
-            classical: '/music/classical-music-and-opera',
-            stage: '/stage'
-        };
-
+        // if (typeNews.length === 0) return
         try {
-
-            const arrTask = Object.entries(typeNews ? {[typeNews]: listTask[typeNews]} : listTask);
+            const arrTask = Object.entries(typeNews.length ? {[typeNews]: this.listTask[typeNews]} : this.listTask);
+            // const arrTask = Object.entries({[typeNews]: this.listTask[typeNews]});
             const promiseArrUrl = arrTask.map(([type, url]) => this.getArrUrlOfType(type, this.HOST + url));
-            const arrListUrl = await Promise.allSettled(promiseArrUrl);
+            let arrListUrl = await Promise.allSettled(promiseArrUrl);
+            arrListUrl = arrListUrl.map(it => it.value)
 
             await writeData('./_urls.json', JSON.stringify(arrListUrl));
 
@@ -491,8 +504,11 @@ export class NewsUpdater {
             let promises = [];
 
             for (let i = 0; i < arrListUrl.length; i++) {
-                let it = arrListUrl[i].value;
-                if (!it) console.error(`Индекс с ошибкой ${i}`);
+                let it = arrListUrl[i];
+                if (!it) {
+                    console.error(`Индекс с ошибкой ${i}`);
+                    continue;
+                }
                 const {type, arrUrl} = it;
                 this.max += arrUrl.length;
                 for (let i = 0; i < arrUrl.length; i++) {
@@ -502,7 +518,8 @@ export class NewsUpdater {
                 }
             }
 
-            if (!_DEBUG_) await Promise.allSettled(promises);
+            if (!_DEBUG_)
+                await Promise.allSettled(promises);
 
         } catch (e) {
             console.error(e);
@@ -512,7 +529,7 @@ export class NewsUpdater {
         }
     }
 
-    async #fetchData({type, url, host}) {
+    async #fetchData({type, url, host, isUpdate = false}) {
         try {
             if (url.startsWith('/')) url = host + url;
             if (!url.startsWith(host)) return;
@@ -521,7 +538,8 @@ export class NewsUpdater {
 
             const id = cyrb53(url);
 
-            if (await this.isExistID(this.db, id)) {
+            const isExist = await this.isExistID(this.db, id);
+            if (isExist && !isUpdate) {
                 console.error(url, type);
                 return null;
             }
@@ -534,7 +552,7 @@ export class NewsUpdater {
             const tagsEn = this.getArrTags(doc);
             if (tagsEn.length === 0) return null;
 
-            const date = this.getUnfDate(doc);
+            const date = this.getDateAsMls(doc);
 
             let paragraphText = this.getTextContent(doc);
             if (paragraphText === null) return null;
@@ -546,6 +564,8 @@ export class NewsUpdater {
             if (!text || !text.length || text.length < this.MIN_WORDS_TOPIC || !title || !title.length || !tags || !tags.length || !date) return;
 
             await this.db.run(`INSERT INTO news (id, url, title, tags, text, dt, type) VALUES (?, ?, ?, ?, ?, ?, ?)`, [cyrb53(url), url, title, tags, text, date, type]);
+
+            return {id: cyrb53(url), url, title, tags, text, date, type}
         } catch (e) {
             console.log(e, url);
         } finally {
@@ -555,5 +575,6 @@ export class NewsUpdater {
                 data: this.counter / this.max * 100
             })
         }
+        return null;
     }
 }

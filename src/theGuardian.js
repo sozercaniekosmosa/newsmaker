@@ -1,8 +1,31 @@
-import {cyrb53, removeFragmentsFromUrl, writeData} from "./utils.js";
-import {connectDB, getDocument, getHtmlUrl} from "./parser.js";
+import {getDocument, getHtmlUrl} from "./parser.js";
 
 
-export function getUnfDate(doc) {
+const listTask = {
+    world: '/world',
+    europeNews: '/world/europe-news',
+    usa: '/us-news',
+    americas: '/world/americas',
+    asia: '/world/asia',
+    australia: '/australia-news',
+    africa: '/world/africa',
+    middleeast: '/world/middleeast',
+    science: '/science',
+    technology: '/uk/technology',
+    business: '/uk/business',
+    football: '/football',
+    cycling: '/sport/cycling',
+    formulaone: '/sport/formulaone',
+    books: '/books',
+    tvRadio: '/uk/tv-and-radio',
+    art: '/artanddesign',
+    film: '/uk/film',
+    games: '/games',
+    classical: '/music/classical-music-and-opera',
+    stage: '/stage'
+};
+
+function getDateAsMls(doc) { // получить время в мс
     try {
         let unfDate = [...doc.querySelectorAll('[data-gu-name="meta"] *')].filter(a => a.childElementCount === 0 && a.textContent.includes("GMT") || a.textContent.includes("BST"))[0].textContent
         return new Date(unfDate.slice(0, -3).trim().replace('.', ':')).getTime()
@@ -11,12 +34,12 @@ export function getUnfDate(doc) {
     }
 }
 
-export function getArrTags(doc) {
+function getArrTags(doc) { // получить теги
     let arrTags = [...doc.querySelectorAll('.dcr-1jl528t a')].map(node => node.textContent.toLocaleLowerCase());
     return arrTags.join(', ');
 }
 
-export function getTextContent(doc) {
+function getTextContent(doc) { //получить текст новости
     const p = doc.querySelectorAll('#maincontent > div > p'); //doc.querySelector('[data-gu-name="body"]').textContent
 
     if (!p) return null;
@@ -38,16 +61,21 @@ export function getTextContent(doc) {
     return paragraphText;
 }
 
-export function getTitle(doc) {
+function getTitle(doc) { // получить заголовок
     return doc.title.replace('| The Guardian', '');
 }
 
-export async function getArrUrlOfType(type, url) {
+async function getArrUrlOfType(type, url) { // получаем ссылки на статьи
     const html = await getHtmlUrl(url);
     const body = getDocument(html).querySelector('body');
     return {type, arrUrl: ([...body.querySelectorAll('[id^="container-"] a')].map(a => a.href))};
 }
 
-export async function isExistID(db, id) {
-    return (await db.all(`SELECT * FROM news WHERE id = ?`, [id])).length > 0;
+export default {
+    listTask,
+    getDateAsMls,
+    getArrTags,
+    getTextContent,
+    getTitle,
+    getArrUrlOfType,
 }
