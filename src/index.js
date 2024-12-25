@@ -197,7 +197,7 @@ async function createWebServer(port) {
     })
     router.post('/build-an-news', async (req, res) => {
         try {
-            const {body: {title, tags, text, name, date, from}} = req;
+            const {body: {title, tags, text, name, date, from, addText}} = req;
             let filePath = `./public/public/news/${date}/${name}/`
             await saveTextToFile(filePath + 'title.txt', title)
 
@@ -207,7 +207,8 @@ async function createWebServer(port) {
                 pathBridge: pathResolveRoot('./content/audio/bridge.mp3'),
                 pathVideoOut: filePath + 'news.mp4',
                 pathLogoMini: pathResolveRoot('./content/img/logo-mini.png'),
-                from
+                from,
+                addText
             })
 
             res.status(200).send('Ok');

@@ -7,7 +7,7 @@ import globals from "globals";
 import {Button, ButtonGroup} from "react-bootstrap";
 import glob from "../../../../../global.ts";
 
-export default function GPT({news, textGPT, setTextGPT, listHostToData}) {
+export default function GPT({news, textGPT, setTextGPT, listHostToData, addText, setAddText}) {
     const [prompt, setPrompt] = useState('Выдели основные мысли и сократи текст до 30 слов')
 
     const [stateLoadYaGPT, setStateLoadYaGPT] = useState(0)
@@ -51,7 +51,7 @@ export default function GPT({news, textGPT, setTextGPT, listHostToData}) {
     }
 
 
-    return <div className="d-flex flex-column w-100">
+    return <div className="d-flex flex-column w-100 flex-stretch">
         <ButtonGroup>
             <Button variant="secondary btn-sm" onClick={() => setPrompt('Выдели основные мысли и сократи текст до 30 слов')}>Обобщение</Button>
             <Button variant="secondary btn-sm" onClick={() => setPrompt('Перефразируй')}>Перефразируй</Button>
@@ -68,6 +68,8 @@ export default function GPT({news, textGPT, setTextGPT, listHostToData}) {
                                onClick={() => onGPT('mistral')}>mistral-GPT</ButtonSpinner>
             </ButtonGroup>
         </div>
+        <input type="text" value={addText} onChange={({target}) => setAddText(target.value)} className="rounded border my-1 px-1"
+        placeholder="Дополнительный текст для особых отметок (верний левый угол)"/>
         <textarea className="flex-stretch no-resize border rounded mb-1 p-2" value={textGPT || ''}
                   onChange={({target}) => setTextGPT(target.value)}/>
     </div>

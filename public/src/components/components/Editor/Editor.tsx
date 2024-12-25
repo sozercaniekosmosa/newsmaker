@@ -30,6 +30,7 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
     const [isExistVideo, setIsExistVideo] = useState(false)
     const [stateNewsBuild, setStateNewsBuild] = useState(0)
     const [update, setUpdate] = useState((new Date()).getTime())
+    const [addText, setAddText] = useState('');
 
     const refAudio: React.MutableRefObject<HTMLAudioElement> = useRef();
     const refVideo: React.MutableRefObject<HTMLVideoElement> = useRef();
@@ -85,6 +86,8 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
         refVideo.current.load();
         refVideo.current.addEventListener('canplay', e => setIsExistVideo(true))
 
+        const _addText = text.match(/^\*.*/m)?.[0] ?? '';
+        setAddText(_addText)
     }, [news])
 
     useEffect(() => {
@@ -98,7 +101,7 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
             const {id, url, title, tags, text, dt, titleEn} = news;
             const {date, name} = getNameAndDate(dt, url, id, listHostToData, titleEn);
             const from = listHostToData[(new URL(url)).host].from;
-            await axios.post(glob.host + 'build-an-news', {title: news.title, tags: news.tags, text: news.text, date, name, from});
+            await axios.post(glob.host + 'build-an-news', {title: news.title, tags: news.tags, text: news.text, date, name, from, addText});
 
             refVideo.current.querySelector('source').src = `/public/news/${date}/${name}/news.mp4?upd=` + new Date().getTime()
             refVideo.current.load()
@@ -186,7 +189,10 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
                               onChange={({target}) => setNews(was => ({...was, text: target.value}))}/>
                 </Tab>
                 <Tab eventKey="handled" title="GPT" style={{flex: 1}}>
-                    <GPT news={news} textGPT={textGPT} setTextGPT={setTextGPT} listHostToData={listHostToData}/>
+                    <div className="d-flex flex-column flex-stretch w-100">
+                        <GPT news={news} textGPT={textGPT} setTextGPT={setTextGPT} listHostToData={listHostToData}
+                             setAddText={setAddText} addText={addText}/>
+                    </div>
                 </Tab>
                 <Tab eventKey="images" title="Картинки" style={{flex: 1}}>
                     <Images news={news} setNews={setNews} arrImg={arrImg} setArrImg={setArrImg} listHostToData={listHostToData}/>

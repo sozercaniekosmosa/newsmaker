@@ -428,9 +428,7 @@ export class WEBSocket {
             this.activeConnections.push(ws);
             clbAddConnection && clbAddConnection({ws, arrActiveConnection: this.activeConnections});
             this.arrSubscriber.forEach(clbSub => clbSub({
-                type: 'connection',
-                ws,
-                arrActiveConnection: this.activeConnections
+                type: 'connection', ws, arrActiveConnection: this.activeConnections
             }));
 
             ws.on('message', (mess) => { // Слушатель для входящих сообщений
@@ -457,9 +455,7 @@ export class WEBSocket {
                 }
                 clbClose && clbClose({ws, arrActiveConnection: this.activeConnections})
                 this.arrSubscriber.forEach(clbSub => clbSub({
-                    type: 'close',
-                    ws,
-                    arrActiveConnection: this.activeConnections
+                    type: 'close', ws, arrActiveConnection: this.activeConnections
                 }));
                 console.log('Соединение закрыто');
             });
@@ -781,8 +777,20 @@ export class CreateVideo {
         console.log(`fit: ${pathVideo} (${duration} sec)`)
     }
 
-    async addTextVideoAudio({pathVideo, text, pos = {x: '10', y: 'H-th-10'}, param = {size: 14, color: 'white'}, pathVideoOut = pathVideo}) {
-        const cmd = `${this.dir_ffmpeg}ffmpeg.exe -y -hwaccel auto -i ${this.setDir(pathVideo)} -vf "drawtext=text='${text}':font='Arial':fontcolor=${param.color}:fontsize=${param.size}:x=${pos.x}:y=${pos.y}" -codec:a copy ${this.setDir(pathVideoOut, pathVideoOut === pathVideo ? '_' : '')}`;
+    /**
+     *
+     * @param pathVideo
+     * @param arrText: [{text, pos = {x: '10', y: 'H-th-10'}, param = {size: 14, color: 'white'}}, ...]
+     * @param pathVideoOut
+     * @returns {Promise<void>}
+     */
+    async addTextVideoAudio({pathVideo, arrText, pathVideoOut = pathVideo}) {
+
+        let arrTextCmd = arrText.map((it) => {
+            const {text, pos = {x: '10', y: 'H-th-10'}, param = {size: 14, color: 'white'}} = it;
+            return `drawtext=text='${text}':font='Arial':fontcolor=black:fontsize=${param.size}:x=${pos.x}+1:y=${pos.y}+1,drawtext=text='${text}':font='Arial':fontcolor=${param.color}:fontsize=${param.size}:x=${pos.x}:y=${pos.y}`;
+        });
+        const cmd = `${this.dir_ffmpeg}ffmpeg.exe -y -hwaccel auto -i ${this.setDir(pathVideo)} -vf "${arrTextCmd.join(', ')}" -codec:a copy ${this.setDir(pathVideoOut, pathVideoOut === pathVideo ? '_' : '')}`;
         await this.execCmd(cmd);
 
         if (pathVideoOut === pathVideo) await this.dry(pathVideo)
@@ -990,20 +998,15 @@ export class CreateVideo {
 
             // Если изображение выше, чем целевое соотношение сторон
             const resizeImage = inputImage.resize({
-                width: targetWidth,
-                height: targetHeight,
-                // fit: sharp.fit.cover, // Заполнение с обрезкой
+                width: targetWidth, height: targetHeight, // fit: sharp.fit.cover, // Заполнение с обрезкой
             });
 
-            const blurredBackground = await resizeImage.blur(50).toBuffer()
+            const blurredBackground = await resizeImage.blur(25).toBuffer()
 
             // Создать основное изображение с учётом "contain"
             const foregroundImage = await inputImage2
                 .resize({
-                    width: targetWidth,
-                    height: targetHeight,
-                    fit: 'contain',
-                    background: {r: 128, g: 200, b: 255, alpha: 0.5}, // Прозрачный фон
+                    width: targetWidth, height: targetHeight, fit: 'contain', background: {r: 128, g: 200, b: 255, alpha: 0.5}, // Прозрачный фон
                 })
                 .toBuffer();
 
