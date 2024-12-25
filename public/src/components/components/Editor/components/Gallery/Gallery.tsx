@@ -36,7 +36,7 @@ export default function Gallery(props) {
                 <center>Пусто</center>
             </div>}
             {props.images.map((image, index) => (
-                <div style={{width: 'fit-content'}}>
+                <div style={{width: 'fit-content'}} key={index}>
                     <Button variant="danger btn-sm py-0 px-0"
                             style={{position: "relative", lineHeight: '0', height: '22px', width: '22px', left: '30px', top: '-32px'}}
                             onClick={(e) => {

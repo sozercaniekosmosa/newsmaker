@@ -1,5 +1,5 @@
 // const DIR_CONTENT = '../public/public/news/24.11.07/tg-nodJVO9st/img/';
-import {CreateVideo, findExtFiles, pathResolveRoot} from "./utils.js";
+import {CreateVideo, findExtFiles, findExtFilesAbs, pathResolveRoot} from "./utils.js";
 
 const DIR_CONTENT = '../public/public/news/24.11.28/tg-c6Hxu7RJ3/';
 const DIR_IMG = '../content/img/';
@@ -70,7 +70,7 @@ export const buildAnNews = async ({dir_ffmpeg, dir_content, pathBridge, pathLogo
     const duration = await video.getDuration(pathAudio)
 
     global.messageSocket.send({type: 'progress', data: currPrc += prc})
-    await video.imageToVideo({arrPathImg: await findExtFiles(dir_content, 'png'), duration, pathOut: pathVideo})
+    await video.imageToVideo({arrPathImg: await findExtFilesAbs(dir_content, 'png'), duration, pathOut: pathVideo})
 
     global.messageSocket.send({type: 'progress', data: currPrc += prc})
     await video.addTextVideoAudio({pathVideo, text: 'источник\\\: ' + from, pos: {x: '10', y: 'H-th-10'}, param: {size: 20, color: 'white'}})

@@ -13,7 +13,7 @@ import iconRT from "../../../assets/rt.png";
 export default function HeaderMenu({arrButtonSelect, setArrNews, filterTags, typeNews, setTypeNews, setFilterTags}) {
 
     const [listPolitics, listPoliticsRU, listScience, listCulture, listSport] = arrButtonSelect as Object[];
-    const [dtFrom, setDtFrom] = useState(formatDateTime(addDay(0, new Date()), 'yyyy-mm-dd'))
+    const [dtFrom, setDtFrom] = useState(formatDateTime(addDay(-1, new Date()), 'yyyy-mm-dd'))
     const [dtTo, setDtTo] = useState(formatDateTime(new Date(), 'yyyy-mm-dd'))
     const [stateNewsTGUpdate, setStateNewsTGUpdate] = useState(0)
     const [stateNewsRTUpdate, setStateNewsRTUpdate] = useState(0)
@@ -49,7 +49,7 @@ export default function HeaderMenu({arrButtonSelect, setArrNews, filterTags, typ
         listSetStateNews[newsSrc](1)
         try {
             await axios.post(glob.host + 'update-news-type', {typeNews, newsSrc})
-            const from = formatDateTime(addDay(0, new Date()), 'yyyy-mm-dd');
+            const from = formatDateTime(addDay(-1, new Date()), 'yyyy-mm-dd');
             let to = formatDateTime(new Date(), 'yyyy-mm-dd');
 
             if (from + to != dtFrom + dtTo) {
