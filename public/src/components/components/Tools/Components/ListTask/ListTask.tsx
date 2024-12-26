@@ -66,7 +66,7 @@ const ListComponent = ({arrData, onChangeData}) => {
             </DragDropContext>
 
             <Dialog title="Удалить" message="Уверены?" show={showModal} setShow={setShowModal} onConfirm={confirmDelete}
-                    props={{className: 'modal-sm'}} children={undefined} onClose={undefined}/>
+                    props={{className: 'modal-sm'}}/>
         </div>
     );
 };

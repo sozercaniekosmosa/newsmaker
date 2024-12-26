@@ -5,11 +5,11 @@ export default ({
                     setShow,
                     title = 'Заголовок',
                     message = 'Сообщение',
-                    onConfirm,
+                    onConfirm = undefined,
                     children = undefined,
                     onClose = undefined,
                     confirmName = 'Да',
-                    props
+                    props = {}
                 }) => {
     // const [show, setShow] = useState(true);
 

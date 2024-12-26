@@ -1,3 +1,16 @@
+.tui-image-editor-help-menu.top .tui-image-editor-item {
+  padding-top: 0 !important;
+}
+
+.tui-colorpicker-clearfix li input {
+  height: 10px !important;
+  width: 10px !important;
+}
+
+.tui-image-editor-container .color-picker-control {
+  width: auto !important;
+}
+
 .operation__img {
   overflow: auto;
   border: 1px solid #dee2e6;
