@@ -2,7 +2,6 @@ import {connectDB, downloadImages, getArrUrlsImageDDG2, getListNews, getListTask
 import express from "express";
 import {fileURLToPath} from 'url';
 import path, {dirname} from 'path';
-
 import {config} from "dotenv";
 import bodyParser from "body-parser";
 import translate from "@mgcodeur/super-translator";
@@ -22,9 +21,7 @@ import {buildAllNews, buildAnNews} from "./video.js";
 import theGuardian from "./theGuardian.js";
 import russiaToday from "./russiaToday.js";
 import {arliGPT, mistralGPT, yandexGPT, yandexToSpeech} from "./ai.js";
-import axios from "axios";
-
-// import global from "./global";
+import multer from "multer";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -195,6 +192,21 @@ async function createWebServer(port) {
             res.status(error.status || 500).send({error: error?.message || error},);
         }
     })
+
+    const upload = multer();
+    router.post('/save-image', upload.single('image'), async (req, res) => {
+        try {
+            const {body: {path}} = req;
+            const data = req.file.buffer;
+            let filePath = `./public/public/${path}`
+            await writeFileAsync(filePath, data)
+            global?.messageSocket && global.messageSocket.send({type: 'update-news'})
+            res.status(200).send('ok');
+        } catch (e) {
+            res.status(error.status || 500).send({error: error?.message || error},);
+        }
+    })
+
     router.post('/build-an-news', async (req, res) => {
         try {
             const {body: {title, tags, text, name, date, from, addText}} = req;

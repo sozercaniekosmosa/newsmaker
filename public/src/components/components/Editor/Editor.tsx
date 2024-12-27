@@ -12,12 +12,8 @@ import Images from "./components/Images/Images";
 import glob from "../../../global.ts";
 import Dialog from "../Dialog/Dialog.tsx";
 import 'tui-image-editor/dist/tui-image-editor.css';
-import ImageEditor from '@toast-ui/react-image-editor';
 
 let currID;
-const myTheme = {
-    // Theme object to extends default dark theme.
-};
 
 const writeChange: (news, text, list) => void = debounce(async (news, text, list) => {
     if (!news) return;
@@ -46,19 +42,6 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
         eventBus.addEventListener('message-socket', ({type}) => {
             if (type === 'update-news') setUpdate((new Date()).getTime());
         })
-
-        // @ts-ignore
-        window.saveAs = (blob, name) => {
-
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = name; // Имя файла для сохранения
-            a.click();
-            URL.revokeObjectURL(url);
-
-            console.log(blob)
-        }
 
     }, [])
 
@@ -160,7 +143,10 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
             setTextGPT(textContent);
             setIsExistAudio(isExistAudio)
             setIsExistVideo(isExistVideo)
-            setArrImg(arrSrc.map(src => ({src, width: undefined, height: undefined,})))
+            setArrImg(arrSrc.map(src => {
+                src+='\\?d=' + (new Date()).getTime()
+                return {src, width: undefined, height: undefined};
+            }))
 
             await updateImageSizes(arrSrc, setArrImg);
         } catch (e) {
@@ -243,7 +229,6 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
                             <ButtonSpinner className="btn-secondary btn-sm mb-1 notranslate" state={stateNewsBuild} onClick={onBuild}>
                                 Собрать
                             </ButtonSpinner>
-                            <Button onClick={() => setShowModal(true)}>Ed</Button>
                             <video controls ref={refVideo} className="w-100">
                                 <source type="video/mp4"/>
                                 Ваш браузер не поддерживает тег video.
@@ -252,32 +237,6 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
                     </div>
                 </Tab>
             </Tabs>
-            <Dialog title="Удалить" message="Уверены?" show={showModal} setShow={setShowModal}
-                    props={{className: 'modal-lg', fullscreen: true}}>
-                <ImageEditor
-                    includeUI={{
-                        loadImage: {
-                            path: 'http://localhost:5173/news/24.12.24/RT-GodKol-jjVd6tgco/bb1yDXrRE.png',
-                            name: 'SampleImage',
-                        },
-                        theme: myTheme,
-                        menu: ['shape', 'filter'],
-                        initMenu: 'filter',
-                        uiSize: {
-                            width: '100%',
-                            height: '100%',
-                        },
-                        menuBarPosition: 'bottom',
-                    }}
-                    // cssMaxHeight={500}
-                    // cssMaxWidth={700}
-                    selectionStyle={{
-                        cornerSize: 20,
-                        rotatingPointOffset: 70,
-                    }}
-                    usageStatistics={false}
-                />
-            </Dialog>
         </div>
     );
 }
