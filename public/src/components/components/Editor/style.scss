@@ -15,6 +15,10 @@
   opacity: 0;
 }
 
+.tui-image-editor-header-buttons > *:nth-child(1) {
+  display: none!important;
+}
+
 .operation {
   //padding-right: 16px;
 

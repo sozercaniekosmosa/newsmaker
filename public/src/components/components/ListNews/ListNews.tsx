@@ -1,6 +1,7 @@
 import 'photoswipe/style.css';
 import {formatDateTime} from "../../../utils";
 import './style.css'
+import global from "../../../global.ts";
 
 export default function ListNews(
     {arrTypes, filterTags, arrNews, typeNews, listHostToData, setNews, setFilterTags,}) {
@@ -15,6 +16,8 @@ export default function ListNews(
 
     function onClickNews({target}) {
         if (!target?.dataset?.index) return
+
+        global.selectedText = undefined;
 
         let title_ru = target.querySelector('.title-ru').textContent;
         let text_ru = target.querySelector('.text-ru').textContent

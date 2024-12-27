@@ -1,4 +1,4 @@
-import {getDocument, getHtmlUrl} from "./parser.js";
+import {getDocument, getHtmlUrl} from "../parser.js";
 
 
 const listTask = {

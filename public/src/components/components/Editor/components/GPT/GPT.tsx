@@ -21,18 +21,10 @@ export default function GPT({news, textGPT, setTextGPT, listHostToData, addText,
         try {
             let nodeNewsTextContainer = document.querySelector('.news-text');
 
-            // const {selectedText, startPos, endPos} = getSelelected(nodeNewsTextContainer)
             const selectedText = glob.selectedText;
             const textContent = selectedText ?? nodeNewsTextContainer.textContent;
 
-            const {data} = await axios.post(glob.host + 'gpt', {type, text: textContent, prompt});
-            let text = data;
-
-            // if (selectedText) {
-            //     text = insertAt(nodeNewsTextContainer.textContent, '\n==>\n' + text + '\n<==\n', endPos)
-            //     console.log(selectedText)
-            // }
-
+            const {data:text} = await axios.post(glob.host + 'gpt', {type, text: textContent, prompt});
             setTextGPT(text)
 
             const {id, url, dt, title, titleEn} = news;

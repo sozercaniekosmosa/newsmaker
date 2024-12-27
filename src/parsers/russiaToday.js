@@ -1,5 +1,5 @@
-import {cyrb53, removeFragmentsFromUrl, writeData} from "./utils.js";
-import {connectDB, getDocument, getHtmlUrl} from "./parser.js";
+import {cyrb53, removeFragmentsFromUrl, writeData} from "../utils.js";
+import {connectDB, getDocument, getHtmlUrl} from "../parser.js";
 
 
 const listTask = {

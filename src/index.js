@@ -18,8 +18,6 @@ import {
     writeFileAsync
 } from "./utils.js";
 import {buildAllNews, buildAnNews} from "./video.js";
-import theGuardian from "./theGuardian.js";
-import russiaToday from "./russiaToday.js";
 import {arliGPT, mistralGPT, yandexGPT, yandexToSpeech} from "./ai.js";
 import multer from "multer";
 
@@ -28,6 +26,10 @@ const __dirname = dirname(__filename);
 
 const {parsed: {PORT}} = config();
 const port = +process.env.PORT || +PORT;
+
+import theGuardian from "./parsers/theGuardian.js";
+import russiaToday from "./parsers/russiaToday.js";
+import dzen from "./parsers/dzen.js";
 
 global.port = port
 
@@ -55,6 +57,7 @@ async function createWebServer(port) {
     const listNewsSrc = {
         TG: new NewsUpdater({host: 'https://www.theguardian.com', db, ...theGuardian}),
         RT: new NewsUpdater({host: 'https://russian.rt.com', db, ...russiaToday}),
+        DZ: new NewsUpdater({host: 'https://dzen.ru/news/rubric', db, ...dzen}),
     }
 
     // Настройка статических файлов

@@ -18,17 +18,7 @@ nodeRoot.addEventListener('dblclick', () => {
 nodeRoot.addEventListener('mouseup', () => {
     const text = window.getSelection().toString()
     if (text.length) glob.selectedText = text
-})
-
-// @ts-ignore
-document.addEventListener('onmouseup', () => {
-    const text = window.getSelection().toString()
-    console.log(text)
-    if (text.length) {
-        glob.selectedText = text
-        // @ts-ignore
-        window.selectedText = text
-    }
+    // console.log(text)
 })
 
 async function createMessageSocket() {
