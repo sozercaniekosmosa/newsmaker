@@ -17,6 +17,7 @@ export default function HeaderMenu({arrButtonSelect, setArrNews, filterTags, typ
     const [dtTo, setDtTo] = useState(formatDateTime(new Date(), 'yyyy-mm-dd'))
     const [stateNewsTGUpdate, setStateNewsTGUpdate] = useState(0)
     const [stateNewsRTUpdate, setStateNewsRTUpdate] = useState(0)
+    const [stateNewsDZUpdate, setStateNewsDZUpdate] = useState(0)
 
     useEffect(() => {
         eventBus.addEventListener('connect-to-srv', () => {
@@ -44,7 +45,7 @@ export default function HeaderMenu({arrButtonSelect, setArrNews, filterTags, typ
     }
 
     async function onUpdateAllNews(newsSrc) {
-        const listSetStateNews = {'TG': setStateNewsTGUpdate, 'RT': setStateNewsRTUpdate}
+        const listSetStateNews = {'TG': setStateNewsTGUpdate, 'RT': setStateNewsRTUpdate, 'DZ': setStateNewsDZUpdate}
 
         listSetStateNews[newsSrc](1)
         try {
@@ -103,6 +104,12 @@ export default function HeaderMenu({arrButtonSelect, setArrNews, filterTags, typ
                            onClick={() => onUpdateAllNews('RT')}>
                 <img src={iconRT} className="news-icon" alt={iconRT}/>&nbsp;<span>Обновить</span>
             </ButtonSpinner>
+
+            <ButtonSpinner className="btn-secondary btn-sm notranslate d-flex align-items-center" state={stateNewsRTUpdate}
+                           onClick={() => onUpdateAllNews('DZ')}>
+                Dzen
+            </ButtonSpinner>
+
             <input type="date" className="form-control" style={{width: '8em', height: '2em'}} value={dtFrom}
                    onChange={e => setDtFrom(e.target.value)}/>
             <input type="date" className="form-control" style={{width: '8em', height: '2em'}} value={dtTo}

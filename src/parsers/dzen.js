@@ -22,7 +22,10 @@ const listTask = {
 async function getArrUrlOfType(type, url) { // получаем ссылки на статьи
     const html = await getHtmlUrl(url);
     const body = getDocument(html).querySelector('body');
-
+    const reqid = [...body.querySelectorAll('script')].find(it=>it.textContent.includes('reqid')).textContent.split('reqid":"')[1].split('","')[0]
+    const requrl = 'https://dzen.ru/news/rubric/chronologic?ajax=1&neo_parent_id='+reqid;
+    const textJSON = await getHtmlUrl(url);
+    console.log(textJSON)
     // let urlToPartOfNews = body.querySelector('.listing__button').dataset.href.split('/').slice(0, -1).join('/') + '/'
     // let urlToPartOfNews = body.querySelector('.listing__button').dataset.href
 
