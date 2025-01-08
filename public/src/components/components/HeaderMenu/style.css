@@ -17,7 +17,7 @@
 
 .selected-news-type {
   color: var(--bs-btn-active-color);
-  background-color: var(--bs-btn-active-bg);
+  background-color: #2e4e13;
   border-color: var(--bs-btn-active-border-color);
 }
 
@@ -26,6 +26,11 @@ header {
 }
 header > * > * {
   margin: 0.1em;
+}
+
+.header-type-flt button {
+  height: 25px;
+  line-height: 0;
 }
 
 /*# sourceMappingURL=style.css.map */

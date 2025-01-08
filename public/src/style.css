@@ -12,4 +12,21 @@ body {
   resize: none;
 }
 
+.no-select {
+  -webkit-user-select: none;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(155, 155, 155, 0.5);
+  border: transparent;
+}
+
 /*# sourceMappingURL=style.css.map */

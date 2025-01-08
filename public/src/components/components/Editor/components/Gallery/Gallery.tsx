@@ -5,7 +5,7 @@ import './style.css'
 import {Button} from "react-bootstrap";
 import Dialog from "../../../Dialog/Dialog.tsx";
 import axios from "axios";
-import glob from "../../../../../global.ts";
+import global from "../../../../../global.ts";
 import 'tui-image-editor/dist/tui-image-editor.css';
 import ImageEditor from '@toast-ui/react-image-editor';
 import {theme, locale_ru} from './cfgEditor';
@@ -33,7 +33,7 @@ export default function Gallery(props) {
                 formData.append('image', blob);
                 formData.append('path', namePath);
 
-                await axios.post(glob.host + 'save-image', formData, {
+                await axios.post(global.host + 'save-image', formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
                     }
@@ -52,13 +52,18 @@ export default function Gallery(props) {
         };
     }, []);
 
-    let onConfirmRemoveImage = async () => {
-        console.log(itemToDelete)
-        await axios.get(glob.host + 'images-remove', {params: {path: itemToDelete}});
+    let onConfirmRemoveImage = async (src: string = null) => {
+        try {
+            console.log(itemToDelete)
+            // await axios.get(global.host + 'images-remove', {params: {path: src.substring(0, src.lastIndexOf('?')) ?? itemToDelete}});
+            await axios.get(global.host + 'images-remove', {params: {path: src ?? itemToDelete}});
+        } catch (e) {
+            console.log(e)
+        }
     };
 
     return (
-        <div className="pswp-gallery d-flex flex-wrap justify-content-center" id={props.galleryID}>
+        <div className="pswp-gallery d-flex flex-wrap justify-content-center" id={props.galleryID} style={{height: 0}}>
             {props.images.length === 0 && <div>
                 <center>Пусто</center>
             </div>}
@@ -87,7 +92,11 @@ export default function Gallery(props) {
                        target="_blank"
                        rel="noreferrer"
                     >
-                        <img src={image.src} alt=""/>
+                        <img src={image.src} alt="" onDragStart={e => global.draggingElement = e.target} onContextMenu={(e) => {
+                            // setItemToDelete(image.src);
+                            onConfirmRemoveImage(image.src);
+                            e.preventDefault();
+                        }}/>
                     </a>
                 </div>
 
@@ -103,10 +112,15 @@ export default function Gallery(props) {
                             path: srcToEdit,
                             name: srcToEdit,
                         },
+                        options: {
+                            stroke: "#00ff08",
+                            fill: "",
+                            strokeWidth: 3
+                        },
                         locale: locale_ru,
                         theme,
-                        menu: ['shape', 'filter', 'icon'],
-                        initMenu: 'filter',
+                        menu: ['shape', 'filter', 'icon', 'draw', 'flip', 'text'],
+                        initMenu: 'shape',
                         uiSize: {
                             width: '100%',
                             height: '100%',

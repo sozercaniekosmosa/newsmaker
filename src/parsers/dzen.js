@@ -1,77 +1,128 @@
-import {cyrb53, removeFragmentsFromUrl, writeData} from "../utils.js";
-import {connectDB, getDocument, getHtmlUrl} from "../parser.js";
+import axios from "axios";
+import {addHour, addMinute, cyrb53, formatDateTime} from "../utils.js";
+import * as chrono from "chrono-node";
+import {config} from "dotenv";
 
+const {parsed: {DZEN_COOKIE}} = config();
 
 const listTask = {
-    world: '/world',
-    now: '/chronologic',//++
-    interest: '/personal_feed',//++
-    politics: '/politics',
-    social: '/society',
-    business: '/business',
-    svo: '/svo',
-    showbusiness: '/showbusiness?utm_source=yxnews&utm_medium=desktop',//++
-    incidents: '/incident',
-    culture: '/culture',
-    technology: '/computers',
-    science: '/science',
-    auto: '/auto',//++
+    world: '/rubric/world',
+    // now: '/rubric/chronologic',//++
+    interest: '/rubric/personal_feed',//++
+    politics: '/rubric/politics',
+    social: '/rubric/society',
+    business: '/rubric/business',
+    svo: '/rubric/svo',
+    showbusiness: '/rubric/showbusiness?utm_source=yxnews&utm_medium=desktop',//++
+    incidents: '/rubric/incident',
+    culture: '/rubric/culture',
+    technology: '/rubric/computers',
+    science: '/rubric/science',
+    auto: '/rubric/auto',//++
 };
 
+const getID = (url) => {
+
+    let _url = new URL(url);
+    _url.searchParams.delete('t');
+    _url.searchParams.delete('rubric');
+
+    return cyrb53(_url.toString());
+}
+
+async function getDocument(html) {
+    try {
+        const ss = 'window.Ya.Neo={'
+        const pos = html.indexOf(ss)
+        const textObj = html.substring(pos + ss.length - 1, html.indexOf('</script>', pos))
+
+        const obj = JSON.parse(textObj);
+
+        return obj
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+async function getHtmlUrl(url) {
+    const headers = {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'Accept-Encoding': 'gzip, deflate, br, zstd',
+        'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Cache-Control': 'max-age=0',
+        'Connection': 'keep-alive',
+        'Cookie': DZEN_COOKIE,
+        'Host': 'dzen.ru',
+        // 'Referer': 'https://dzen.ru/news?utm_referrer=www.google.com',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"'
+    };
+
+    try {
+        const response = await axios.get(url, {headers, withCredentials: true});
+        // console.log(response.data);
+        return response.data
+    } catch (error) {
+        console.error('Error fetching personal feed:', error);
+        return null;
+    }
+}
+
+function getSrcName(doc) { // получаем имя оригинального источника
+    return doc.dataSource.news.story.summarization.items[0].sourceName
+}
 
 async function getArrUrlOfType(type, url) { // получаем ссылки на статьи
     const html = await getHtmlUrl(url);
-    const body = getDocument(html).querySelector('body');
-    const reqid = [...body.querySelectorAll('script')].find(it=>it.textContent.includes('reqid')).textContent.split('reqid":"')[1].split('","')[0]
-    const requrl = 'https://dzen.ru/news/rubric/chronologic?ajax=1&neo_parent_id='+reqid;
-    const textJSON = await getHtmlUrl(url);
-    console.log(textJSON)
-    // let urlToPartOfNews = body.querySelector('.listing__button').dataset.href.split('/').slice(0, -1).join('/') + '/'
-    // let urlToPartOfNews = body.querySelector('.listing__button').dataset.href
+    // const script = getDocument(html).querySelector('script').textContent;
+    // let searchStr = 'window.Ya.Neo={';
+    // const posStart = script.indexOf(searchStr);
+    // if (posStart === -1) return null;
+    // const textObj = script.substring(posStart + searchStr.length - 1)
 
-    const query = url.includes('/trend/') ? '.listing__trend .card__heading a' : '.rows__column_section-index_left .listing__rows .card__heading a'
+    const ss = 'window.Ya.Neo={'
+    const pos = html.indexOf(ss)
+    const textObj = html.substring(pos + ss.length - 1, html.indexOf('</script>', pos))
 
-    const arrUrl = [...body.querySelectorAll(query)].map(a => a.href);
+    const obj = JSON.parse(textObj);
+    const arrNews = obj.dataSource.news.parentFeed;
+
+    const arrUrl = arrNews.map(news => news.url);
+    console.log(arrNews)
     return {type, arrUrl};
 }
 
 function getTitle(doc) { // получить заголовок
-    return doc.title.replaceAll(/ — РТ на русском/g, '');
+    return doc.dataSource.news.story.title;
 }
 
 function getDateAsMls(doc) { // получить время в мс
     try {
-        const unfDate = doc.querySelector('.article__date .date').getAttribute('datetime');
-        return (new Date(unfDate)).getTime()
+        let unfDate;
+        unfDate = doc.dataSource.news.story.time.toLocaleLowerCase();
+
+        const date = chrono.ru.parseDate(unfDate)
+        // console.log(unfDate)
+        return date.getTime();
     } catch (e) {
         console.error(e)
     }
 }
 
 function getArrTags(doc) { // получить теги
-    let arrTags = [...doc.querySelectorAll('.tags-trends a')].map(node => node.textContent.trim().toLocaleLowerCase());
-    return arrTags.join(', ');
+    return doc.dataSource.news.story.title;
 }
 
 function getTextContent(doc) { //получить текст новости
-    const summary = '===\n' + doc.querySelector('.article__summary').textContent + '\n===\n'; //doc.querySelector('[data-gu-name="body"]').textContent
-    const p = doc.querySelectorAll('.article__text p'); //doc.querySelector('[data-gu-name="body"]').textContent
-    if (!p) return null;
-
-    let arrParagraphs = [...p];
-
-    // let paragraphText = ''
-    // for (let i = 0; i < arrParagraphs.length; i++) {
-    //     const paragraph = arrParagraphs[i];
-    //
-    //     //Удаление лишнего
-    //     if (paragraph.closest('blockquote')) continue
-    //     if (paragraph.textContent === "" || paragraph.textContent === ' ') continue
-    //
-    //     paragraphText += paragraph.textContent.trim() + '\n';
-    // }
-
-    return summary + arrParagraphs.map(p => p.textContent.replaceAll(/\u00A0/g, ' ')).join('\n');
+    const text = doc.dataSource.news.story.summarization.items.map(it => it.text).join(' ');
+    return text;
 }
 
 export default {
@@ -81,4 +132,8 @@ export default {
     getTextContent,
     getTitle,
     getArrUrlOfType,
+    getHtmlUrl,
+    getDocument,
+    getSrcName,
+    getID
 }

@@ -1,0 +1,16 @@
+.flex-stretch {
+  flex: 1;
+}
+
+.scroll-parent {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  flex-wrap: nowrap;
+}
+
+.scroll-child {
+  overflow-x: hidden;
+  overflow-y: auto;
+}

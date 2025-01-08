@@ -1,5 +1,9 @@
 import {Button, Modal} from "react-bootstrap";
 
+interface DialogProps {
+    onKeyDown?: ({key}: { key: any }) => void
+}
+
 export default ({
                     show,
                     setShow,
@@ -9,7 +13,7 @@ export default ({
                     children = undefined,
                     onClose = undefined,
                     confirmName = 'Да',
-                    props = {}
+                    props = {},
                 }) => {
     // const [show, setShow] = useState(true);
 
@@ -19,14 +23,14 @@ export default ({
     };
 
     return (<>
-        <Modal show={show} onHide={handleClose} {...props} >
+        <Modal show={show} onHide={handleClose} {...props}>
             <Modal.Header closeButton>
                 <Modal.Title className="h6">{title}</Modal.Title>
             </Modal.Header>
             <Modal.Body className="py-4">{children ? children : message}</Modal.Body>
             {onConfirm && <Modal.Footer>
                 <Button variant="secondary" onClick={handleClose} size="sm">Отмена</Button>
-                <Button variant="danger" onClick={() => setShow(false) || onConfirm()} size="sm">{confirmName}</Button>
+                <Button variant="danger" onClick={() => setShow(false) || onConfirm()} size="sm" autoFocus={true}>{confirmName}</Button>
             </Modal.Footer>}
         </Modal>
     </>);

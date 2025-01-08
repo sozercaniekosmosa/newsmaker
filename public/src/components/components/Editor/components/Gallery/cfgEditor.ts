@@ -19,8 +19,8 @@ export const theme = {
     'loadButton.fontSize': '12px',
 
     // download button
-    'downloadButton.backgroundColor': '#fdba3b',
-    'downloadButton.border': '1px solid #fdba3b',
+    'downloadButton.backgroundColor': '#777777',
+    'downloadButton.border': '1px solid #fff',
     'downloadButton.color': '#fff',
     'downloadButton.fontFamily': 'NotoSans, sans-serif',
     'downloadButton.fontSize': '12px',
@@ -93,7 +93,7 @@ export const locale_ru = {
     'Cancel': 'Отменить',
     'Center': 'Центр',
     'Circle': 'Окружность',
-    'Color': 'Чветь',
+    'Color': 'Цвет',
     'Color Filter': 'Фильтр цвета',
     'Crop': 'Вырезать',
     'Custom': 'Custom',
@@ -124,7 +124,7 @@ export const locale_ru = {
     'Noise': 'Шум',
     'Pixelate': 'Мозаика',
     'Polygon': 'Полигон',
-    'Range': 'Диапазон',
+    'Range': 'Угол',
     'Rectangle': 'Rectangle',
     'Redo': 'Повтор',
     'Remove White': 'Убрать белый',

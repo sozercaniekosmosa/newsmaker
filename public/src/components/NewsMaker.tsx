@@ -10,67 +10,77 @@ import Tools from "./components/Tools/Tools.tsx";
 import glob from "../global.ts";
 import iconTG from "../assets/tg.svg";
 import iconRT from "../assets/rt.png";
+import iconDZ from "../assets/dzen.ico";
+import {ScrollChild, ScrollParent} from "./components/Scrollable/Scrollable.tsx";
+import ListTask from "./components/Tools/Components/ListTask/ListTask.tsx";
 
 glob.host = 'http://localhost:3000/api/v1/'
 const listHostToData = {
     'www.theguardian.com': {icon: iconTG, from: 'The Guardian', short: 'TG'},
-    'russian.rt.com': {icon: iconRT, from: 'Russia Today', short: 'RT'}
+    'russian.rt.com': {icon: iconRT, from: 'Russia Today', short: 'RT'},
+    'dzen.ru': {icon: iconDZ, from: null, short: 'DZ'},
 }
 
-const listPolitics = {
+const listGeneral = {
     world: "Мир",
-    gaza: 'Газа',
+    // now: 'Сейчас',//++
+    interest: 'Интересное',//++
+    showbusiness: 'Шоубизнес',//++
+    auto: 'Авто',//++
+}
+const listPolitics = {
+    // gaza: 'Газа',
     politics: 'Политика',
-    sanctions: 'Санкции',
-    europeNews: "Европа", usa: "США", americas: "Америка",
-    asia: "Азия", australia: "Австралия", africa: "Африка", middleeast: "Ближний восток",
+    svo: 'СВО',
+    // sanctions: 'Санкции',
+    // europeNews: "Европа", usa: "США", americas: "Америка",
+    // asia: "Азия", australia: "Австралия", africa: "Африка", middleeast: "Ближний восток",
     business: "Бизнес",
 }
 const listPoliticsRU = {
-    politicsrus: 'Политика РУ',
-    svo: 'СВО',
-    regions: 'Регионы',
-    investigation: 'Расследования',
+    // politicsrus: 'Политика РУ',
+    // regions: 'Регионы',
+    // investigation: 'Расследования',
     incidents: 'Происшествия',
     social: 'Общество',
-    belorus: 'Белорусы',
-    army: 'Армия',
-    moldova: 'Молдова',
-    pribalty: 'Балтика',
-    kavkaz: 'Кавказ',
+    // belorus: 'Белорусы',
+    // army: 'Армия',
+    // moldova: 'Молдова',
+    // pribalty: 'Балтика',
+    // kavkaz: 'Кавказ',
 }
 const listScience = {
     science: "Наука",
     technology: "Технологии",
-    cosmos: 'Космос',
-    medicine: 'Медицина',
-    biology: 'Биология',
-    history: 'История',
-    archeology: 'Археология',
-    ecology: 'Экология',
-    physics: 'Физика',
-    chemistry: 'Химия',
-    sociology: 'Социология',
+    // cosmos: 'Космос',
+    // medicine: 'Медицина',
+    // biology: 'Биология',
+    // history: 'История',
+    // archeology: 'Археология',
+    // ecology: 'Экология',
+    // physics: 'Физика',
+    // chemistry: 'Химия',
+    // sociology: 'Социология',
 }
 const listSport = {
-    football: "Футбол", cycling: "Велоспорт", formulaone: "F1",
-    tennis: 'Теннис',
-    fighting: 'Бокс+MMA',
-    hokkey: 'Хоккей',
-    figures: 'Фигуристы',
-    summer: 'Летний',
-    winter: 'Зимний',
+    // football: "Футбол", cycling: "Велоспорт", formulaone: "F1",
+    // tennis: 'Теннис',
+    // fighting: 'Бокс+MMA',
+    // hokkey: 'Хоккей',
+    // figures: 'Фигуристы',
+    // summer: 'Летний',
+    // winter: 'Зимний',
 }
 const listCulture = {
     culture: 'Культура',
-    internet: 'Интернет',
-    entertainment: 'Развлечения',
-    socialnetworks: 'Соц.сети',
-    nature: 'Природа',
-    books: "Книги", tvRadio: "ТВ-Радио", art: "АРТ", film: "Фильмы",
-    games: "Игры", classical: "Классика", stage: "Сцена"
+    // internet: 'Интернет',
+    // entertainment: 'Развлечения',
+    // socialnetworks: 'Соц.сети',
+    // nature: 'Природа',
+    // books: "Книги", tvRadio: "ТВ-Радио", art: "АРТ", film: "Фильмы",
+    // games: "Игры", classical: "Классика", stage: "Сцена"
 };
-let arrTypes = [listPolitics, listPoliticsRU, listScience, listCulture, listSport];
+let arrTypes = [listGeneral, listPolitics, listPoliticsRU, listScience, listCulture, listSport];
 
 function NewsMaker() {
 
@@ -80,6 +90,8 @@ function NewsMaker() {
     const [typeNews, setTypeNews] = useState('')
     const [progress, setProgress] = useState(0)
     const [news, setNews] = useState(null)
+    const [doneTasks, setDoneTasks] = useState(false)
+    const [donePre, setDonePre] = useState(false)
 
 
     useEffect(() => {
@@ -93,13 +105,14 @@ function NewsMaker() {
             {progress >= 0 && <ProgressBar progress={progress}/>}
             <HeaderMenu
                 setTypeNews={setTypeNews} arrButtonSelect={arrTypes} typeNews={typeNews} setArrNews={setArrNews} filterTags={filterTags}
-                setFilterTags={setFilterTags}
+                setFilterTags={setFilterTags} doneTasks={doneTasks} setDoneTasks={setDoneTasks} donePre={donePre} setDonePre={setDonePre}
             />
             <ResizablePanes vertical uniqueId="uid1" className="no-scroll" resizerSize={3}>
                 <Pane id="P0" size={4}>
                     <ListNews
                         arrNews={arrNews} arrTypes={arrTypes} filterTags={filterTags}
                         setNews={setNews} typeNews={typeNews} listHostToData={listHostToData} setFilterTags={setFilterTags}
+                        doneTasks={doneTasks} donePre={donePre}
                     />
                 </Pane>
                 <Pane id="P1" size={9}>

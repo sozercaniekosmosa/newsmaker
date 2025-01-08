@@ -13,7 +13,7 @@ import glob from "../../../global.ts";
 import Dialog from "../Dialog/Dialog.tsx";
 import 'tui-image-editor/dist/tui-image-editor.css';
 
-let currID;
+let currID, _news;
 
 const writeChange: (news, text, list) => void = debounce(async (news, text, list) => {
     if (!news) return;
@@ -33,15 +33,22 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
     const [stateNewsBuild, setStateNewsBuild] = useState(0)
     const [update, setUpdate] = useState((new Date()).getTime())
     const [addText, setAddText] = useState('');
-    const [showModal, setShowModal] = useState(false);
+    const [speedDelta, setSpeedDelta] = useState(0);
+    const [audioDuration, setAudioDuration] = useState(0);
 
     const refAudio: React.MutableRefObject<HTMLAudioElement> = useRef();
     const refVideo: React.MutableRefObject<HTMLVideoElement> = useRef();
 
     useEffect(() => {
         eventBus.addEventListener('message-socket', ({type}) => {
-            if (type === 'update-news') setUpdate((new Date()).getTime());
+            if (type === 'update-news') {
+                setUpdate((new Date()).getTime());
+            }
         })
+
+        // eventBus.addEventListener('build-all-news', () => {
+        //     setNews(null)
+        // })
 
     }, [])
 
@@ -50,7 +57,7 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
 
         const newNews = {
             ...news,
-            ...{option: {image: !!arrImg.length, text: !!textGPT?.length, audio: isExistAudio, video: isExistVideo}}
+            ...{option: {image: !!arrImg.length, text: !!textGPT?.length, audio: isExistAudio, video: isExistVideo, done: !!news?.option?.done}}
         }
         setNews(newNews);
 
@@ -58,12 +65,7 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
         arrNewNews[news.index] = newNews;
         setArrNews(arrNewNews);
 
-        (async () => {
-            await updateDB({
-                values: {option: JSON.stringify(newNews.option)},
-                condition: {id: newNews.id}
-            });
-        })()
+        (() => updateDB({values: {option: JSON.stringify(newNews.option)}, condition: {id: newNews.id}}))()
 
     }, [arrImg, textGPT, isExistAudio, isExistVideo]);
 
@@ -86,12 +88,14 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
         refAudio.current.load();
         refAudio.current.addEventListener('canplay', e => setIsExistAudio(true))
 
-        refVideo.current.querySelector('source').src = src + 'news.mp4';
+        refVideo.current.querySelector('source').src = src + 'news.mp4?upd=' + new Date().getTime();
         refVideo.current.load();
         refVideo.current.addEventListener('canplay', e => setIsExistVideo(true))
 
         const _addText = text.match(/^\*.*/m)?.[0] ?? '';
         setAddText(_addText)
+
+        setArrImg([])
     }, [news])
 
     useEffect(() => {
@@ -99,18 +103,29 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
     }, [update])
 
     async function onBuild() {
-        //TODO:
         setStateNewsBuild(1);
         try {
-            const {id, url, title, tags, text, dt, titleEn} = news;
+            const {id, url, title, tags, text, dt, titleEn, srcName} = news;
             const {date, name} = getNameAndDate(dt, url, id, listHostToData, titleEn);
             const from = listHostToData[(new URL(url)).host].from;
-            await axios.post(glob.host + 'build-an-news', {title: news.title, tags: news.tags, text: news.text, date, name, from, addText});
+
+            const {data: {respID}} = await axios.post(glob.host + 'build-an-news', {
+                title: news.title,
+                tags: news.tags,
+                text: news.text,
+                date,
+                name,
+                from: from ?? srcName,
+                addText,
+                id
+            });
+            setStateNewsBuild(0);
+
+            if (currID !== +respID) return; //TODO: переделать
 
             refVideo.current.querySelector('source').src = `/public/news/${date}/${name}/news.mp4?upd=` + new Date().getTime()
             refVideo.current.load()
 
-            setStateNewsBuild(0);
         } catch (e) {
             setStateNewsBuild(2);
         }
@@ -132,6 +147,9 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
     }
 
     const getLocalSource = async (news): Promise<void> => {
+        // if (!news) return;
+        // if (_news) return;
+        // debugger
         try {
             // console.log(news)
 
@@ -144,14 +162,16 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
             setIsExistAudio(isExistAudio)
             setIsExistVideo(isExistVideo)
             setArrImg(arrSrc.map(src => {
-                src+='\\?d=' + (new Date()).getTime()
+                src += '?d=' + (new Date()).getTime()
                 return {src, width: undefined, height: undefined};
             }))
 
             await updateImageSizes(arrSrc, setArrImg);
         } catch (e) {
-            setArrImg([])
+            // setArrImg([])
         }
+
+        _news = news
     }
 
     async function onUpdateAnNews() {
@@ -181,9 +201,9 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
     }
 
     return (
-        <div className="options d-flex flex-column h-100 notranslate"
+        !news ? '' : <div className="options d-flex flex-column h-100 notranslate"
             // @ts-ignore
-             upd={update}>
+                          upd={update}>
             <div className="d-flex flex-row">
             <textarea className="options__title d-flex flex-row flex-stretch input-text border rounded mb-1 p-2" value={news?.title || ''}
                       onChange={({target}) => setNews(was => ({...was, title: target.value}))}/>
@@ -191,43 +211,53 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
                 <Button hidden={true} variant="secondary btn-sm mb-1 notranslate" onClick={onRemoveNews}>X</Button>
             </div>
             <Tabs defaultActiveKey="original" className="mb-1">
-                <Tab eventKey="original" title="Оригинал" style={{flex: 1}} className="">
-                    <textarea className="news-text flex-stretch no-resize border rounded mb-1 p-2" value={news?.text || ''}
-                              onChange={({target}) => setNews(was => ({...was, text: target.value}))}/>
-                </Tab>
-                <Tab eventKey="handled" title="GPT" style={{flex: 1}}>
-                    <div className="d-flex flex-column flex-stretch w-100">
+                <Tab eventKey="original" title="Текст" style={{flex: 1}} className="">
+                    <div className="d-flex flex-column flex-stretch w-100" style={{position: 'relative'}}>
+                        <div className="w-100" style={{position: 'relative'}}>
+                            <textarea className="news-text border rounded mb-1 p-2 w-100" value={news?.text || ''}
+                                      onChange={({target}) => setNews(was => ({...was, text: target.value}))}
+                                      style={{height: '15em'}}/>
+                            <div style={{position: 'absolute', bottom: '10px', left: '6px', opacity: .5}}>
+                                Слов: {(news?.text.match(/ /g) || []).length}</div>
+                        </div>
+                        <hr/>
                         <GPT news={news} textGPT={textGPT} setTextGPT={setTextGPT} listHostToData={listHostToData}
                              setAddText={setAddText} addText={addText}/>
-                    </div>
-                </Tab>
-                <Tab eventKey="images" title="Картинки" style={{flex: 1}}>
-                    <Images news={news} setNews={setNews} arrImg={arrImg} setArrImg={setArrImg} listHostToData={listHostToData}/>
-                </Tab>
-                <Tab eventKey="audio" title="Озвучка">
-                    <div className="flex-stretch" style={{flex: 1}}>
+                        <hr/>
                         <div className="d-flex flex-column w-100">
-                            <ButtonGroup className="notranslate">
-                                <ButtonSpinner className="btn-secondary btn-sm mb-2" state={stateText2Speech}
-                                               onClick={() => toYASpeech('alena', 1.4)}>Алёна</ButtonSpinner>
-                                <ButtonSpinner className="btn-secondary btn-sm mb-2" state={stateText2Speech}
-                                               onClick={() => toYASpeech('marina', 1.5)}>Марина</ButtonSpinner>
-                                <ButtonSpinner className="btn-secondary btn-sm mb-2" state={stateText2Speech}
-                                               onClick={() => toYASpeech('omazh', 1.5)}>Омаж</ButtonSpinner>
-                                <ButtonSpinner className="btn-secondary btn-sm mb-2" state={stateText2Speech}
-                                               onClick={() => toYASpeech('filipp', 1.4)}>Филипп</ButtonSpinner>
-                            </ButtonGroup>
-                            <audio controls ref={refAudio} className="w-100">
+                            <div className="d-flex flex-row">
+                                <ButtonGroup className="notranslate flex-stretch">
+                                    <ButtonSpinner className="btn-secondary btn-sm mb-2" state={stateText2Speech}
+                                                   onClick={() => toYASpeech('alena', 1.4 + speedDelta)}>Алёна</ButtonSpinner>
+                                    <ButtonSpinner className="btn-secondary btn-sm mb-2" state={stateText2Speech}
+                                                   onClick={() => toYASpeech('marina', 1.5 + speedDelta)}>Марина</ButtonSpinner>
+                                    <ButtonSpinner className="btn-secondary btn-sm mb-2" state={stateText2Speech}
+                                                   onClick={() => toYASpeech('omazh', 1.5 + speedDelta)}>Омаж</ButtonSpinner>
+                                    <ButtonSpinner className="btn-secondary btn-sm mb-2" state={stateText2Speech}
+                                                   onClick={() => toYASpeech('filipp', 1.4 + speedDelta)}>Филипп</ButtonSpinner>
+                                </ButtonGroup>
+                                <input className="rounded border text-end mb-2 ms-1" type="range" value={speedDelta} min={-1} max={1}
+                                       step={0.1} onChange={({target}) => setSpeedDelta(+target.value)} title="Скорость"/>
+                                <span className="p-1 text-center" style={{width: '3em'}}>{speedDelta}</span>
+                            </div>
+                            <audio controls ref={refAudio} className="w-100 mb-2" style={{height: '2em'}} onDurationChange={(e) => {
+                                setAudioDuration(~~(e.target as HTMLAudioElement).duration)
+                            }}>
                                 <source type="audio/mpeg"/>
                             </audio>
                         </div>
                     </div>
                 </Tab>
-                <Tab eventKey="build" title="Сборка">
+                <Tab eventKey="images" title="Изображения" style={{flex: 1}}>
+                    <Images news={news} setNews={setNews} arrImg={arrImg} setArrImg={setArrImg} listHostToData={listHostToData}
+                            maxImage={audioDuration}/>
+                </Tab>
+                <Tab eventKey="build" title="Видео">
                     <div className="flex-stretch" style={{flex: 1}}>
                         <div className="d-flex flex-column w-100">
-                            <ButtonSpinner className="btn-secondary btn-sm mb-1 notranslate" state={stateNewsBuild} onClick={onBuild}>
-                                Собрать
+                            <ButtonSpinner className="btn-secondary btn-sm mb-1 notranslate" state={stateNewsBuild}
+                                           onClick={onBuild}>
+                                Собрать видео
                             </ButtonSpinner>
                             <video controls ref={refVideo} className="w-100">
                                 <source type="video/mp4"/>

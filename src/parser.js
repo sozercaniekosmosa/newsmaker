@@ -1,14 +1,14 @@
 import fs, {promises} from "fs";
-import path from "path";
 import axios from "axios";
-import puppeteer from "puppeteer";
 import {JSDOM, VirtualConsole} from "jsdom";
 import randUserAgent from "random-useragent";
-import {CreateVideo, cyrb53, removeFragmentsFromUrl, writeData} from "./utils.js";
+import {CreateVideo, cyrb53, removeFragmentsFromUrl, toShortString, writeData} from "./utils.js";
 import {HttpsProxyAgent} from "https-proxy-agent";
 import {Database} from "./db.js";
-import {isDate} from "jsdom/lib/jsdom/living/helpers/dates-and-times.js";
-import {toShortString} from "./utils.js";
+import sharp from "sharp";
+import {config} from "dotenv";
+
+const {parsed: {IMG_COOKIE, IMG_XBROWS_VALID, IMG_XCLIENT}} = config();
 
 function getUserAgent() {
     return randUserAgent.getRandom()
@@ -27,18 +27,19 @@ export async function connectDB() {
                 text TEXT,
                 dt INTEGER,
                 type TEXT,
-                option TEXT
+                option TEXT,
+                srcName TEXT
             )
         `);
         await db.run(`
             CREATE TABLE IF NOT EXISTS tasks (
                 id INTEGER PRIMARY KEY,
-                arrTask TEXT
+                task TEXT
             )
         `);
 
         const res = await db.get(`SELECT id FROM tasks WHERE id = ?`, [0]);
-        if (!res) await db.run(`INSERT INTO tasks (id, arrTask) VALUES (?, ?)`, [0, '[]']);
+        if (!res) await db.run(`INSERT INTO tasks (id, task) VALUES (?, ?)`, [0, '{}']);
 
     } catch (e) {
         console.log(e)
@@ -164,14 +165,6 @@ export class Requester {
     }
 }
 
-// пример использования
-// let htmlMain = await getHtmlUrl('https://www.theguardian.com/')
-// await writeFileAsync('./data.html', htmlMain)
-/**
- * Получить текст HTML по url
- * @param url
- * @returns {Promise<any>}
- */
 export const getHtmlUrl = async (url) => {
     const userAgent = getUserAgent();
     const {data} = await axios.get(url, {
@@ -183,14 +176,6 @@ export const getHtmlUrl = async (url) => {
     return data
 }
 
-// пример использования
-// const body = getDocument(data.toString()).querySelector('body');
-// const arrHref = [...body.querySelectorAll('[id^="container-"] a')].map(a => a.href);
-/**
- * Парсинг DOM
- * @param html
- * @returns {*}
- */
 export const getDocument = (html) => {
     const virtualConsole = new VirtualConsole();
     const dom = new JSDOM(html.toString(), {virtualConsole});
@@ -216,7 +201,7 @@ export const getDocument = (html) => {
  * @param ext
  * @param max
  */
-export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.jfif', count = 10}) {
+export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.jfif', count = 10, timeout = 3000}) {
     let counter = 0.01
     let max = arrUrl.length;
 
@@ -229,18 +214,38 @@ export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.j
     const arrOutNames = [], arrPromiseTask = [];
     const cv = new CreateVideo({dir_content: outputDir})
 
+    const headers = {
+        'Referer': 'http://localhost:5173/',
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'accept-encoding': 'gzip, deflate, br, zstd',
+        'accept-language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+        'cache-control': 'max-age=0',
+        'if-modified-since': 'Wed, 23 Aug 2023 14:09:26 GMT',
+        'if-none-match': '"64e61316-12b4f"',
+        'priority': 'u=0, i',
+        'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+        'sec-fetch-dest': 'document',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-site': 'none',
+        'sec-fetch-user': '?1',
+        'upgrade-insecure-requests': '1',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    };
+
+
     async function loadAndSaveImage(url, outPath) {
         try {
-            const {data} = await axios.get(url, {responseType: 'arraybuffer',});
+            const {data} = await axios.get(url, {headers, responseType: 'arraybuffer', timeout});
+            console.log(`Получено: ${url}`);
             await cv.toPng({arrayBuffer: data, outputPath: outPath})
-            // console.log(`Загружено: ${fileName}`);
         } catch (error) {
             console.error(`Ошибка при загрузке ${url}: ${error.message}`);
         } finally {
             counter++;
             if (global.messageSocket) (global.messageSocket).send({
-                type: 'progress',
-                data: counter / max * 100
+                type: 'progress', data: counter / max * 100
             })
         }
     }
@@ -253,6 +258,7 @@ export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.j
         let outPath = pfx + toShortString(cyrb53(url)) + ext;
         arrOutNames.push(outPath)
         arrPromiseTask.push(loadAndSaveImage(url, outPath))
+        // await loadAndSaveImage(url, outPath)
     }
 
     await Promise.allSettled(arrPromiseTask)
@@ -266,129 +272,6 @@ export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.j
     global?.messageSocket?.send({type: 'progress', data: -1})
 
     return arrOutNames;
-}
-
-export async function getArrUrlsImageDDG2(querySearch, max = 5) {
-
-    const loadUrl = async (page, url) => {
-        try {
-            await page.goto(url, {
-                timeout: 20000, waitUntil: ['load', 'domcontentloaded', 'networkidle0', 'networkidle2']
-            })
-        } catch (error) {
-            throw new Error("url " + url + " url not loaded -> " + error)
-        }
-    }
-
-    const qeryBuild = querySearch.split(' ').join('+')
-
-    const queryEncode = encodeURIComponent(qeryBuild)
-
-    let devtools = false;
-    let headless = devtools ? false : 'shell';
-
-    const browser = await puppeteer.launch({
-        headless, args: ["--fast-start", "--disable-extensions", "--no-sandbox"], ignoreHTTPSErrors: true, devtools
-    });
-
-    const page = await browser.newPage();
-    page.on('console', msg => console.log('PAGE LOG:', msg.text()))
-    await loadUrl(page, `https://duckduckgo.com/?q=${queryEncode}&t=h_&iar=images&iax=images&ia=images&iaf=size%3ALarge`)
-    // await loadUrl(page, `https://duckduckgo.com/?q=${queryEncode}&t=h_&iar=images&iax=images&ia=images&iaf=size%3ALarge%2Clicense%3AModifyCommercially`)
-    // await loadUrl(page, `https://duckduckgo.com/?q=${queryEncode}&t=h_&iar=images&iax=images&ia=images&iaf=license%3AModifyCommercially`)
-    // await loadUrl(page, `https://www.google.com/search?q=${queryEncode}&udm=2&source=lnt&tbs=isz:l&sa=X`)
-
-    await page.setViewport({width: 1080, height: 1024});
-
-    const arrUrlImage = await page.evaluate((max) => {
-        const arrUrlImage = [...document.querySelectorAll('.tile-wrap img')].slice(0, max);
-        let _arrUrlImage = []
-        debugger
-
-        for (let i = 1; i < arrUrlImage.length; i += 3) {
-            const node = arrUrlImage[i];
-            node.click();
-            _arrUrlImage.push(document.querySelectorAll('.detail .detail__media.detail__media--images a')[0].href);
-            _arrUrlImage.push(document.querySelectorAll('.detail .detail__media.detail__media--images a')[1].href);
-            _arrUrlImage.push(document.querySelectorAll('.detail .detail__media.detail__media--images a')[2].href);
-        }
-
-        return _arrUrlImage;
-    }, max);
-    console.log(arrUrlImage)
-    await browser.close();
-
-    return arrUrlImage;
-}
-
-export async function getArrUrlsImageDDG(querySearch) {
-
-    const loadUrl = async (page, url) => {
-        try {
-            await page.goto(url, {
-                timeout: 20000, waitUntil: ['load', 'domcontentloaded', 'networkidle0', 'networkidle2']
-            })
-        } catch (error) {
-            throw new Error("url " + url + " url not loaded -> " + error)
-        }
-    }
-
-    const qeryBuild = querySearch.split(' ').join('+')
-
-    const queryEncode = encodeURIComponent(qeryBuild)
-
-    let headless = true;
-    // const browser = await puppeteer.launch({headless, args: ['--disable-features=site-per-process']});
-    // const browser = await puppeteer.launch({
-    //     headless: true,
-    //     args: ["--fast-start", "--disable-extensions", "--no-sandbox"],
-    //     ignoreHTTPSErrors: true
-    // });
-    const browser = await puppeteer.launch({
-        headless: 'shell', args: ["--fast-start", "--disable-extensions", "--no-sandbox"], ignoreHTTPSErrors: true
-    });
-
-    const page = await browser.newPage();
-
-    await loadUrl(page, `https://duckduckgo.com/?q=${queryEncode}&t=h_&iar=images&iax=images&ia=images&iaf=license%3AModifyCommercially`)
-
-    // await page.goto(`https://duckduckgo.com/?q=${queryEncode}&t=h_&iar=images&iax=images&ia=images`);
-    // await page.waitForNavigation(1000);
-    // page.waitForNavigation({
-    //     waitUntil: 'networkidle0',
-    // })
-
-    // await page.waitForNavigation();
-
-// Set screen size.
-    if (headless === false) await page.setViewport({width: 1080, height: 1024});
-
-    const arrUrlImage = await page.evaluate(() => {
-        return [...document.querySelectorAll('.tile-wrap img')].map(node => node.src)
-    });
-
-
-    await browser.close();
-
-    return arrUrlImage;
-
-    /*
-    // Type into search box.
-    await page.locator('.devsite-search-field').fill('automate beyond recorder');
-
-    // Wait and click on first result.
-    await page.locator('.devsite-result-item-link').click();
-
-    // Locate the full title with a unique string.
-    const textSelector = await page
-        .locator('text/Customize and automate')
-        .waitHandle();
-    const fullTitle = await textSelector?.evaluate(el => el.textContent);
-
-    // Print the full title.
-    console.log('The title of this blog post is "%s".', fullTitle);
-
-    // await browser.close();*/
 }
 
 function secondsToTime(seconds) {
@@ -456,6 +339,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 }
 
 export class NewsUpdater {
+    _listCompare = new Set();
     MIN_WORDS_TOPIC = 200;
     counter = 0;
     max = 1;
@@ -466,9 +350,38 @@ export class NewsUpdater {
     getTitle = () => console.error('not init getTitle method');
     getArrTags = () => console.error('not init getArrTags method');
     getTextContent = () => console.error('not init getTextContent method');
+    getHtmlUrl = () => {
+        console.error('not init getHtmlUrl method');
+        return null
+    };
+    getDocument = () => {
+        console.error('not init getDocument method');
+        return null
+    };
+    getSrcName = () => {
+        console.error('not init getSrcName method');
+        return null
+    };
+    getID = () => {
+        console.error('not init getID method');
+        return null
+    };
     listTask;
 
-    constructor({host, listTask, db, getArrUrlOfType, getDateAsMls, getTitle, getArrTags, getTextContent}) {
+    constructor({
+                    host,
+                    listTask,
+                    db,
+                    getArrUrlOfType,
+                    getDateAsMls,
+                    getTitle,
+                    getArrTags,
+                    getTextContent,
+                    getHtmlUrl,
+                    getDocument,
+                    getSrcName,
+                    getID
+                }) {
         this.HOST = host;
         this.db = db;
         this.getArrUrlOfType = getArrUrlOfType;
@@ -477,6 +390,10 @@ export class NewsUpdater {
         this.getArrTags = getArrTags;
         this.getTextContent = getTextContent;
         this.listTask = listTask;
+        this.getHtmlUrl = getHtmlUrl;
+        this.getDocument = getDocument;
+        this.getSrcName = getSrcName;
+        this.getID = getID;
 
     }
 
@@ -489,6 +406,7 @@ export class NewsUpdater {
     }
 
     async updateByType(typeNews) {
+        this._listCompare = new Set();
         this.counter = 0;
         // if (typeNews.length === 0) return
         try {
@@ -518,8 +436,7 @@ export class NewsUpdater {
                 }
             }
 
-            if (!_DEBUG_)
-                await Promise.allSettled(promises);
+            if (!_DEBUG_) await Promise.allSettled(promises);
 
         } catch (e) {
             console.error(e);
@@ -536,7 +453,13 @@ export class NewsUpdater {
 
             url = removeFragmentsFromUrl(url);
 
-            const id = cyrb53(url);
+            const id = this.getID(url) ?? cyrb53(url);
+
+            if (this._listCompare.has(id) && !isUpdate) {
+                console.error(url, type);
+                return null;
+            }
+            this._listCompare.add(id);
 
             const isExist = await this.isExistID(this.db, id);
             if (isExist && !isUpdate) {
@@ -544,8 +467,11 @@ export class NewsUpdater {
                 return null;
             }
 
-            const html = await getHtmlUrl(url);
-            const doc = getDocument(html);
+
+            let html = await this.getHtmlUrl(url) ?? await getHtmlUrl(url);
+            html = html.replaceAll(/\u00A0/g, ' ');
+
+            const doc = await this.getDocument(html) ?? await getDocument(html);
 
             const titleEn = this.getTitle(doc);
 
@@ -560,10 +486,11 @@ export class NewsUpdater {
             const title = titleEn;
             const tags = tagsEn;
             const text = paragraphText;
+            let srcName = this.getSrcName(doc) ?? '';
 
             if (!text || !text.length || text.length < this.MIN_WORDS_TOPIC || !title || !title.length || !tags || !tags.length || !date) return;
 
-            await this.db.run(`INSERT INTO news (id, url, title, tags, text, dt, type) VALUES (?, ?, ?, ?, ?, ?, ?)`, [cyrb53(url), url, title, tags, text, date, type]);
+            await this.db.run(`INSERT INTO news (id, url, title, tags, text, dt, type, srcName) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [cyrb53(url), url, title, tags, text, date, type, srcName]);
 
             return {id: cyrb53(url), url, title, tags, text, date, type}
         } catch (e) {
@@ -571,10 +498,163 @@ export class NewsUpdater {
         } finally {
             this.counter++;
             if (global.messageSocket) (global.messageSocket).send({
-                type: 'progress',
-                data: this.counter / this.max * 100
+                type: 'progress', data: this.counter / this.max * 100
             })
         }
         return null;
+    }
+}
+
+export class ImageDownloadProcessor {
+    #getMostFrequentLengthArray(arrays) {
+        // Создаем объект для подсчета частоты длин массивов
+        let _arr = Array(arrays.length * 2).fill(0);
+
+        // Проходим по каждому массиву и подсчитываем частоту его длины
+        arrays.forEach(arr => {
+            const length = arr.length;
+            if (_arr[length]) {
+                _arr[length]++;
+            } else {
+                _arr[length] = 1;
+            }
+        });
+        let maxIndex = 0;
+        for (let i = 1; i < _arr.length; i++) {
+            if (_arr[i] > _arr[maxIndex]) {
+                maxIndex = i;
+            }
+        }
+        return maxIndex;
+    }
+
+    #findClosingBrace(str) {
+        let count = 0;
+
+        for (let i = 0; i < str.length; i++) {
+            if (str[i] === '{') {
+                count++;
+            } else if (str[i] === '}') {
+                count--;
+                if (count === 0) {
+                    return i;
+                }
+            }
+        }
+
+        if (count !== 0) {
+            throw new Error('Unmatched opening brace');
+        }
+
+        return -1; // Если не найдено закрывающей скобки
+    }
+
+
+    async #getImages(querySearch) {
+        const headers = {
+            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'accept-encoding': 'gzip, deflate, br, zstd',
+            'accept-language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+            'cookie': IMG_COOKIE,
+            'priority': 'u=0, i',
+            'sec-ch-prefers-color-scheme': 'dark',
+            'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+            'sec-ch-ua-arch': '"x86"',
+            'sec-ch-ua-bitness': '"64"',
+            'sec-ch-ua-form-factors': '"Desktop"',
+            'sec-ch-ua-full-version': '"131.0.6778.205"',
+            'sec-ch-ua-full-version-list': '"Google Chrome";v="131.0.6778.205", "Chromium";v="131.0.6778.205", "Not_A Brand";v="24.0.0.0"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-model': '""',
+            'sec-ch-ua-platform': '"Windows"',
+            'sec-ch-ua-platform-version': '"19.0.0"',
+            'sec-ch-ua-wow64': '?0',
+            'sec-fetch-dest': 'document',
+            'sec-fetch-mode': 'navigate',
+            'sec-fetch-site': 'none',
+            'sec-fetch-user': '?1',
+            'upgrade-insecure-requests': '1',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'x-browser-channel': 'stable',
+            'x-browser-copyright': 'Copyright 2024 Google LLC. All rights reserved.',
+            'x-browser-validation': IMG_XBROWS_VALID,
+            'x-browser-year': '2024',
+            'x-client-data': IMG_XCLIENT
+        };
+
+        const qeryBuild = querySearch.split(' ').join('+')
+
+        const queryEncode = encodeURIComponent(qeryBuild)
+
+        const url = `https://www.google.com/search?q=${queryEncode}&udm=2&source=lnt&tbs=isz:l&sa=X`;
+
+        try {
+            const response = await axios.get(url, {headers, withCredentials: true});
+            // console.log(response.data);
+            return response.data
+        } catch (error) {
+            console.error('Error fetching personal feed:', error);
+            return null;
+        }
+    }
+
+    async getArrImage(searchRequest) {
+
+        try {
+            const html = await this.#getImages(searchRequest);
+            if (html === null) throw 'ImageDownloadProcessor.getArrImage: не могу получить документ возможно нужно обновить кукисы';
+
+            //дальше пытаемся обработать [Объект] внутри [документа] работая с ним как со строкой так быстрее
+
+            const _pos = html.indexOf('gws-wiz-serp'); //ищем в тексте некий примитив который в данном документе встречается минимальное количество раз
+            if (_pos === -1) throw 'ImageDownloadProcessor.getArrImage: скорее всего изменилась структура объекта';
+
+            const _startPos = html.lastIndexOf('{', _pos) //теперь ищем в обратную сторону пока не встретим начало структуры (фигурная скобка)
+            if (_startPos === -1) throw 'ImageDownloadProcessor.getArrImage: видимо что то пошло не так структура "съехала" или была сильно изменена';
+
+            const _html = html.substring(_startPos)// получаем подстроку — начало структуры
+
+            const _endPos = this.#findClosingBrace(_html) //ищем конец струкутры переберая все уровни вложенность подструкутр
+            const objText = _html.substring(0, _endPos + 1); //наконец получаем структуру как строку
+            const obj = JSON.parse(objText); //парсим в объект
+
+            const _arr = Object.values(obj) //откидываем ключи оставляем значения и представляем как массив каждый элемент которого тоже массив но об этом далее
+            const _indexArr = this.#getMostFrequentLengthArray(_arr); //находим самый часто встречающийся размер подмассива это в финале и будут массивы которые содержат ссылки на картинки
+            const _arrImg = _arr.filter(v => v.length === _indexArr) //фильтруем подмассивы с нужно  длинной
+            const _arrImgFlat = _arrImg.map(a => a.flat(5)) //так как каждый под массив содержит некую вложенность подмассиво делаем его плоским для удобства
+            const __arrImg = _arrImgFlat.map(a => a.filter(it => (it + '').startsWith("https"))) //отыскиваем подмассивы которые содежат ссылки и мапим только их в новый массив
+            return __arrImg.map(a => a.filter(it => !(it + '').startsWith("https://encrypted"))).flat(); //оставляем только прямые ссылки на кртинки
+
+        } catch (e) {
+            console.error(e)
+            return null;
+        }
+    }
+}
+
+export async function overlayImages(baseImagePath, overlayImagePath, outputPath, x, y) {
+    try {
+        // Загружаем базовое изображение
+        const baseImage = sharp(baseImagePath);
+
+        // Загружаем изображение для наложения
+        const overlayImage = sharp(overlayImagePath);
+
+        // Получаем метаданные изображения для наложения
+        const overlayMetadata = await overlayImage.metadata();
+
+        // Создаем буфер для наложения
+        const overlayBuffer = await overlayImage.toBuffer();
+
+        // Накладываем изображение на базовое изображение
+        const compositeImage = await baseImage
+            .composite([{
+                input: overlayBuffer, top: y, left: x, blend: 'over'
+            }])
+            .toFile(outputPath);
+
+        console.log(`Изображение успешно сохранено в ${outputPath}`);
+    } catch (error) {
+        console.error('Ошибка при наложении изображений:', error);
     }
 }

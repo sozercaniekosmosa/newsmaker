@@ -1,13 +1,13 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Button, ListGroup} from 'react-bootstrap';
 import {DragDropContext, Draggable, Droppable} from 'react-beautiful-dnd';
 import './style.css'
 import Dialog from "../../../Dialog/Dialog";
+import {eventBus} from "../../../../../utils.ts";
 
 const ListComponent = ({arrData, onChangeData}) => {
     const [showModal, setShowModal] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
-
 
     const handleDelete = (index) => {
         setItemToDelete(index);

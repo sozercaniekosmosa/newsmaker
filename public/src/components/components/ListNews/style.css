@@ -11,8 +11,8 @@
   overflow-y: scroll;
 }
 .n-list .selected {
-  outline: 2px solid #99c79c;
-  outline-offset: -1px;
+  outline: 2px solid #00d60d;
+  outline-offset: -2px;
   background-color: #eaffdb;
   border-radius: 0.18em;
 }

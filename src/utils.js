@@ -347,7 +347,6 @@ export const getRandomRange = (min, max, fix = 2) => {
     return (Math.random() * (max - min) + min).toFixed(fix);
 }
 
-
 export const readFileAsync = async (path, options) => {
     try {
         const data = await fsPromises.readFile(path, options);
@@ -522,13 +521,43 @@ export const throttle = (clb, ms) => {
 const pathRoot = process.cwd();
 export const pathResolveRoot = (path) => path.startsWith('.') ? resolve(pathRoot, ...path.split(/\\|\//)) : path;
 
+
+const isFileAvailable = async (path) => {
+    try {
+        const handle = await fsPromises.open(path, fs.constants.O_RDONLY);
+        await handle.close(); // Закрываем файл после проверки
+        return true;
+    } catch (error) {
+        if (error.code === 'EBUSY' || error.code === 'EPERM') {
+            console.warn(`Файл ${path} занят или недоступен:`, error.message);
+            return false;
+        }
+        throw error; // Для других ошибок выбрасываем исключение
+    }
+};
+
 export const removeFile = async (path) => {
     try {
-        await fsPromises.unlink(path);
+        fs.unwatchFile(path)
+        fs.unlinkSync(path)
     } catch (error) {
         throw error;
     }
 };
+
+
+// export const removeFile = async (path) => {
+//     try {
+//         let isAvailable = await isFileAvailable(path);
+//         if (isAvailable)
+//             await fsPromises.unlink(path);
+//         else throw 'Файл занят!'
+//     } catch (error) {
+//         throw error;
+//     }
+// };
+
+
 export const readData = async (path, options) => {
     try {
         const data = await readFileAsync(path, options);

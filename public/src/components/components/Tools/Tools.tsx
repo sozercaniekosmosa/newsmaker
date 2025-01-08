@@ -6,29 +6,75 @@ import {Button, ButtonGroup, Modal} from "react-bootstrap";
 import Dialog from "../Dialog/Dialog";
 import {getArrTask, getNameAndDate, updateDB} from "../../utils.ts";
 import axios from "axios";
-import glob from "../../../global.ts";
+import global from "../../../global.ts";
 import ButtonSpinner from "../ButtonSpinner/ButtonSpinner.tsx";
+import {eventBus} from "../../../utils.ts";
+import {ScrollParent, ScrollChild} from "../Scrollable/Scrollable.tsx";
+
+function storeToDB(arr: any[], textGPT: string) {
+    updateDB({
+        "table": 'tasks',
+        values: {task: JSON.stringify({arr, title: textGPT})},
+        condition: {id: 0}
+    });
+}
 
 export default function Tools({news, listHostToData}) {
 
     const [arrTaskList, setArrTaskList] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [stateBuildALl, setStateBuildALl] = useState(0)
+
+    const [prompt, setPrompt] = useState('Сделай из этих названий новостей краткий заголовок для новостного видео (вместо запятой используй вертикальную черту)')
+    const [titleGPT, setTitleGPT] = useState('')
+    const [stateLoadYaGPT, setStateLoadYaGPT] = useState(0)
+    const [stateLoadArliGPT, setStateLoadArliGPT] = useState(0)
+    const [stateLoadMistralGPT, setStateLoadMistralGPT] = useState(0)
+    const [srcImgTitle, setSrcImgTitle] = useState('')
+
     let isForbiddenAdd: boolean = true;
 
     useEffect(() => {
         (async () => {
             let _arrTL = await getArrTask();
             if (!_arrTL.length) return;
-            const _arrTaskList = JSON.parse(_arrTL[0].arrTask)
-            setArrTaskList(_arrTaskList)
+            const {arr, title} = JSON.parse(_arrTL[0].task)
+            setArrTaskList(arr ?? [])
+            setTitleGPT(title ?? '')
         })()
     }, []);
 
+    async function onGPT(type) {
+        type === 'yandex' && setStateLoadYaGPT(1)
+        type === 'arli' && setStateLoadArliGPT(1)
+        type === 'mistral' && setStateLoadMistralGPT(1)
+        try {
+
+            const textContent = arrTaskList.map(({title}) => title).join(' | ');
+
+            const {data: text} = await axios.post(global.host + 'gpt', {type, text: textContent, prompt});
+            setTitleGPT(text)
+
+            storeToDB(arrTaskList, text);
+
+            type === 'yandex' && setStateLoadYaGPT(0)
+            type === 'arli' && setStateLoadArliGPT(0)
+            type === 'mistral' && setStateLoadMistralGPT(0)
+        } catch (e) {
+            console.log(e)
+            type === 'yandex' && setStateLoadYaGPT(2)
+            type === 'arli' && setStateLoadArliGPT(2)
+            type === 'mistral' && setStateLoadMistralGPT(2)
+        }
+    }
+
     const buildAllNews = async () => {
         try {
+            // eventBus.dispatchEvent('build-all-news')
             setStateBuildALl(1)
-            const res = await axios.post(glob.host + 'build-all-news', arrTaskList);
+            const _srcImgTitle = (new URL(srcImgTitle)).pathname;
+            await axios.post(global.host + 'build-all-news', {task: arrTaskList, title: titleGPT, srcImgTitle: _srcImgTitle});
+
             setStateBuildALl(0)
         } catch (e) {
             console.error(e)
@@ -44,7 +90,7 @@ export default function Tools({news, listHostToData}) {
 
     if (news?.option) {
         const {image, text, audio, video} = news.option
-        isForbiddenAdd = !(image && text && audio && video);
+        isForbiddenAdd = !(image && text && audio);
     }
 
     let onChangeData = (arr: any[]) => {
@@ -52,41 +98,82 @@ export default function Tools({news, listHostToData}) {
 
         arr = arr.map(news => {
             if (news?.name) return news;
-            const {id, url, dt, title, titleEn} = news;
+            const {id, url, dt, title, titleEn, option, done} = news;
             const {date, name} = getNameAndDate(dt, url, id, listHostToData, titleEn);
             const from = listHostToData[(new URL(url)).host].from;
-            return {id, date, name, title, from}
+            return {id, date, name, title, from, option, done}
         });
 
-        updateDB({
-            "table": 'tasks',
-            values: {arrTask: JSON.stringify(arr)},
-            condition: {id: 0}
-        });
+        storeToDB(arr, '');
 
+        setTitleGPT('')
         setArrTaskList(arr);
     };
 
     return (
-        <div className="operation d-flex flex-column h-100 notranslate me-1">
-            <div className="d-flex flex-column p-2 mb-2 border rounded">
-                <ButtonGroup className="mb-2">
-                    <Button variant="secondary btn-sm" disabled={isForbiddenAdd} onClick={addToTaskList}>
-                        Добавить
-                    </Button>
-                    <Button variant="secondary btn-sm" disabled={setArrTaskList.length === 0} onClick={() => setShowModal(true)}>
-                        Очистить
-                    </Button>
-                </ButtonGroup>
-                Список задач:
+        <ScrollParent className="pe-1 pb-1">
+                     <textarea className="form-control me-1 operation__prompt rounded border mb-1" value={titleGPT}
+                               onChange={e => setTitleGPT(e.target.value)} style={{height: '100px'}}/>
+
+            <ButtonGroup>
+                <ButtonSpinner className="btn-secondary btn-sm" state={stateLoadYaGPT}
+                               onClick={() => onGPT('yandex')}>ya-GPT</ButtonSpinner>
+                <ButtonSpinner className="btn-secondary btn-sm" state={stateLoadArliGPT}
+                               onClick={() => onGPT('arli')}>arli-GPT</ButtonSpinner>
+                <ButtonSpinner className="btn-secondary btn-sm" state={stateLoadMistralGPT}
+                               onClick={() => onGPT('mistral')}>mistral-GPT</ButtonSpinner>
+            </ButtonGroup>
+            <hr/>
+            Список задач:
+            <ButtonGroup>
+                <Button variant="secondary btn-sm" disabled={isForbiddenAdd} onClick={addToTaskList}>
+                    Добавить
+                </Button>
+                <Button variant="secondary btn-sm" disabled={setArrTaskList.length === 0} onClick={() => setShowModal(true)}>
+                    Очистить
+                </Button>
+            </ButtonGroup>
+            <ScrollChild className="my-1 border rounded p-1">
                 <ListTask arrData={arrTaskList} onChangeData={onChangeData}/>
-                <Dialog title="Очистить" message="Уверены?" show={showModal} setShow={setShowModal}
-                        onConfirm={() => onChangeData([])}
-                        props={{className: 'modal-sm'}}/>
+            </ScrollChild>
+            <div className="d-flex flex-column p-2 mb-2 border rounded text-muted text-center position-relative"
+                 onDrop={() => {
+                     let src = global.draggingElement.src;
+                     setSrcImgTitle(src)
+                     global.draggingElement = null;
+                 }} onDragOver={e => e.preventDefault()}>
+                <img src={srcImgTitle}/>
+                <div hidden={srcImgTitle != ''}>Добвьте изображение для обложки...</div>
+                <Button hidden={srcImgTitle == ''} variant="danger btn-sm py-0 px-0 " className="position-absolute"
+                        style={{lineHeight: '0', height: '22px', width: '22px', right: '12px', top: '12px'}}
+                        onClick={() => setSrcImgTitle('')}
+                >X</Button>
             </div>
             <ButtonSpinner state={stateBuildALl} className="btn-secondary btn-sm" onClick={buildAllNews}>
-                Собрать все
+                Собрать все видео
             </ButtonSpinner>
-        </div>
+            <Dialog title="Очистить" message="Уверены?" show={showModal} setShow={setShowModal} onConfirm={() => onChangeData([])}
+                    props={{className: 'modal-sm'}}/>
+
+        </ScrollParent>
+        // <div className="operation d-flex flex-column h-100 notranslate me-1 flex-stretch">
+
+        //     <div className="d-flex flex-column p-2 mb-2 border rounded text-muted text-center position-relative"
+        //          onDrop={() => {
+        //              let src = global.draggingElement.src;
+        //              setSrcImgTitle(src)
+        //              global.draggingElement = null;
+        //          }} onDragOver={e => e.preventDefault()}>
+        //         <img src={srcImgTitle}/>
+        //         <div hidden={srcImgTitle != ''}>Добвьте изображение для обложки...</div>
+        //         <Button hidden={srcImgTitle == ''} variant="danger btn-sm py-0 px-0 " className="position-absolute"
+        //                 style={{lineHeight: '0', height: '22px', width: '22px', right: '12px', top: '12px'}}
+        //                 onClick={() => setSrcImgTitle('')}
+        //         >X</Button>
+        //     </div>
+        //     <ButtonSpinner state={stateBuildALl} className="btn-secondary btn-sm" onClick={buildAllNews}>
+        //         Собрать все видео
+        //     </ButtonSpinner>
+        // </div>
     );
 }

@@ -125,7 +125,10 @@ export const addDay = (d, date) => {
     date = date ?? new Date;
     return new Date(date.setDate((date.getDate() + d)));
 };
-export const addHour = (h) => new Date(new Date().setHours(new Date().getHours() + h));
+export const addHour = (h, date) => {
+    date = date ?? new Date;
+    return new Date(date.setHours(date.getHours() + h));
+};
 export const addMinute = (m) => new Date(new Date().setMinutes(new Date().getMinutes() + m));
 export const addSecond = (s) => new Date(new Date().setSeconds(new Date().getSeconds() + s));
 
