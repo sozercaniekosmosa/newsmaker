@@ -12,6 +12,7 @@ import Images from "./components/Images/Images";
 import glob from "../../../global.ts";
 import Dialog from "../Dialog/Dialog.tsx";
 import 'tui-image-editor/dist/tui-image-editor.css';
+import DraggableList from "./components/DraggableList/DraggableList.tsx";
 
 let currID, _news;
 
@@ -27,6 +28,7 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
     const [stateUpdateAnNews, setStateUpdateAnNews] = useState(0)
     const [stateText2Speech, setStateText2Speech] = useState(0)
     const [arrImg, setArrImg] = useState([])
+    const [arrImgAssign, setArrImgAssign] = useState([])
     const [textGPT, setTextGPT] = useState('')
     const [isExistAudio, setIsExistAudio] = useState(false)
     const [isExistVideo, setIsExistVideo] = useState(false)
@@ -35,6 +37,7 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
     const [addText, setAddText] = useState('');
     const [speedDelta, setSpeedDelta] = useState(0);
     const [audioDuration, setAudioDuration] = useState(0);
+    const [addItem, setAddItem] = useState(null);
 
     const refAudio: React.MutableRefObject<HTMLAudioElement> = useRef();
     const refVideo: React.MutableRefObject<HTMLVideoElement> = useRef();
@@ -57,7 +60,15 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
 
         const newNews = {
             ...news,
-            ...{option: {image: !!arrImg.length, text: !!textGPT?.length, audio: isExistAudio, video: isExistVideo, done: !!news?.option?.done}}
+            ...{
+                option: {
+                    image: arrImgAssign,
+                    text: !!textGPT?.length,
+                    audio: audioDuration,
+                    video: isExistVideo,
+                    done: !!news?.option?.done
+                }
+            }
         }
         setNews(newNews);
 
@@ -67,7 +78,7 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
 
         (() => updateDB({values: {option: JSON.stringify(newNews.option)}, condition: {id: newNews.id}}))()
 
-    }, [arrImg, textGPT, isExistAudio, isExistVideo]);
+    }, [arrImg, textGPT, isExistAudio, isExistVideo, arrImgAssign, audioDuration]);
 
     useEffect(() => {
         writeChange(news, textGPT, listHostToData)
@@ -79,6 +90,7 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
         if (currID === news.id) return;
         currID = news.id;
         setTextGPT('')
+        setArrImgAssign(news?.option?.image ?? [])
         getLocalSource(news);
 
         const {id, url, title, tags, text, dt, titleEn} = news;
@@ -105,9 +117,19 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
     async function onBuild() {
         setStateNewsBuild(1);
         try {
-            const {id, url, title, tags, text, dt, titleEn, srcName} = news;
+            const {id, url, title, tags, text, dt, titleEn, srcName, option} = news;
             const {date, name} = getNameAndDate(dt, url, id, listHostToData, titleEn);
             const from = listHostToData[(new URL(url)).host].from;
+
+            // a=[1,2,3,4,5]
+            // b=9/1.5
+            // c=Array(Math.ceil(b/a.length)).fill(a).flat().splice(0,b)
+
+            let SecPerFrame = 1.3; //сек на кадр
+            const arr = option.image;
+            const dur = option.audio / SecPerFrame
+            const arrSrcImg = Array(Math.ceil(dur / arr.length)).fill(arr).flat().splice(0, dur);
+
 
             const {data: {respID}} = await axios.post(glob.host + 'build-an-news', {
                 title: news.title,
@@ -117,7 +139,8 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
                 name,
                 from: from ?? srcName,
                 addText,
-                id
+                id,
+                arrSrcImg: arrSrcImg.map(url => (new URL(url)).pathname)
             });
             setStateNewsBuild(0);
 
@@ -200,6 +223,16 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
         }
     }
 
+
+    const initialItems = [
+        'news\\25.01.10\\DZ-KomUdaKat-8ZRY7RrwO\\qZAlBNrRx.png',
+        'news\\25.01.10\\DZ-NewStaVto-zwyhoGurj\\97nrmfhru.png',
+        'news\\25.01.10\\DZ-NewStaVto-zwyhoGurj\\shEKY74qE.png',
+        'news\\25.01.10\\DZ-TelZheRod-cgecVFyy6\\A6ykTKtjx.png',
+        'news\\25.01.09\\DZ-SovTraUol-3aZcvwshS\\cd9GrJvjg.png',
+        'news\\25.01.09\\DZ-EkoPreRos-eQzOFv4wc\\924AVYD2w.png',
+    ];
+
     return (
         !news ? '' : <div className="options d-flex flex-column h-100 notranslate"
             // @ts-ignore
@@ -249,7 +282,10 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
                     </div>
                 </Tab>
                 <Tab eventKey="images" title="Изображения" style={{flex: 1}}>
-                    <Images news={news} setNews={setNews} arrImg={arrImg} setArrImg={setArrImg} listHostToData={listHostToData}
+                    <Images news={news} setNews={setNews}
+                            arrImg={arrImg} setArrImg={setArrImg}
+                            arrImgAssign={arrImgAssign} setArrImgAssign={setArrImgAssign}
+                            listHostToData={listHostToData}
                             maxImage={audioDuration}/>
                 </Tab>
                 <Tab eventKey="build" title="Видео">
@@ -266,6 +302,9 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
                         </div>
                     </div>
                 </Tab>
+                {/*<Tab eventKey="test" title="Тест">*/}
+                {/*    <button onClick={() => setAddItem((new Date()).getTime())}>Add Item</button>*/}
+                {/*</Tab>*/}
             </Tabs>
         </div>
     );

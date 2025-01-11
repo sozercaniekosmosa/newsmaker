@@ -75,9 +75,9 @@ export default function ListNews(
                                 <span>{formatDateTime(new Date(dt), 'dd.mm.yy hh:MM')}</span>&nbsp;
                                 <a href={url || ''} target="_blank">ссылка</a>&nbsp;
                                 <span>{toTranslate[type]}</span>
-                                <span className="notranslate">{option?.image ? '🖼️' : ''}</span>
+                                <span className="notranslate">{option?.image?.length ? '🖼️' : ''}</span>
                                 <span className="notranslate">{option?.text ? '📝' : ''}</span>
-                                <span className="notranslate">{option?.audio ? '🎵' : ''}</span>
+                                <span className="notranslate">{option?.audio > 0 ? '🎵' : ''}</span>
                                 <span className="notranslate">{option?.video ? '🎥' : ''}</span>
                                 <div className="n-list__title title-ru">{title}</div>
                             </div>

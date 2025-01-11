@@ -136,7 +136,7 @@ export default function Tools({news, listHostToData}) {
             <ScrollChild className="my-1 border rounded p-1">
                 <ListTask arrData={arrTaskList} onChangeData={onChangeData}/>
             </ScrollChild>
-            <div className="d-flex flex-column p-2 mb-2 border rounded text-muted text-center position-relative"
+            <div className="d-flex flex-column p-2 mb-1 border rounded text-muted text-center position-relative"
                  onDrop={() => {
                      let src = global.draggingElement.src;
                      setSrcImgTitle(src)

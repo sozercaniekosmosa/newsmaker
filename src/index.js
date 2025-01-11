@@ -93,7 +93,7 @@ async function createWebServer(port) {
     router.get('/images-remove', async (req, res) => {
         try {
             const {path} = req.query;
-            await removeFile('./public/public/' + path.replaceAll(/\\/g,'/'))
+            await removeFile('./public/public/' + path.replaceAll(/\\/g, '/'))
             res.status(200).send('ok')
         } catch (error) {
             res.status(error.status || 500).send({error: error?.message || error},);
@@ -218,13 +218,14 @@ async function createWebServer(port) {
 
     router.post('/build-an-news', async (req, res) => {
         try {
-            const {body: {title, tags, text, name, date, from, addText, id}} = req;
+            const {body: {title, tags, text, name, date, from, addText, id, arrSrcImg}} = req;
             let filePath = `./public/public/news/${date}/${name}/`
             await saveTextToFile(filePath + 'title.txt', title)
 
             await buildAnNews({
                 dir_ffmpeg: './content/ffmpeg/',
                 dir_content: filePath,
+                arrSrcImg: arrSrcImg.map(src => pathResolveRoot('./public/public/' + src.replaceAll(/\\/g, '/'))),
                 pathBridge: pathResolveRoot('./content/audio/bridge.mp3'),
                 pathVideoOut: filePath + 'news.mp4',
                 pathLogoMini: pathResolveRoot('./content/img/logo-mini.png'),
@@ -270,7 +271,7 @@ async function createWebServer(port) {
             const overlayImagePath = pathResolveRoot('./content/img/logo-lg.png');
             const outputPath = filePathOut + 'title.png';
             const x = 0; // Координата X для наложения
-            const y = 1080 - 200; // Координата Y для наложения
+            const y = 1080 - 240; // Координата Y для наложения
 
             await overlayImages(baseImagePath, overlayImagePath, outputPath, x, y);
 

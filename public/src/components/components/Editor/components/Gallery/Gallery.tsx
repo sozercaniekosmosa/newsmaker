@@ -93,7 +93,6 @@ export default function Gallery(props) {
                        rel="noreferrer"
                     >
                         <img src={image.src} alt="" onDragStart={e => global.draggingElement = e.target} onContextMenu={(e) => {
-                            // setItemToDelete(image.src);
                             onConfirmRemoveImage(image.src);
                             e.preventDefault();
                         }}/>

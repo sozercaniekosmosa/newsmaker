@@ -1,0 +1,22 @@
+.dragover.center {
+  position: relative;
+}
+
+.dragover.center::before {
+  content: "";
+  position: absolute;
+  top: 33.33%;
+  left: 33.33%;
+  right: 33.33%;
+  bottom: 33.33%;
+  outline: 3px solid gray;
+}
+
+.dragover {
+  outline: 3px solid gray;
+  outline-offset: -3px;
+}
+
+.sortable {
+  height: 100px
+}
