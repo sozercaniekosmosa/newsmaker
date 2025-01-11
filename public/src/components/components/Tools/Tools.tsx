@@ -156,24 +156,5 @@ export default function Tools({news, listHostToData}) {
                     props={{className: 'modal-sm'}}/>
 
         </ScrollParent>
-        // <div className="operation d-flex flex-column h-100 notranslate me-1 flex-stretch">
-
-        //     <div className="d-flex flex-column p-2 mb-2 border rounded text-muted text-center position-relative"
-        //          onDrop={() => {
-        //              let src = global.draggingElement.src;
-        //              setSrcImgTitle(src)
-        //              global.draggingElement = null;
-        //          }} onDragOver={e => e.preventDefault()}>
-        //         <img src={srcImgTitle}/>
-        //         <div hidden={srcImgTitle != ''}>Добвьте изображение для обложки...</div>
-        //         <Button hidden={srcImgTitle == ''} variant="danger btn-sm py-0 px-0 " className="position-absolute"
-        //                 style={{lineHeight: '0', height: '22px', width: '22px', right: '12px', top: '12px'}}
-        //                 onClick={() => setSrcImgTitle('')}
-        //         >X</Button>
-        //     </div>
-        //     <ButtonSpinner state={stateBuildALl} className="btn-secondary btn-sm" onClick={buildAllNews}>
-        //         Собрать все видео
-        //     </ButtonSpinner>
-        // </div>
     );
 }

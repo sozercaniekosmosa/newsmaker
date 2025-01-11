@@ -23,6 +23,8 @@ import multer from "multer";
 import theGuardian from "./parsers/theGuardian.js";
 import russiaToday from "./parsers/russiaToday.js";
 import dzen from "./parsers/dzen.js";
+import {RedisDB} from "./redis.js";
+import redis from "jsdom/lib/jsdom/living/xhr/xhr-utils.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -49,7 +51,9 @@ async function updateDB(typeCond, values, condition, table, db) {
 }
 
 async function createWebServer(port) {
-    const db = await connectDB();
+    // const db = await connectDB();
+    const client = redis.createClient();
+    const db = new RedisDB(client);
 
     const app = express();
     const router = express.Router();
@@ -67,8 +71,8 @@ async function createWebServer(port) {
     });
 
     const listNewsSrc = {
-        TG: new NewsUpdater({host: 'https://www.theguardian.com', db, ...theGuardian}),
-        RT: new NewsUpdater({host: 'https://russian.rt.com', db, ...russiaToday}),
+        // TG: new NewsUpdater({host: 'https://www.theguardian.com', db, ...theGuardian}),
+        // RT: new NewsUpdater({host: 'https://russian.rt.com', db, ...russiaToday}),
         DZ: new NewsUpdater({host: 'https://dzen.ru/news', db, ...dzen}),
     }
 
@@ -80,9 +84,12 @@ async function createWebServer(port) {
     })
 
     router.post('/update-db', async (req, res) => {
-        const {body: {table, values, condition, typeCond}} = req;
+        // const {body: {table, values, condition, typeCond}} = req;
+        const {body: news} = req;
         try {
-            await updateDB(typeCond, values, condition, table, db);
+            // await updateDB(typeCond, values, condition, table, db);
+
+            await db.update('news', news.id, news)
 
             res.status(200).send('ok')
         } catch (error) {
@@ -157,7 +164,8 @@ async function createWebServer(port) {
     router.post('/remove-news', async (req, res) => {
         try {
             const {body: {id}} = req;
-            const data = await db.run('DELETE FROM news WHERE ID = ?', [id]);
+            // const data = await db.run('DELETE FROM news WHERE ID = ?', [id]);
+            const data = await db.del('news', id);
             res.send(data);
             global?.messageSocket?.send({type: 'update-list-news'})
         } catch (error) {

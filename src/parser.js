@@ -67,7 +67,8 @@ console.log(`Updated ${result.changes} row(s)`);
 export async function getListTask(db) {
     let res;
     try {
-        res = await db.all(`SELECT * FROM tasks`);
+        res = await db.getByID('taskList', null)
+        if (!res) await db.add('taskList', null, {arrNews, title, })
     } catch (e) {
         console.error(e)
     }
@@ -369,18 +370,8 @@ export class NewsUpdater {
     listTask;
 
     constructor({
-                    host,
-                    listTask,
-                    db,
-                    getArrUrlOfType,
-                    getDateAsMls,
-                    getTitle,
-                    getArrTags,
-                    getTextContent,
-                    getHtmlUrl,
-                    getDocument,
-                    getSrcName,
-                    getID
+                    host, listTask, db, getArrUrlOfType, getDateAsMls, getTitle, getArrTags,
+                    getTextContent, getHtmlUrl, getDocument, getSrcName, getID
                 }) {
         this.HOST = host;
         this.db = db;
@@ -398,7 +389,7 @@ export class NewsUpdater {
     }
 
     async isExistID(db, id) {
-        return (await db.all(`SELECT * FROM news WHERE id = ?`, [id])).length > 0;
+        return !!await db.getById('news', id)
     }
 
     async updateOneNewsType(typeNews, url) {
@@ -467,30 +458,31 @@ export class NewsUpdater {
                 return null;
             }
 
-
             let html = await this.getHtmlUrl(url) ?? await getHtmlUrl(url);
             html = html.replaceAll(/\u00A0/g, ' ');
 
             const doc = await this.getDocument(html) ?? await getDocument(html);
 
             const titleEn = this.getTitle(doc);
+            if (!titleEn || !titleEn.length) return null;
 
             const tagsEn = this.getArrTags(doc);
-            if (tagsEn.length === 0) return null;
+            if (!tagsEn || !tagsEn.length) return null;
 
             const date = this.getDateAsMls(doc);
+            if (!date) return null;
 
             let paragraphText = this.getTextContent(doc);
-            if (paragraphText === null) return null;
+            if (!paragraphText || !paragraphText.length || paragraphText.length < this.MIN_WORDS_TOPIC) return null;
 
             const title = titleEn;
             const tags = tagsEn;
             const text = paragraphText;
-            let srcName = this.getSrcName(doc) ?? '';
+            let from = this.getSrcName(doc) ?? '';
 
-            if (!text || !text.length || text.length < this.MIN_WORDS_TOPIC || !title || !title.length || !tags || !tags.length || !date) return;
-
-            await this.db.run(`INSERT INTO news (id, url, title, tags, text, dt, type, srcName) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [cyrb53(url), url, title, tags, text, date, type, srcName]);
+            await this.db.add('news', cyrb53(url), {
+                date, url, title, tags: [], text, type, from, textHandled: null, arrSrcImg: [], srcAudio: null, srcVideo: null, done: false
+            });
 
             return {id: cyrb53(url), url, title, tags, text, date, type}
         } catch (e) {
