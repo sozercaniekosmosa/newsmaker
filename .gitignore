@@ -33,3 +33,4 @@ dist-ssr
 /*.db
 /content/
 /public/public/news/
+/public/test.html
