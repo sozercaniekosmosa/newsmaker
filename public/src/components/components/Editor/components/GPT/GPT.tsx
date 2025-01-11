@@ -55,6 +55,7 @@ export default function GPT({news, textGPT, setTextGPT, listHostToData, addText,
             <Button variant="secondary btn-sm" onClick={() => onGPT('mistral', 'число в текст')}>Переведи число в текст</Button>
             <Button variant="secondary btn-sm" onClick={() => setPrompt('Сократи текст в два раза')}>Сократи х2</Button>
             <Button variant="secondary btn-sm" onClick={() => setPrompt('перевод на английский')}>На английский</Button>
+            <Button variant="secondary btn-sm" onClick={() => setPrompt('Выдели основные мысли и на основе них сделай несколько не больше 4 тегов. формат ответа: тег, тег, тег')}>Теги</Button>
         </ButtonGroup>
         <textarea className="form-control me-1 operation__prompt rounded border mb-1 px-2" value={prompt} style={{height: '30px'}}
                   onChange={e => setPrompt(e.target.value)}/>
