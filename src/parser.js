@@ -68,7 +68,7 @@ export async function getListTask(db) {
     let res;
     try {
         res = await db.getByID('taskList', null)
-        if (!res) await db.add('taskList', null, {arrNews, title, })
+        res = res ? res : await db.add('taskList', null, {arrNews: [], title: null, date: null});
     } catch (e) {
         console.error(e)
     }

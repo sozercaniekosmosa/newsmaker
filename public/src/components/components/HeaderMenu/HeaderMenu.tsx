@@ -7,8 +7,6 @@ import {getData} from "../../utils.ts";
 import axios from "axios";
 import './style.css'
 import glob from "../../../global.ts";
-import iconTG from "../../../assets/tg.svg";
-import iconRT from "../../../assets/rt.png";
 import iconDz from "../../../assets/dzen.ico";
 
 async function getNewsData(dtFrom: string, dtTo: string, setArrNews, setArrFilter) {
@@ -109,23 +107,16 @@ export default function HeaderMenu({
             <ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listSport}/></ButtonGroup>
         </div>
         <div className="header-control-flt d-flex flex-row notranslate">
-            <ButtonSpinner className="btn-secondary btn-sm notranslate d-flex align-items-center" state={stateNewsTGUpdate}
-                           onClick={() => onUpdateAllNews('TG')}>
-                <img src={iconTG} className="news-icon" alt={iconTG}/>
-            </ButtonSpinner>
-            <ButtonSpinner className="btn-secondary btn-sm notranslate d-flex align-items-center" state={stateNewsRTUpdate}
-                           onClick={() => onUpdateAllNews('RT')}>
-                <img src={iconRT} className="news-icon" alt={iconRT}/>
-            </ButtonSpinner>
-
             <ButtonSpinner className="btn-secondary btn-sm notranslate d-flex align-items-center" state={stateNewsDZUpdate}
                            onClick={() => onUpdateAllNews('DZ')}>
                 <img src={iconDz} className="news-icon" alt={iconDz}/>
             </ButtonSpinner>
 
-            <input type="date" className="form-control" style={{width: '8em', height: '2em'}} value={formatDateTime(addDay(0, new Date(dtFrom)), 'yyyy-mm-dd')}
+            <input type="date" className="form-control" style={{width: '8em', height: '2em'}}
+                   value={formatDateTime(addDay(0, new Date(dtFrom)), 'yyyy-mm-dd')}
                    onChange={e => setDtFrom(e.target.value + ' 00:00:00')}/>
-            <input type="date" className="form-control" style={{width: '8em', height: '2em'}} value={formatDateTime(addDay(0, new Date(dtTo)), 'yyyy-mm-dd')}
+            <input type="date" className="form-control" style={{width: '8em', height: '2em'}}
+                   value={formatDateTime(addDay(0, new Date(dtTo)), 'yyyy-mm-dd')}
                    onChange={e => setDtTo(e.target.value + ' 00:00:00')}/>
             <div className="selected-filters" onClick={onResetSelectedTag}>{filterTags ? '#' + filterTags : ''}</div>
 

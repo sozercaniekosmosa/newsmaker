@@ -52,7 +52,7 @@ async function updateDB(typeCond, values, condition, table, db) {
 
 async function createWebServer(port) {
     // const db = await connectDB();
-    const client = redis.createClient();
+    const client = await redis.createClient();
     const db = new RedisDB(client);
 
     const app = express();
@@ -182,7 +182,6 @@ async function createWebServer(port) {
         }
     });
     router.get('/list-task', async (req, res) => {
-        const {from, to} = req.query;
         try {
             let result = await getListTask(db);
             res.status(200).send(result)
@@ -254,7 +253,7 @@ async function createWebServer(port) {
                 const filePath = `./public/public/news/${date}/${name}/`
                 return pathResolveRoot(filePath + 'news.mp4')
             })
-            let filePathOut = `./public/public/done/` + formatDateTime(new Date(), 'yy-mm-dd_hh_MM_ss' + '/');
+            let filePathOut = `./public/public/done/` + formatDateTime(/*TODO:нужно получать дату с верха*/new Date(), 'yy-mm-dd_hh_MM_ss' + '/');
             let filePathIntro = pathResolveRoot('./content/video/intro.mp4');
             let filePathEnd = pathResolveRoot('./content/video/end.mp4');
 

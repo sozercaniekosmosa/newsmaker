@@ -1,8 +1,6 @@
-const redis = require('redis');
-const fs = require('fs');
-const {promisify} = require('util');
-const _ = require('lodash');
-
+import fs from "fs";
+import {promisify} from "util";
+import _ from "lodash";
 
 export class RedisDB {
     constructor(redisClient, dumpFilePath = './news_dump.json') {
@@ -10,9 +8,9 @@ export class RedisDB {
         this.dumpFilePath = dumpFilePath;
 
         // Promisify Redis methods
-        this.hgetallAsync = promisify(this.client.hgetall).bind(this.client);
-        this.hsetAsync = promisify(this.client.hset).bind(this.client);
-        this.hdelAsync = promisify(this.client.hdel).bind(this.client);
+        this.hgetallAsync = promisify(this.client.hGetAll).bind(this.client);
+        this.hsetAsync = promisify(this.client.hSet).bind(this.client);
+        this.hdelAsync = promisify(this.client.hDel).bind(this.client);
         this.keysAsync = promisify(this.client.keys).bind(this.client);
         this.delAsync = promisify(this.client.del).bind(this.client);
 
@@ -23,9 +21,10 @@ export class RedisDB {
     // Add a news item
     async add(table, id, news) {
         news.id = id;
-        await this.hsetAsync(`${table}:${id}`, news);
+        // await this.hsetAsync(`${table}:${id}`, news);
+        await this.client.hSet(`${table}:${id}`, news);
         this.debouncedDumpDatabase();
-        return id;
+        return news;
     }
 
     // Add a news item

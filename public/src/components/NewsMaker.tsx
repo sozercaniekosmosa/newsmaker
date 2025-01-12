@@ -8,16 +8,10 @@ import ListNews from "./components/ListNews/ListNews";
 import Editor from "./components/Editor/Editor.tsx";
 import Tools from "./components/Tools/Tools.tsx";
 import glob from "../global.ts";
-import iconTG from "../assets/tg.svg";
-import iconRT from "../assets/rt.png";
 import iconDZ from "../assets/dzen.ico";
-import {ScrollChild, ScrollParent} from "./components/Scrollable/Scrollable.tsx";
-import ListTask from "./components/Tools/Components/ListTask/ListTask.tsx";
 
 glob.host = 'http://localhost:3000/api/v1/'
 const listHostToData = {
-    'www.theguardian.com': {icon: iconTG, from: 'The Guardian', short: 'TG'},
-    'russian.rt.com': {icon: iconRT, from: 'Russia Today', short: 'RT'},
     'dzen.ru': {icon: iconDZ, from: null, short: 'DZ'},
 }
 
