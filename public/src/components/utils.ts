@@ -72,11 +72,11 @@ type UpdateDBParams = {
     condition?: any;
     typeCond?: any;
 };
-export const updateDB: (params: UpdateDBParams) => void =
-    debounce(async ({table = null, values, condition = null, typeCond = null}) => {
-        try {
-            await axios.post(glob.host + 'update-db', {table, values, condition, typeCond});
-        } catch (e) {
-            console.log(e)
-        }
-    }, 500);
+
+export const updateDB: (task: object) => void = debounce(async (task: object) => {
+    try {
+        await axios.post(glob.host + 'update-db-task', task);
+    } catch (e) {
+        console.log(e)
+    }
+}, 500);

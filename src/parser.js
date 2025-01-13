@@ -67,8 +67,8 @@ console.log(`Updated ${result.changes} row(s)`);
 export async function getListTask(db) {
     let res;
     try {
-        res = await db.getByID('taskList', null)
-        res = res ? res : await db.add('taskList', null, {arrNews: [], title: null, date: null});
+        res = await db.getByID(0)
+        res = res ? res : await db.add(0, {arrTaskList: [], title: null, date: null});
     } catch (e) {
         console.error(e)
     }
@@ -389,7 +389,7 @@ export class NewsUpdater {
     }
 
     async isExistID(db, id) {
-        return !!await db.getById('news', id)
+        return !!db.getById(id)
     }
 
     async updateOneNewsType(typeNews, url) {
@@ -480,7 +480,7 @@ export class NewsUpdater {
             const text = paragraphText;
             let from = this.getSrcName(doc) ?? '';
 
-            await this.db.add('news', cyrb53(url), {
+            this.db.add(cyrb53(url), {
                 date, url, title, tags: [], text, type, from, textHandled: null, arrSrcImg: [], srcAudio: null, srcVideo: null, done: false
             });
 

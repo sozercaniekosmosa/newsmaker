@@ -30,7 +30,10 @@ dist-ssr
 /iam.json
 /.env
 /_urls.json
+/*.dbNews
 /*.db
 /content/
 /public/public/news/
+/public/public/done/
 /public/test.html
+*tst.*

@@ -8,16 +8,9 @@ import {getArrTask, getNameAndDate, updateDB} from "../../utils.ts";
 import axios from "axios";
 import global from "../../../global.ts";
 import ButtonSpinner from "../ButtonSpinner/ButtonSpinner.tsx";
-import {eventBus} from "../../../utils.ts";
+import {debounce, eventBus} from "../../../utils.ts";
 import {ScrollParent, ScrollChild} from "../Scrollable/Scrollable.tsx";
-
-function storeToDB(arr: any[], textGPT: string) {
-    updateDB({
-        "table": 'tasks',
-        values: {task: JSON.stringify({arr, title: textGPT})},
-        condition: {id: 0}
-    });
-}
+import glob from "../../../global.ts";
 
 export default function Tools({news, listHostToData}) {
 
@@ -55,7 +48,7 @@ export default function Tools({news, listHostToData}) {
             const {data: text} = await axios.post(global.host + 'gpt', {type, text: textContent, prompt});
             setTitleGPT(text)
 
-            storeToDB(arrTaskList, text);
+            updateDB({arrTaskList, title: text, date: (new Date()).getTime()});
 
             type === 'yandex' && setStateLoadYaGPT(0)
             type === 'arli' && setStateLoadArliGPT(0)
@@ -104,7 +97,7 @@ export default function Tools({news, listHostToData}) {
             return {id, date, name, title, from, option, done}
         });
 
-        storeToDB(arr, '');
+        updateDB({arrTaskList});
 
         setTitleGPT('')
         setArrTaskList(arr);

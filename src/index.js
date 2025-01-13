@@ -23,7 +23,7 @@ import multer from "multer";
 import theGuardian from "./parsers/theGuardian.js";
 import russiaToday from "./parsers/russiaToday.js";
 import dzen from "./parsers/dzen.js";
-import {RedisDB} from "./redis.js";
+import {noSQL} from "./noSQL.js";
 import redis from "jsdom/lib/jsdom/living/xhr/xhr-utils.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -51,9 +51,10 @@ async function updateDB(typeCond, values, condition, table, db) {
 }
 
 async function createWebServer(port) {
-    // const db = await connectDB();
+    // const dbNews = await connectDB();
     const client = await redis.createClient();
-    const db = new RedisDB(client);
+    const dbNews = new noSQL('dbNews.json');
+    const dbTask = new noSQL('dbTask.json');
 
     const app = express();
     const router = express.Router();
@@ -71,9 +72,9 @@ async function createWebServer(port) {
     });
 
     const listNewsSrc = {
-        // TG: new NewsUpdater({host: 'https://www.theguardian.com', db, ...theGuardian}),
-        // RT: new NewsUpdater({host: 'https://russian.rt.com', db, ...russiaToday}),
-        DZ: new NewsUpdater({host: 'https://dzen.ru/news', db, ...dzen}),
+        // TG: new NewsUpdater({host: 'https://www.theguardian.com', dbNews, ...theGuardian}),
+        // RT: new NewsUpdater({host: 'https://russian.rt.com', dbNews, ...russiaToday}),
+        DZ: new NewsUpdater({host: 'https://dzen.ru/news', db: dbNews, ...dzen}),
     }
 
     // Настройка статических файлов
@@ -83,13 +84,21 @@ async function createWebServer(port) {
         res.sendFile(path.join(__dirname, dir, 'index.html')); // Укажите путь к вашей HTML странице
     })
 
-    router.post('/update-db', async (req, res) => {
-        // const {body: {table, values, condition, typeCond}} = req;
+    router.post('/update-db-news', async (req, res) => {
         const {body: news} = req;
         try {
-            // await updateDB(typeCond, values, condition, table, db);
+            dbNews.update(news.id, news)
 
-            await db.update('news', news.id, news)
+            res.status(200).send('ok')
+        } catch (error) {
+            res.status(error.status || 500).send({error: error?.message || error},);
+        }
+    });
+
+    router.post('/update-db-task', async (req, res) => {
+        const {body: news} = req;
+        try {
+            dbNews.update(news.id, news)
 
             res.status(200).send('ok')
         } catch (error) {
@@ -122,36 +131,7 @@ async function createWebServer(port) {
             res.status(error.status || 500).send({error: error?.message || error},);
         }
     });
-    router.post('/translate', async (req, res) => {
-        const {body: data} = req;
-        try {
-            const arrEn = data.text.split('\n');
-            let accTextEn = '';
-            let accTextRu = '';
 
-            for (let i = 0; i < arrEn.length; i++) {
-                if (accTextEn.length + arrEn[i].length > 4000) {
-                    const result = await translate({
-                        from: 'auto', to: 'ru', text: accTextEn
-                    });
-                    accTextRu += result;
-                    accTextEn = '';
-                }
-                accTextEn += arrEn[i] + '\n'
-            }
-
-            if (accTextEn.length) {
-                accTextRu += await translate({
-                    from: 'auto', to: 'ru', text: accTextEn
-                });
-            }
-
-
-            res.send(accTextRu)
-        } catch (error) {
-            res.status(error.status || 500).send({error: error?.message || error},);
-        }
-    });
     router.post('/update-one-news-type', async (req, res) => {
         try {
             const {body: {typeNews, newsSrc, url}} = req;
@@ -164,8 +144,8 @@ async function createWebServer(port) {
     router.post('/remove-news', async (req, res) => {
         try {
             const {body: {id}} = req;
-            // const data = await db.run('DELETE FROM news WHERE ID = ?', [id]);
-            const data = await db.del('news', id);
+            // const data = await dbNews.run('DELETE FROM news WHERE ID = ?', [id]);
+            const data = await dbNews.del('news', id);
             res.send(data);
             global?.messageSocket?.send({type: 'update-list-news'})
         } catch (error) {
@@ -183,7 +163,7 @@ async function createWebServer(port) {
     });
     router.get('/list-task', async (req, res) => {
         try {
-            let result = await getListTask(db);
+            let result = await getListTask(dbTask);
             res.status(200).send(result)
         } catch (error) {
             res.status(error.status || 500).send({error: error?.message || error},);
@@ -192,7 +172,7 @@ async function createWebServer(port) {
     router.get('/list-news', async (req, res) => {
         const {from, to} = req.query;
         try {
-            let result = await getListNews(db, from, to);
+            let result = await getListNews(dbNews, from, to);
             res.send(result)
         } catch (error) {
             res.status(error.status || 500).send({error: error?.message || error},);
@@ -270,7 +250,12 @@ async function createWebServer(port) {
                 pathOut: filePathOut + 'news-all.mp4'
             })
 
-            const promiseDB = task.map(({id, option}) => updateDB(null, {option: JSON.stringify({...option, done: true})}, {id}, 'news', db));
+            const promiseDB = task.map(({id, option}) => updateDB(null, {
+                option: JSON.stringify({
+                    ...option,
+                    done: true
+                })
+            }, {id}, 'news', dbNews));
             await Promise.allSettled(promiseDB);
             global?.messageSocket && global.messageSocket.send({type: 'update-news'})
 
