@@ -125,7 +125,7 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
             // b=9/1.5
             // c=Array(Math.ceil(b/a.length)).fill(a).flat().splice(0,b)
 
-            let SecPerFrame = 1.3; //сек на кадр
+            let SecPerFrame = 1.5; //сек на кадр
             const arr = option.image;
             const dur = option.audio / SecPerFrame
             const arrSrcImg = Array(Math.ceil(dur / arr.length)).fill(arr).flat().splice(0, dur);

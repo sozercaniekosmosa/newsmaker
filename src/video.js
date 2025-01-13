@@ -70,7 +70,7 @@ export const buildAnNews = async ({dir_ffmpeg, dir_content, arrSrcImg, pathBridg
     const duration = await video.getDuration(pathAudio)
 
     global.messageSocket.send({type: 'progress', data: currPrc += prc})
-    await video.imageToVideo({arrPathImg: arrSrcImg, duration, pathOut: pathVideo})
+    await video.imageToVideo({arrPathImg: arrSrcImg, duration, pathOut: pathVideo, indexEff: 10})
     // await video.imageToVideo({arrPathImg: await findExtFilesAbs(dir_content, 'png'), duration, pathOut: pathVideo})
 
     global.messageSocket.send({type: 'progress', data: currPrc += prc})
