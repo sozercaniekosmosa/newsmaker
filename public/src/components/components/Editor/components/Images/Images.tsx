@@ -1,11 +1,10 @@
 import React, {useEffect, useState} from "react";
 import ButtonSpinner from "../../../ButtonSpinner/ButtonSpinner";
 import Gallery from "../Gallery/Gallery";
-import {getNameAndDate, updateImageSizes} from "../../../../utils";
 import axios from "axios";
 import glob from "../../../../../global.ts";
-import DraggableList from "../DraggableList/DraggableList.tsx";
 import global from "../../../../../global.ts";
+import DraggableList from "../DraggableList/DraggableList.tsx";
 
 function arrMoveItem(arr, fromIndex, toIndex) {
     if (fromIndex < 0 || fromIndex >= arr.length || toIndex < 0 || toIndex >= arr.length) {
@@ -22,7 +21,7 @@ function arrMoveItem(arr, fromIndex, toIndex) {
 }
 
 let currID;
-export default function Images({news, setNews, arrImg, setArrImg, arrImgAssign, setArrImgAssign, listHostToData, maxImage}) {
+export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
     const [stateImageLoad, setStateImageLoad] = useState(0)
     const [quantity, setQuantity] = useState(5);
     const [timeout, setTimeout] = useState(3);
@@ -33,7 +32,7 @@ export default function Images({news, setNews, arrImg, setArrImg, arrImgAssign, 
         if (currID == news?.id) return;
         currID = news.id;
 
-        setArrImg([])
+        setArrImg([]);
     }, [news])
 
     async function requestImages() {
@@ -44,9 +43,8 @@ export default function Images({news, setNews, arrImg, setArrImg, arrImgAssign, 
             const selectedText = glob.selectedText;
             const prompt = selectedText ?? news.tagsEn;
 
-            const {date, name} = getNameAndDate(dt, url, id, listHostToData, titleEn);
             const {data: {arrUrl, id: respID}} = await axios.get(glob.host + 'images',
-                {params: {prompt, name, max: quantity, date, id, timeout: timeout * 1000}});
+                {params: {prompt, max: quantity, id, timeout: timeout * 1000}});
             setStateImageLoad(0)
 
             if (currID !== +respID) return; //TODO: переделать
@@ -58,14 +56,14 @@ export default function Images({news, setNews, arrImg, setArrImg, arrImgAssign, 
     }
 
     let onChangeSort = (nodeIndex, targetIndex) => {
-        const _arr = arrMoveItem([...arrImgAssign], nodeIndex, targetIndex)
-        setArrImgAssign(_arr)
+        const _arr = arrMoveItem([...news.arrImg], nodeIndex, targetIndex)
+        setNews({...news, arrImg: _arr});
     };
 
     function onRemoveImage(e) {
         const index = e.target.dataset.index;
-        arrImgAssign.splice(index, 1)
-        setArrImgAssign([...arrImgAssign])
+        news.arrImg.splice(index, 1)
+        setNews({...news, arrImg: news.arrImg});
         e.preventDefault()
     }
 
@@ -92,13 +90,17 @@ export default function Images({news, setNews, arrImg, setArrImg, arrImgAssign, 
         </div>
         <div className="flex-stretch operation__img border rounded mb-1" onDrop={() => {
             if (!global.draggingElement) return;
-            let src = global.draggingElement.src;
-            setArrImgAssign([...arrImgAssign, src]);
+            let src = global.draggingElement.src.split('/').at(-1);
+            setNews({...news, arrImg: [...news.arrImg, src]});
             global.draggingElement = null;
         }} onDragOver={e => e.preventDefault()}>
             <DraggableList addItem={srcImgTitle} onChange={onChangeSort} className="d-flex flex-wrap flex-stretch">
-                {arrImgAssign.map((item, index) => <img key={index} className="sortable border" draggable src={item} data-index={index}
-                                                        onContextMenu={(e) => onRemoveImage(e)}/>)}
+                {news?.arrImg.map((item, index) => {
+                    return <img key={index} className="sortable border" draggable
+                                src={'./' + news.pathSrc + '/' + item}
+                                data-index={index}
+                                onContextMenu={(e) => onRemoveImage(e)}/>
+                })}
             </DraggableList>
         </div>
     </div>

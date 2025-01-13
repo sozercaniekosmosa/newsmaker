@@ -11,69 +11,16 @@ import glob from "../global.ts";
 import iconDZ from "../assets/dzen.ico";
 
 glob.host = 'http://localhost:3000/api/v1/'
-const listHostToData = {
-    'dzen.ru': {icon: iconDZ, from: null, short: 'DZ'},
+const listHostToIcon = {
+    'dzen.ru': iconDZ,
 }
 
-const listGeneral = {
-    world: "Мир",
-    // now: 'Сейчас',//++
-    interest: 'Интересное',//++
-    showbusiness: 'Шоубизнес',//++
-    auto: 'Авто',//++
-}
-const listPolitics = {
-    // gaza: 'Газа',
-    politics: 'Политика',
-    svo: 'СВО',
-    // sanctions: 'Санкции',
-    // europeNews: "Европа", usa: "США", americas: "Америка",
-    // asia: "Азия", australia: "Австралия", africa: "Африка", middleeast: "Ближний восток",
-    business: "Бизнес",
-}
-const listPoliticsRU = {
-    // politicsrus: 'Политика РУ',
-    // regions: 'Регионы',
-    // investigation: 'Расследования',
-    incidents: 'Происшествия',
-    social: 'Общество',
-    // belorus: 'Белорусы',
-    // army: 'Армия',
-    // moldova: 'Молдова',
-    // pribalty: 'Балтика',
-    // kavkaz: 'Кавказ',
-}
-const listScience = {
-    science: "Наука",
-    technology: "Технологии",
-    // cosmos: 'Космос',
-    // medicine: 'Медицина',
-    // biology: 'Биология',
-    // history: 'История',
-    // archeology: 'Археология',
-    // ecology: 'Экология',
-    // physics: 'Физика',
-    // chemistry: 'Химия',
-    // sociology: 'Социология',
-}
-const listSport = {
-    // football: "Футбол", cycling: "Велоспорт", formulaone: "F1",
-    // tennis: 'Теннис',
-    // fighting: 'Бокс+MMA',
-    // hokkey: 'Хоккей',
-    // figures: 'Фигуристы',
-    // summer: 'Летний',
-    // winter: 'Зимний',
-}
-const listCulture = {
-    culture: 'Культура',
-    // internet: 'Интернет',
-    // entertainment: 'Развлечения',
-    // socialnetworks: 'Соц.сети',
-    // nature: 'Природа',
-    // books: "Книги", tvRadio: "ТВ-Радио", art: "АРТ", film: "Фильмы",
-    // games: "Игры", classical: "Классика", stage: "Сцена"
-};
+const listGeneral = {world: "Мир", interest: 'Интересное',/*++*/ showbusiness: 'Шоубизнес',/*++*/ auto: 'Авто',/*++*/};
+const listPolitics = {politics: 'Политика', svo: 'СВО', business: "Бизнес",};
+const listPoliticsRU = {incidents: 'Происшествия', social: 'Общество',};
+const listScience = {science: "Наука", technology: "Технологии",};
+const listSport = {};
+const listCulture = {culture: 'Культура',};
 let arrTypes = [listGeneral, listPolitics, listPoliticsRU, listScience, listCulture, listSport];
 
 function NewsMaker() {
@@ -94,6 +41,18 @@ function NewsMaker() {
         });
     }, [])
 
+
+    useEffect(() => {
+        const index = arrNews.findIndex(({id}) => id == news.id)
+
+        setArrNews(now => {
+            const newArr = [...now];
+            newArr[index] = news;
+            return newArr;
+        });
+
+    }, [news]);
+
     return (
         <div className="editor d-flex flex-column h-100">
             {progress >= 0 && <ProgressBar progress={progress}/>}
@@ -105,7 +64,7 @@ function NewsMaker() {
                 <Pane id="P0" size={4}>
                     <ListNews
                         arrNews={arrNews} arrTypes={arrTypes} filterTags={filterTags}
-                        setNews={setNews} typeNews={typeNews} listHostToData={listHostToData} setFilterTags={setFilterTags}
+                        setNews={setNews} typeNews={typeNews} listHostToData={listHostToIcon} setFilterTags={setFilterTags}
                         doneTasks={doneTasks} donePre={donePre}
                     />
                 </Pane>
@@ -114,11 +73,11 @@ function NewsMaker() {
                         news={news} setNews={setNews}
                         arrNews={arrNews}
                         setArrNews={setArrNews}
-                        listHostToData={listHostToData}
+                        listHostToData={listHostToIcon}
                     />
                 </Pane>
                 <Pane id="P2" size={4}>
-                    <Tools news={news} listHostToData={listHostToData}/>
+                    <Tools news={news} listHostToData={listHostToIcon}/>
                 </Pane>
             </ResizablePanes>
         </div>

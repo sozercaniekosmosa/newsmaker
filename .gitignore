@@ -37,3 +37,4 @@ dist-ssr
 /public/public/done/
 /public/test.html
 *tst.*
+/db*.json

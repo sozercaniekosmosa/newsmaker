@@ -38,14 +38,14 @@ export const updateImageSizes = async (arrImg, setArrImg) => {
     setArrImg(updatedImages);
 };
 
-export function getNameAndDate(dt, url, id, listData, title) {
-    const date = formatDateTime(new Date(dt), 'yy.mm.dd');
-    let _title = title.replaceAll(/[^A-Za-zА-Яа-я ]/g, '')
-    _title = translit(_title);
-    _title = _title.toLocaleLowerCase().split(' ').map(it => it.slice(0, 3)).map(it => it.charAt(0).toUpperCase() + it.slice(1)).slice(0, 3).join('')
-    const name = listData[(new URL(url)).host].short + '-' + _title + '-' + toShortString(id);
-    return {date, name};
-}
+// export function getPathSourceNews({arrImg, date, done, from, id, isAudioExist, isVideoExist, tags, text, textGPT, title, type, url, short}) {
+//     const _date = formatDateTime(new Date(date), 'yy.mm.dd');
+//     let _title = title.replaceAll(/[^A-Za-zА-Яа-я ]/g, '')
+//     _title = translit(_title);
+//     _title = _title.toLocaleLowerCase().split(' ').map(it => it.slice(0, 3)).map(it => it.charAt(0).toUpperCase() + it.slice(1)).slice(0, 3).join('')
+//     const name = short + '-' + _title + '-' + toShortString(id);
+//     return {date, name};
+// }
 
 export let getArrTask = async () => {
     let {data} = await axios.get(glob.host + 'list-task');
@@ -59,10 +59,6 @@ export let getData = async (from, to) => {
             to: (new Date(to)).getTime() + 3600 * 24 * 1000
         }
     });
-    data = data.map(it => {
-        it.option = JSON.parse(it.option)
-        return it;
-    })
     return data;
 }
 
@@ -73,9 +69,18 @@ type UpdateDBParams = {
     typeCond?: any;
 };
 
-export const updateDB: (task: object) => void = debounce(async (task: object) => {
+export const updateTaskDB: (task: object) => void = debounce(async (task: object) => {
+    if (!task) return;
     try {
         await axios.post(glob.host + 'update-db-task', task);
+    } catch (e) {
+        console.log(e)
+    }
+}, 500);
+export const updateNewsDB: (news: object) => void = debounce(async (news: object) => {
+    if (!news) return;
+    try {
+        await axios.post(glob.host + 'update-db-news', news);
     } catch (e) {
         console.log(e)
     }

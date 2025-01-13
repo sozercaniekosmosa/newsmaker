@@ -7,6 +7,7 @@ import {HttpsProxyAgent} from "https-proxy-agent";
 import {Database} from "./db.js";
 import sharp from "sharp";
 import {config} from "dotenv";
+import {formatDateTime, translit} from "./utils.js";
 
 const {parsed: {IMG_COOKIE, IMG_XBROWS_VALID, IMG_XCLIENT}} = config();
 
@@ -67,8 +68,8 @@ console.log(`Updated ${result.changes} row(s)`);
 export async function getListTask(db) {
     let res;
     try {
-        res = await db.getByID(0)
-        res = res ? res : await db.add(0, {arrTaskList: [], title: null, date: null});
+        res = await db.getByID('config')
+        res = res ? res : await db.add('config', {arrTaskList: [], title: null, date: null, srcImgTitle: null});
     } catch (e) {
         console.error(e)
     }
@@ -79,9 +80,9 @@ export async function getListNews(db, from, to) {
     let res;
     try {
         if (from && to) {
-            res = await db.all(`SELECT * FROM news where dt>=? and dt<=? ORDER BY dt DESC`, [+from, +to]);
+            res = db.getNews({fromDate: +from, toDate: +to});
         } else {
-            res = await db.all(`SELECT * FROM news ORDER BY dt DESC`);
+            res = db.getAll();
         }
     } catch (e) {
         console.error(e)
@@ -344,6 +345,7 @@ export class NewsUpdater {
     MIN_WORDS_TOPIC = 200;
     counter = 0;
     max = 1;
+    short;
     HOST;
     db;
     getArrUrlOfType = () => console.error('not init getArrUrlOfType method');
@@ -371,7 +373,7 @@ export class NewsUpdater {
 
     constructor({
                     host, listTask, db, getArrUrlOfType, getDateAsMls, getTitle, getArrTags,
-                    getTextContent, getHtmlUrl, getDocument, getSrcName, getID
+                    getTextContent, getHtmlUrl, getDocument, getSrcName, getID, short
                 }) {
         this.HOST = host;
         this.db = db;
@@ -385,11 +387,12 @@ export class NewsUpdater {
         this.getDocument = getDocument;
         this.getSrcName = getSrcName;
         this.getID = getID;
+        this.short = short;
 
     }
 
     async isExistID(db, id) {
-        return !!db.getById(id)
+        return !!db.getByID(id)
     }
 
     async updateOneNewsType(typeNews, url) {
@@ -463,26 +466,33 @@ export class NewsUpdater {
 
             const doc = await this.getDocument(html) ?? await getDocument(html);
 
-            const titleEn = this.getTitle(doc);
-            if (!titleEn || !titleEn.length) return null;
+            const title = this.getTitle(doc);
+            if (!title || !title.length) return null;
 
-            const tagsEn = this.getArrTags(doc);
-            if (!tagsEn || !tagsEn.length) return null;
+            const tags = this.getArrTags(doc);
+            if (!tags || !tags.length) return null;
 
             const date = this.getDateAsMls(doc);
             if (!date) return null;
 
-            let paragraphText = this.getTextContent(doc);
-            if (!paragraphText || !paragraphText.length || paragraphText.length < this.MIN_WORDS_TOPIC) return null;
+            let text = this.getTextContent(doc);
+            if (!text || !text.length || text.length < this.MIN_WORDS_TOPIC) return null;
 
-            const title = titleEn;
-            const tags = tagsEn;
-            const text = paragraphText;
             let from = this.getSrcName(doc) ?? '';
 
-            this.db.add(cyrb53(url), {
-                date, url, title, tags: [], text, type, from, textHandled: null, arrSrcImg: [], srcAudio: null, srcVideo: null, done: false
-            });
+            let news = {
+                date, url,
+                type, from, short: this.short,
+                title, tags: [],
+                text, textGPT: null, textAdd: null,
+                pathSrc: getPathSourceNews({id, title, date, short: this.short}), //путь до ресурсной директории
+                arrImg: [], secPerFrame: 1.5,
+                isAudioExist: null, audioLen: 0,
+                isVideoExist: null,
+                done: false,
+            };
+
+            this.db.add(id, news);
 
             return {id: cyrb53(url), url, title, tags, text, date, type}
         } catch (e) {
@@ -649,4 +659,13 @@ export async function overlayImages(baseImagePath, overlayImagePath, outputPath,
     } catch (error) {
         console.error('Ошибка при наложении изображений:', error);
     }
+}
+
+export function getPathSourceNews({id, title, date, short}) {
+    const _date = formatDateTime(new Date(date), 'yy.mm.dd');
+    let _title = title.replaceAll(/[^A-Za-zА-Яа-я ]/g, '')
+    _title = translit(_title);
+    _title = _title.toLocaleLowerCase().split(' ').map(it => it.slice(0, 3)).map(it => it.charAt(0).toUpperCase() + it.slice(1)).slice(0, 3).join('')
+    const name = short + '-' + _title + '-' + toShortString(id);
+    return `news/${_date}/${name}`;
 }

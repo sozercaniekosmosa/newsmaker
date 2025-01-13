@@ -51,248 +51,6 @@ export const getHashCyrb53Arr = function (arr, seed = 0) {
     return 4294967296 * (2097151 & h2) + (h1 >>> 0);
 }
 
-let revokes = new WeakMap();
-
-export const removeProxy = function (obj) {
-    let [originalObj, revoke] = revokes.get(obj);
-    revoke();
-    return originalObj;
-}
-
-export const onProxy = function (obj, clb) {
-    const makeHandler = (path = '') => ({
-        get(target, key) {
-            return typeof target[key] === 'object' && target[key] !== null ? new Proxy(target[key], makeHandler(path + (Array.isArray(target) ? `[${key}]` : '.' + key))) : Reflect.get(...arguments);
-            // return Reflect.get(...arguments);
-        }, set(target, key, val) {
-            if (target[key] === val) return false;
-            clb && clb(target, key, val, path);
-            return Reflect.set(...arguments);
-        }
-    });
-
-    let {proxy, revoke} = Proxy.revocable(obj, makeHandler());
-    revokes.set(proxy, [obj, revoke]);
-    return proxy;
-}
-
-export const isEmpty = obj => Object.keys(obj).length === 0;
-
-export const meval = function (js, scope) {
-    return new Function(`with (this) { return (${js}); }`).call(scope);
-}
-
-export const getID = (host, port = '', tid, ccid = '') => `${host}:${port}${tid ?? ''}${ccid ?? ''}`;
-
-export const DataEvents = class {
-    TYPE_ROOT = 'r'
-    TYPE_INIT = 'i'
-    TYPE_ASSIGN = '='
-    TYPE_OBJ_ASSIGN = '*'
-    TYPE_ADD = '+'
-    TYPE_REMOVE = '-'
-    TYPE_ERROR = '!'
-    TYPE_WAIT = 'w'
-
-    data = {};
-    arrChange = [];
-    eventEmitter;
-
-    constructor(eventEmitter) {
-        this.eventEmitter = eventEmitter;
-
-        //TODO: изменения по времени и по объему
-        const loop = () => {
-            if (this.arrChange.length) {
-                this.eventEmitter && this.eventEmitter.emit('data-changed', this.arrChange);
-                this.arrChange = [];
-            }
-            setTimeout(loop, 1000);
-            // setTimeout(loop, 0);
-        }
-        loop();
-    }
-
-    isTypeDiff = (a, b) => !!(Array.isArray(a) ^ Array.isArray(b))
-    isTypeArrBoth = (a, b) => Array.isArray(a) && Array.isArray(b)
-    addChange = (type, path, val) => this.arrChange.push([type, val, path]);
-
-    getData(dataSet) {
-        if (dataSet) this.data = dataSet; else return this.data;
-    }
-
-    mergeData(path = '', src, greedy = false, concat = false) {
-
-        let dest = this.data;
-
-        if (typeof dest !== 'object') throw 'dest is not an object!';
-
-        let pathArr = [], key;
-
-        if (path.length) {
-            pathArr = path.split('.');
-            key = pathArr[pathArr.length - 1];
-            for (let i = 0; i < pathArr.length - 1; i++) {
-                const k = pathArr[i];
-                dest = dest?.[k] ? dest[k] : Number.isInteger(+k) ? (dest[k] = []) : (dest[k] = {});
-            }
-        }
-
-        if (typeof src !== 'object') {// изменение значения
-            dest[key] = src;
-            this.addChange(this.TYPE_ASSIGN, path, src);
-        } else if (concat && this.isTypeArrBoth(dest[key], src)) {// объединение массивов
-            dest[key] = [...dest[key], ...src];
-            this.addChange(this.TYPE_ADD, path, src);
-        } else if (this.isTypeDiff(dest[key], src)) {// изменение значения
-            dest[key] = src;
-            const type = typeof src === 'object' ? this.TYPE_OBJ_ASSIGN : this.TYPE_ASSIGN;
-            this.addChange(type, path, JSON.parse(JSON.stringify(src)));
-        } else {
-            this.#merge(dest[key] ?? dest, src, greedy, concat, pathArr);
-        }
-    }
-
-    #merge(dest, src, greedy = false, concat = false, pathArr = []) {
-        const arrKeySrc = Object.keys(src);
-        greedy && Object.keys(dest).forEach(key => {// удаление
-            if (!arrKeySrc.includes(key)) {
-                delete dest[key];
-                this.addChange(this.TYPE_REMOVE, pathArr.join('.'));
-            }
-        });
-
-        for (const key of arrKeySrc) {
-            const [valSrc, valDest] = [src[key], dest[key]];
-            pathArr.push(key);
-
-            if (valSrc === null) continue;
-
-
-            if (valDest === undefined) {// добавление
-                dest[key] = valSrc;
-                this.addChange(this.TYPE_ASSIGN, pathArr.join('.'), dest[key]);
-            } else if (this.isTypeDiff(valDest, valSrc)) {// замена
-                dest[key] = valSrc;
-                const type = typeof src === 'object' ? this.TYPE_OBJ_ASSIGN : this.TYPE_ASSIGN;
-                this.addChange(type, pathArr.join('.'), dest[key]);
-            } else if (concat && this.isTypeArrBoth(valDest, valSrc)) {// массивы объеденены
-                dest[key] = [...dest[key], ...valSrc];
-                this.addChange(this.TYPE_ADD, pathArr.join('.'), dest[key]);
-            } else if (typeof valSrc === 'object') {
-                this.#merge(valDest, valSrc, greedy, concat, pathArr);
-            } else if (valDest !== valSrc) {// изменено значение
-                dest[key] = valSrc;
-                this.addChange(this.TYPE_ASSIGN, pathArr.join('.'), dest[key]);
-                pathArr.pop();
-            } else {
-                pathArr.pop();
-            }
-        }
-
-        pathArr.pop();
-    }
-
-    #createObjectDimension = (obj, pathArr) => {
-        let key = pathArr.pop();
-        pathArr.forEach(key => obj = obj?.[key] ? obj[key] : Number.isInteger(+key) ? (obj[key] = []) : (obj[key] = {}))
-        return {obj, key};
-    }
-
-    applyData(key = '', data, isRoot) {
-        const tmpKey = isRoot ? '' : (key.length ? key + '.' : key);
-        data.forEach(([type, val, path], i) => {
-            if (type === this.TYPE_ROOT) {
-                this.data = val;
-                this.eventEmitter.emit(key, data[i]);
-            } else if (type === this.TYPE_INIT) {
-                this.data[key] ??= [];
-                const index = path ? path : i; // если будет путь(всегда один индекс) тогда используем его
-
-                this.data[key][index] = val;
-                this.eventEmitter.emit(key, data[index]);
-            } else if (type === this.TYPE_ERROR) {
-                this.eventEmitter.emit(key, [...data[i]]);
-            } else if (type === this.TYPE_WAIT) {
-                this.eventEmitter.emit(key, [...data[i]]);
-            } else {
-                const {obj, key: keySrc} = this.#createObjectDimension(this.data, (tmpKey + path).split('.'));
-                obj[keySrc] = val;
-                this.addChange(type, tmpKey + path, val);
-                this.eventEmitter.emit(key, [...data[i], obj, keySrc]);
-            }
-            // this.eventEmitter.emit(key, data[i]);//TODO: тут наверное нужно будет для ускорения сделать на прямую без системы событий
-        });
-        // this.eventEmitter.emit(key, data);//оптимизировал тк задвоение цикла нахер!!!
-    }
-
-    filterApply(arrChanged, arrFilter) {
-        if (!arrFilter) return arrChanged ? arrChanged : [[this.TYPE_ROOT, this.data]]; // полная cdata
-        let tmpArr = [];
-        if (arrChanged) {// частички
-            arrChanged.forEach(([type, val, path]) => path && arrFilter.forEach((src, j) => path.includes(src) && tmpArr.push([type, val, j + path.substring(src.length)])))
-            return tmpArr.length ? tmpArr : undefined;
-        }
-        arrFilter.forEach(it => {// инициализация
-            let d = this.data;
-            it.split('.').forEach(k => d = d?.[k]);
-            if (d !== undefined) tmpArr.push([this.TYPE_INIT, d]);
-        })
-        return tmpArr;
-    }
-
-    onData(eventName, {clbInit, clbAssign, clbAdd, clbRemove, clbObjAssign, clbError, clbWait}) {
-        this.eventEmitter.on(eventName, ([type, val, path, obj, key]) => {//TODO: и тут возможно нужно будет для ускорения сделать напрямую без системы событий
-            switch (type) {
-                case this.TYPE_ROOT:
-                    clbInit && clbInit(val);
-                    break;
-                case this.TYPE_INIT:
-                    clbInit && clbInit(val);
-                    break;
-                case this.TYPE_ASSIGN:
-                    clbAssign && clbAssign(val, path, obj, key);
-                    break;
-                case this.TYPE_OBJ_ASSIGN:
-                    clbObjAssign && clbObjAssign(val, path, obj, key);
-                    break;
-                case this.TYPE_ADD:
-                    clbAdd && clbAdd(val, path, obj, key);
-                    break;
-                case this.TYPE_REMOVE:
-                    clbRemove && clbRemove(val, path, obj, key);
-                    break;
-                case this.TYPE_ERROR:
-                    clbError && clbError(val);
-                    break;
-                case this.TYPE_WAIT:
-                    clbWait && clbWait(val);
-                    break;
-            }
-        });
-    }
-}
-
-export const getObjectByPath = (obj, pathArr) => {
-    for (let i = 0; i < pathArr.length - 1; i++) {
-        const k = pathArr[i];
-        if (obj?.[k]) {
-            obj = obj[k];
-        } else {
-            return undefined;
-        }
-    }
-    return {obj, key: pathArr[pathArr.length - 1]};
-}
-
-export const createObjectDimension = (obj, pathArr) => {
-    for (let i = 0; i < pathArr.length - 1; i++) {
-        const k = pathArr[i];
-        obj = obj?.[k] ? obj[k] : Number.isInteger(+k) ? (obj[k] = []) : (obj[k] = {});
-    }
-    return {obj, key: pathArr[pathArr.length - 1]};
-}
-
 export const isFunction = functionToCheck => functionToCheck && {}.toString.call(functionToCheck) === '[object Function]';
 
 export const formatDateTime = (date = new Date(), dateTimeFormat = 'dd.mm.yyyy hh:MM:ss') => {
@@ -841,14 +599,14 @@ export class CreateVideo {
         console.log(`join: ${pathVideo}+${pathAudio}`)
     }
 
-    async addAudioToAudio({pathAudioSrc, pathAudioAdded, pathAudioOut = pathAudioSrc}) {
+    async addAudioToAudio({pathisAudioExist, pathAudioAdded, pathAudioOut = pathisAudioExist}) {
 
-        const cmdJoinAudioPair = `${this.dir_ffmpeg}ffmpeg.exe -y -hwaccel auto -i ${this.setDir(pathAudioSrc)} -i ${this.setDir(pathAudioAdded)} -filter_complex "[0:a][1:a]concat=n=2:a=1:v=0[a]" -map "[a]" ${this.setDir(pathAudioOut, pathAudioOut === pathAudioSrc ? '_' : '')}`
+        const cmdJoinAudioPair = `${this.dir_ffmpeg}ffmpeg.exe -y -hwaccel auto -i ${this.setDir(pathisAudioExist)} -i ${this.setDir(pathAudioAdded)} -filter_complex "[0:a][1:a]concat=n=2:a=1:v=0[a]" -map "[a]" ${this.setDir(pathAudioOut, pathAudioOut === pathisAudioExist ? '_' : '')}`
         await this.execCmd(cmdJoinAudioPair);
 
-        if (pathAudioOut === pathAudioSrc) await this.dry(pathAudioSrc)
+        if (pathAudioOut === pathisAudioExist) await this.dry(pathisAudioExist)
 
-        console.log(`add audio to audio ${pathAudioSrc} + ${pathAudioAdded}`)
+        console.log(`add audio to audio ${pathisAudioExist} + ${pathAudioAdded}`)
     }
 
     async cropVideo({path, start = 0, duration = 0}) {
@@ -1082,3 +840,27 @@ export const removeFragmentsFromUrl = (url) => {
     // Возвращаем очищенный URL
     return urlObj.toString();
 };
+
+export function translit(str) {
+    const converter = {
+        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd',
+        'е': 'e', 'ё': 'yo', 'ж': 'zh', 'з': 'z', 'и': 'i',
+        'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n',
+        'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't',
+        'у': 'u', 'ф': 'f', 'х': 'kh', 'ц': 'ts',
+        'ч': 'ch', 'ш': 'sh', 'щ': 'shch',
+        'ъ': '_',
+        'ы': 'y',
+        'ь': '_',
+        'э': 'e',
+        'ю': 'yu',
+        'я': 'ya'
+    };
+
+    let result = '';
+    for (let i = 0; i < str.length; i++) {
+        const char = str[i].toLocaleLowerCase();
+        result += converter[char] || char;
+    }
+    return result;
+}

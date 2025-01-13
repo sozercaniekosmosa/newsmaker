@@ -1,13 +1,20 @@
 import fs, {promises as fsPromises} from "fs";
 import _ from "lodash";
-import PATH from "path";
+import PATH, {resolve} from "path";
+import root from 'app-root-path'
+
+
+const pathRoot = root.path;
+const pathResolveRoot = (path) => path.startsWith('.') ? resolve(pathRoot, ...path.split(/\\|\//)) : path;
 
 export class noSQL {
     constructor(dumpFilePath = './news_dump.json') {
-        this.dumpFilePath = dumpFilePath;
+        this.dumpFilePath = pathResolveRoot(dumpFilePath);
+
 
         const strDump = this.getDumpDatabase(this.dumpFilePath);
-        this.db = JSON.parse(strDump + '');
+        if (!strDump) this.writeFileAsync(dumpFilePath, '{}')
+        this.db = JSON.parse(strDump ?? '{}');
 
         // Debounced function to dump database
         this.debouncedDumpDatabase = _.debounce(this.dumpDatabase.bind(this), 1000);
@@ -45,13 +52,13 @@ export class noSQL {
     }
 
     // Get news with sorting and optional date range filter
-    getNews({fromDate = 0, toDate = Date.now()} = {}) {
+    getNews({fromDate = 0, toDate = Date.now()} = {}) { //TODO: убрать оставить только getAll
         const arrVal = Object.values(this.db);
         const newsList = [];
 
         for (let i = 0; i < arrVal.length; i++) {
             const val = arrVal[i];
-            if (val && val.dt >= fromDate && val.dt <= toDate) {
+            if (val && val.date >= fromDate && val.date <= toDate) {
                 newsList.push(val);
             }
         }
@@ -60,9 +67,11 @@ export class noSQL {
     }
 
     // Get filter items
-    getAllFilter(clbFilter) {
+    getAll(clbFilter) {
         const arrVal = Object.values(this.db);
         const newsList = [];
+
+        if (!clbFilter) return arrVal;
 
         for (let i = 0; i < arrVal.length; i++) {
             const val = arrVal[i];
@@ -75,7 +84,14 @@ export class noSQL {
     }
 
     // Dump database to a file
-    getDumpDatabase = async () => await this.readFileAsync(this.dumpFilePath);
+    getDumpDatabase = () => {
+        try {
+            return fs.readFileSync(this.dumpFilePath);
+        } catch (e) {
+            return null;
+        }
+    }
+    getDumpDatabaseAsync = async () => await this.readFileAsync(this.dumpFilePath);
 
     async dumpDatabase() {
         await this.writeFileAsync(this.dumpFilePath, JSON.stringify(this.db, null, 2));
@@ -106,7 +122,7 @@ export class noSQL {
     };
 
     // Dump database to a file
-    // async getDumpDatabase(table) {
+    // async getDumpDatabaseAsync(table) {
     //     const keys = await this.keysAsync(`${table}:*`);
     //     const data = {};
     //
@@ -135,9 +151,9 @@ export class noSQL {
 //         type: 'article',
 //         from: 'source1',
 //         textHadled: 'Processed text.',
-//         arrSrcImg: ['https://example.com/image1.jpg'],
-//         srcAudio: '',
-//         srcVideo: ''
+//         arrImg: ['https://example.com/image1.jpg'],
+//         isAudioExist: '',
+//         isVideoExist: ''
 //     });
 //
 //     // Getting news items

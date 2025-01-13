@@ -4,7 +4,7 @@ import 'photoswipe/style.css';
 import ListTask from "./Components/ListTask/ListTask.tsx";
 import {Button, ButtonGroup, Modal} from "react-bootstrap";
 import Dialog from "../Dialog/Dialog";
-import {getArrTask, getNameAndDate, updateDB} from "../../utils.ts";
+import {getArrTask, updateTaskDB} from "../../utils.ts";
 import axios from "axios";
 import global from "../../../global.ts";
 import ButtonSpinner from "../ButtonSpinner/ButtonSpinner.tsx";
@@ -48,7 +48,7 @@ export default function Tools({news, listHostToData}) {
             const {data: text} = await axios.post(global.host + 'gpt', {type, text: textContent, prompt});
             setTitleGPT(text)
 
-            updateDB({arrTaskList, title: text, date: (new Date()).getTime()});
+            updateTaskDB({arrTaskList, title: text, date: (new Date()).getTime()});
 
             type === 'yandex' && setStateLoadYaGPT(0)
             type === 'arli' && setStateLoadArliGPT(0)
@@ -89,15 +89,7 @@ export default function Tools({news, listHostToData}) {
     let onChangeData = (arr: any[]) => {
         console.log(arr);
 
-        arr = arr.map(news => {
-            if (news?.name) return news;
-            const {id, url, dt, title, titleEn, option, done} = news;
-            const {date, name} = getNameAndDate(dt, url, id, listHostToData, titleEn);
-            const from = listHostToData[(new URL(url)).host].from;
-            return {id, date, name, title, from, option, done}
-        });
-
-        updateDB({arrTaskList});
+        updateTaskDB({arrTaskList:arr, srcImgTitle});
 
         setTitleGPT('')
         setArrTaskList(arr);

@@ -1,10 +1,9 @@
-import {connectDB, downloadImages, getListNews, getListTask, ImageDownloadProcessor, NewsUpdater, overlayImages} from "./parser.js";
+import {downloadImages, getListNews, getListTask, getPathSourceNews, ImageDownloadProcessor, NewsUpdater, overlayImages} from "./parser.js";
 import express from "express";
 import {fileURLToPath} from 'url';
 import path, {dirname} from 'path';
 import {config} from "dotenv";
 import bodyParser from "body-parser";
-import translate from "@mgcodeur/super-translator";
 import {
     checkFileExists,
     createAndCheckDir,
@@ -20,11 +19,8 @@ import {
 import {buildAllNews, buildAnNews} from "./video.js";
 import {arliGPT, mistralGPT, yandexGPT, yandexToSpeech} from "./ai.js";
 import multer from "multer";
-import theGuardian from "./parsers/theGuardian.js";
-import russiaToday from "./parsers/russiaToday.js";
 import dzen from "./parsers/dzen.js";
 import {noSQL} from "./noSQL.js";
-import redis from "jsdom/lib/jsdom/living/xhr/xhr-utils.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -35,26 +31,9 @@ const port = +process.env.PORT || +PORT;
 global.port = port
 
 
-// createWebSocketServer(webServer);
-
-async function updateDB(typeCond, values, condition, table, db) {
-    const lop = typeCond ? typeCond : 'AND'
-    const paramSet = Object.keys(values).join(' = ? ') + ' = ?'
-    const arrSet = Object.values(values)
-    const paramWhere = Object.keys(condition).join(' = ? ' + lop) + ' = ?'
-    const arrWhere = Object.values(condition)
-    const arrVal = [].concat(arrSet, arrWhere)
-    let reqSQL = `UPDATE ${table ? table : 'news'} SET ${paramSet} WHERE ${paramWhere}`;
-
-    const result = await db.run(reqSQL, arrVal);
-    console.log(result)
-}
-
 async function createWebServer(port) {
-    // const dbNews = await connectDB();
-    const client = await redis.createClient();
-    const dbNews = new noSQL('dbNews.json');
-    const dbTask = new noSQL('dbTask.json');
+    const dbNews = new noSQL('./dbNews.json');
+    const dbTask = new noSQL('./dbTask.json');
 
     const app = express();
     const router = express.Router();
@@ -74,7 +53,7 @@ async function createWebServer(port) {
     const listNewsSrc = {
         // TG: new NewsUpdater({host: 'https://www.theguardian.com', dbNews, ...theGuardian}),
         // RT: new NewsUpdater({host: 'https://russian.rt.com', dbNews, ...russiaToday}),
-        DZ: new NewsUpdater({host: 'https://dzen.ru/news', db: dbNews, ...dzen}),
+        DZ: new NewsUpdater({host: 'https://dzen.ru/news', short: 'DZ', db: dbNews, ...dzen}),
     }
 
     // Настройка статических файлов
@@ -98,7 +77,7 @@ async function createWebServer(port) {
     router.post('/update-db-task', async (req, res) => {
         const {body: news} = req;
         try {
-            dbNews.update(news.id, news)
+            dbTask.update('config', news)
 
             res.status(200).send('ok')
         } catch (error) {
@@ -118,13 +97,14 @@ async function createWebServer(port) {
         }
     })
     router.get('/images', async (req, res) => {
-        const {prompt, max, name, date, id, timeout} = req.query;
+        const {prompt, max, /*name, date,*/ id, timeout} = req.query;
         try {
+            const news = dbNews.getByID(id);
             const ip = new ImageDownloadProcessor()
             const arrUrl = (await ip.getArrImage(prompt)).slice(0, max)
             res.status(200).send({arrUrl, id})
             await downloadImages({
-                arrUrl, outputDir: `./public/public/news/${date}/${name}/`, pfx: '', ext: '.png', count: +max, timeout
+                arrUrl, outputDir: `./public/public/${news.pathSrc}/`, pfx: '', ext: '.png', count: +max, timeout
             })
             global?.messageSocket && global.messageSocket.send({type: 'update-news'})
         } catch (error) {
@@ -132,15 +112,6 @@ async function createWebServer(port) {
         }
     });
 
-    router.post('/update-one-news-type', async (req, res) => {
-        try {
-            const {body: {typeNews, newsSrc, url}} = req;
-            const data = await listNewsSrc[newsSrc].updateOneNewsType(typeNews, url);
-            res.status(200).send(data)
-        } catch (error) {
-            res.status(error.status || 500).send({error: error?.message || error},);
-        }
-    });
     router.post('/remove-news', async (req, res) => {
         try {
             const {body: {id}} = req;
@@ -148,6 +119,15 @@ async function createWebServer(port) {
             const data = await dbNews.del('news', id);
             res.send(data);
             global?.messageSocket?.send({type: 'update-list-news'})
+        } catch (error) {
+            res.status(error.status || 500).send({error: error?.message || error},);
+        }
+    });
+    router.post('/update-one-news-type', async (req, res) => {
+        try {
+            const {body: {typeNews, newsSrc, url}} = req;
+            const data = await listNewsSrc[newsSrc].updateOneNewsType(typeNews, url);
+            res.status(200).send(data)
         } catch (error) {
             res.status(error.status || 500).send({error: error?.message || error},);
         }
@@ -205,19 +185,25 @@ async function createWebServer(port) {
 
     router.post('/build-an-news', async (req, res) => {
         try {
-            const {body: {title, tags, text, name, date, from, addText, id, arrSrcImg}} = req;
-            let filePath = `./public/public/news/${date}/${name}/`
-            await saveTextToFile(filePath + 'title.txt', title)
+            const {body: {id}} = req;
+
+            const news = dbNews.getByID(id);
+            const dur = news.audioLen / (news.secPerFrame ?? 1.5)
+            const _arrImg = Array(Math.ceil(dur / news.arrImg.length)).fill(news.arrImg).flat().splice(0, dur);
+            const arrImg = _arrImg.map(url => (new URL(url)).pathname);
+
+            let filePath = `./public/public/${news.pathSrc}/`
+            await saveTextToFile(filePath + 'title.txt', news.title)
 
             await buildAnNews({
                 dir_ffmpeg: './content/ffmpeg/',
                 dir_content: filePath,
-                arrSrcImg: arrSrcImg.map(src => pathResolveRoot('./public/public/' + src.replaceAll(/\\/g, '/'))),
+                arrImg: arrImg.map(src => pathResolveRoot('./public/public/' + src.replaceAll(/\\/g, '/'))),
                 pathBridge: pathResolveRoot('./content/audio/bridge.mp3'),
                 pathVideoOut: filePath + 'news.mp4',
                 pathLogoMini: pathResolveRoot('./content/img/logo-mini.png'),
-                from,
-                addText
+                from: news.from,
+                textAdd: news.textAdd
             })
 
             res.status(200).send({respID: id});
@@ -250,13 +236,12 @@ async function createWebServer(port) {
                 pathOut: filePathOut + 'news-all.mp4'
             })
 
-            const promiseDB = task.map(({id, option}) => updateDB(null, {
-                option: JSON.stringify({
-                    ...option,
-                    done: true
-                })
-            }, {id}, 'news', dbNews));
-            await Promise.allSettled(promiseDB);
+            // const promiseDB = task.map(({id, option}) => updateDB(null, {
+            //     option: JSON.stringify({
+            //         ...option, done: true
+            //     })
+            // }, {id}, 'news', dbNews));
+            // await Promise.allSettled(promiseDB);
             global?.messageSocket && global.messageSocket.send({type: 'update-news'})
 
             const baseImagePath = pathResolveRoot(`./public/public/` + srcImgTitle);
@@ -275,9 +260,10 @@ async function createWebServer(port) {
 
     router.get('/local-data', async (req, res) => {
         let arrImgUrls, textContent, isExistAudio, isExistVideo;
+        const {id} = req.query;
         try {
-            const {name, date} = req.query;
-            let filePath = `./public/public/news/${date}/${name}/`
+            const news = dbNews.getByID(id);
+            let filePath = `./public/public/${news.pathSrc}/`
 
             const promArrImgUrls = findExtFiles(filePath, 'png');
             const promTextContent = readFileAsync(filePath + 'news.txt');
@@ -301,29 +287,37 @@ async function createWebServer(port) {
     });
 
     router.post('/gpt', async (req, res) => {
-        const {body: {type, text, prompt}} = req;
-
-        switch (type) {
-            case 'yandex':
-                await yandexGPT(prompt, text, res);
-                break;
-            case 'arli':
-                await arliGPT(prompt, text, res);
-                break;
-            case 'mistral':
-                await mistralGPT(prompt, text, res);
-                break;
-            default:
-                await arliGPT(prompt, text, res);
+        const {body: {id, type, text, prompt}} = req;
+        let textGPT = '';
+        try {
+            switch (type) {
+                case 'yandex':
+                    textGPT = await yandexGPT(prompt, text, res);
+                    break;
+                case 'arli':
+                    textGPT = await arliGPT(prompt, text, res);
+                    break;
+                case 'mistral':
+                    textGPT = await mistralGPT(prompt, text, res);
+                    break;
+                default:
+                    textGPT = await arliGPT(prompt, text, res);
+            }
+            // dbNews.update(id, {textGPT: textGPT});
+            res.status(200).send(textGPT);
+        } catch (error) {
+            console.log(error)
+            res.status(error.status || 500).send({error: error?.message || error},);
         }
     });
 
     router.post('/to-speech', async (req, res) => {
 
         try {
-            const {body: {text, name, date, voice, speed}} = req;
+            const {body: {id, text, voice, speed}} = req;
 
-            await yandexToSpeech({text, date, name, voice: voice ?? 'marina', speed: speed ?? 1.4});
+            let news = dbNews.getByID(id);
+            await yandexToSpeech({text, path: news.pathSrc, voice: voice ?? 'marina', speed: speed ?? 1.4});
 
             res.send('ok');
         } catch (error) {
@@ -335,7 +329,7 @@ async function createWebServer(port) {
     });
 
     global.messageSocket = new WEBSocket(webServ, {
-        clbAddConnection: async ({arrActiveConnection}) => {
+        clbAddConnection: async ({ws, arrActiveConnection}) => {
             try {
                 console.log('новый клиент')
             } catch (e) {

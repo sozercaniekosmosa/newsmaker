@@ -56,7 +56,7 @@ const pathAudio = 'out.mp3';
 
 //.\ffmpeg.exe -y -i .\middle.mp4 -i .\news.mp4 -filter_complex "[0:v][1:v]overlay=320:180:shortest=1[v];[0:a][1:a]amix=inputs=2[a]" -map "[v]" -map "[a]" -shortest output.mp4
 
-export const buildAnNews = async ({dir_ffmpeg, dir_content, arrSrcImg, pathBridge, pathLogoMini, from, addText}) => {
+export const buildAnNews = async ({dir_ffmpeg, dir_content, arrImg, pathBridge, pathLogoMini, from, textAdd}) => {
     let prc = 100 / 7, currPrc = 0;
 
     global.messageSocket.send({type: 'progress', data: currPrc += prc})
@@ -64,18 +64,18 @@ export const buildAnNews = async ({dir_ffmpeg, dir_content, arrSrcImg, pathBridg
     const durationSpeech = await video.getDuration('speech.mp3')
 
     global.messageSocket.send({type: 'progress', data: currPrc += prc})
-    await video.addAudioToAudio({pathAudioSrc: 'speech.mp3', pathAudioAdded: pathBridge, pathAudioOut: pathAudio})
+    await video.addAudioToAudio({pathisAudioExist: 'speech.mp3', pathAudioAdded: pathBridge, pathAudioOut: pathAudio})
 
     global.messageSocket.send({type: 'progress', data: currPrc += prc})
     const duration = await video.getDuration(pathAudio)
 
     global.messageSocket.send({type: 'progress', data: currPrc += prc})
-    await video.imageToVideo({arrPathImg: arrSrcImg, duration, pathOut: pathVideo, indexEff: 10})
+    await video.imageToVideo({arrPathImg: arrImg, duration, pathOut: pathVideo})
     // await video.imageToVideo({arrPathImg: await findExtFilesAbs(dir_content, 'png'), duration, pathOut: pathVideo})
 
     global.messageSocket.send({type: 'progress', data: currPrc += prc})
     let arrText = [{text: 'источник\\\: ' + from, pos: {x: '10', y: 'H-th-10'}, param: {size: 15, color: 'white'}}];
-    if (addText) arrText.push({text: addText, pos: {x: '10', y: '10'}, param: {size: 20, color: 'white'}})
+    if (textAdd) arrText.push({text: textAdd, pos: {x: '10', y: '10'}, param: {size: 20, color: 'white'}})
     await video.addTextVideoAudio({pathVideo, arrText})
 
 

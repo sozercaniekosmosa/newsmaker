@@ -21,6 +21,7 @@ export default function ListNews(
 
     }, [])
 
+
     function onSelectTag({target}) {
         if (!target?.dataset?.tag) return
         console.log(target.dataset.tag)
@@ -44,48 +45,41 @@ export default function ListNews(
 
         currID = id;
 
-        setNews({
-            id, url, title: title_ru, tags: tags_ru, text: text_ru, titleEn: title,
-            dt, tagsEn: tags, option, type, index: target.dataset.index, srcName
-        });
+        // setNews({
+        //     id, url, title: title_ru, tags: tags_ru, text: text_ru, titleEn: title,
+        //     dt, tagsEn: tags, option, type, index: target.dataset.index, srcName
+        // });
+        setNews(arrNews[target.dataset.index])
     }
 
     return (
         <div className="scroll-wrapper">
             <div className="n-list ms-1 mb-1" // @ts-ignore
                  upd={update}>
-                {arrNews.map(({id, url, title, tags, text, dt, type, option}, idx) => {
+                {arrNews.map(({arrImg, date, done, from, id, isAudioExist, isVideoExist, tags, text, textGPT, title, type, url}, idx) => {
 
-                    // if (donePre == false && (option && (option.image || option.text || option.audio || option.video))) {
-                    // } else return '';
-                    if (donePre && (!option || !(option.image || option.text || option.audio || option.video))) return '';
-                    if (doneTasks == false && option?.done == true) return '';
+                    if (donePre && (!(isVideoExist.image || textGPT || isAudioExist || isVideoExist))) return '';
+                    if (doneTasks == false && done == true) return '';
                     if (filterTags && !tags.includes(filterTags)) return '';
                     if (typeNews && type != typeNews) return '';
-                    const icon = listHostToData[(new URL(url)).host].icon;
+                    const icon = listHostToData[(new URL(url)).host];
 
                     return (
                         <div className={"n-list__item ps-1" + ((id == currID) ? ' selected' : '')} key={idx}
-                             style={option?.done ? {backgroundColor: 'rgba(151,151,184,0.73)'} : {}}>
+                             style={done ? {backgroundColor: 'rgba(151,151,184,0.73)'} : {}}>
                             <div data-index={idx} data-id={id} onClick={onClickNews}>
-                                {/*<div className="text-ru">{text.replaceAll(/\n/g, '%@%')}</div>*/}
                                 <div className="text-ru">{text}</div>
                                 <div className="tags-ru">{tags}</div>
                                 <img src={icon} className="news-icon me-1" alt={icon}/>
-                                <span>{formatDateTime(new Date(dt), 'dd.mm.yy hh:MM')}</span>&nbsp;
+                                <span>{formatDateTime(new Date(date), 'dd.mm.yy hh:MM')}</span>&nbsp;
                                 <a href={url || ''} target="_blank">ссылка</a>&nbsp;
                                 <span>{toTranslate[type]}</span>
-                                <span className="notranslate">{option?.image?.length ? '🖼️' : ''}</span>
-                                <span className="notranslate">{option?.text ? '📝' : ''}</span>
-                                <span className="notranslate">{option?.audio > 0 ? '🎵' : ''}</span>
-                                <span className="notranslate">{option?.video ? '🎥' : ''}</span>
+                                <span className="notranslate">{arrImg?.length ? '🖼️' : ''}</span>
+                                <span className="notranslate">{textGPT ? '📝' : ''}</span>
+                                <span className="notranslate">{isAudioExist > 0 ? '🎵' : ''}</span>
+                                <span className="notranslate">{isVideoExist ? '🎥' : ''}</span>
                                 <div className="n-list__title title-ru">{title}</div>
                             </div>
-                            {/*<div className="n-list__tags notranslate" onClick={onSelectTag}>*/}
-                            {/*    {tags.replaceAll(/\s?,\s?/g, ',').split(',').map((it, i) => <a key={i} data-tag={it}> #{it}</a>)}*/}
-                            {/*</div><div className="n-list__tags notranslate" onClick={onSelectTag}>*/}
-                            {/*    {tags.replaceAll(/\s?,\s?/g, ',').split(',').map((it, i) => <a key={i} data-tag={it}> #{it}</a>)}*/}
-                            {/*</div>*/}
                         </div>);
                 })}
             </div>

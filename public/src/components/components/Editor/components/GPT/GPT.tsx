@@ -2,48 +2,33 @@ import ButtonSpinner from "../../../ButtonSpinner/ButtonSpinner";
 import React, {useState} from "react";
 import {getSelelected, insertAt} from "../../../../../utils";
 import axios from "axios";
-import {getNameAndDate} from "../../../../utils";
 import globals from "globals";
 import {Button, ButtonGroup} from "react-bootstrap";
 import glob from "../../../../../global.ts";
+import {updateNewsDB} from "../../../../utils.ts";
 
-export default function GPT({news, textGPT, setTextGPT, listHostToData, addText, setAddText}) {
+export default function GPT({news, setNews}) {
     const [prompt, setPrompt] = useState('Выдели основные мысли и сократи текст до 30 слов')
 
-    const [stateLoadYaGPT, setStateLoadYaGPT] = useState(0)
-    const [stateLoadArliGPT, setStateLoadArliGPT] = useState(0)
-    const [stateLoadMistralGPT, setStateLoadMistralGPT] = useState(0)
+    const [stateLoadGPT, setStateLoadGPT] = useState({type: '', state: 0});
 
     async function onGPT(type: string, promptCmd = null) {
-        type === 'yandex' && setStateLoadYaGPT(1)
-        type === 'arli' && setStateLoadArliGPT(1)
-        type === 'mistral' && setStateLoadMistralGPT(1)
+        setStateLoadGPT({type, state: 1})
+
         try {
             let nodeNewsTextContainer = document.querySelector('.news-text');
-
             const textContent = glob.selectedText ?? nodeNewsTextContainer.textContent;
+            const {data: text} = await axios.post(glob.host + 'gpt', {id: news.id, type, text: textContent, prompt: promptCmd ?? prompt});
 
-            const {data: text} = await axios.post(glob.host + 'gpt', {type, text: textContent, prompt: promptCmd ?? prompt});
+            if (text.toLocaleLowerCase().includes('в интернете есть много сайтов с информацией на эту')) throw 'ошибка';
 
-            if (promptCmd) {
-                setTextGPT(textGPT.replace(textContent, text))
-            } else {
-                if (text.toLocaleLowerCase().includes('в интернете есть много сайтов с информацией на эту')) throw 'ошибка';
-                setTextGPT(textGPT + text + '\n\n');
-            }
-            //сохранить в файл
-            const {id, url, dt, title, titleEn} = news;
-            const {date, name} = getNameAndDate(dt, url, id, listHostToData, titleEn);
-            await axios.post(glob.host + 'save-text', {path: `news\\${date}\\${name}\\news.txt`, data: news.text});
+            let textGPT = promptCmd ? news.textGPT.replace(textContent, text) : news.textGPT + text + '\n\n';
+            setNews({...news, textGPT})
 
-            type === 'yandex' && setStateLoadYaGPT(0)
-            type === 'arli' && setStateLoadArliGPT(0)
-            type === 'mistral' && setStateLoadMistralGPT(0)
+            setStateLoadGPT({type, state: 0})
         } catch (e) {
             console.log(e)
-            type === 'yandex' && setStateLoadYaGPT(2)
-            type === 'arli' && setStateLoadArliGPT(2)
-            type === 'mistral' && setStateLoadMistralGPT(2)
+            setStateLoadGPT({type, state: 2})
         }
     }
 
@@ -61,18 +46,19 @@ export default function GPT({news, textGPT, setTextGPT, listHostToData, addText,
                   onChange={e => setPrompt(e.target.value)}/>
         <div className="d-flex flex-row w-100 justify-content-end mb-1">
             <ButtonGroup>
-                <ButtonSpinner className="btn-secondary btn-sm" state={stateLoadYaGPT}
+                <ButtonSpinner className="btn-secondary btn-sm" state={stateLoadGPT.type == 'yandex' ? stateLoadGPT.state : 0}
                                onClick={() => onGPT('yandex')}>ya-GPT</ButtonSpinner>
-                <ButtonSpinner className="btn-secondary btn-sm" state={stateLoadArliGPT}
+                <ButtonSpinner className="btn-secondary btn-sm" state={stateLoadGPT.type == 'arli' ? stateLoadGPT.state : 0}
                                onClick={() => onGPT('arli')}>arli-GPT</ButtonSpinner>
-                <ButtonSpinner className="btn-secondary btn-sm" state={stateLoadMistralGPT}
+                <ButtonSpinner className="btn-secondary btn-sm" state={stateLoadGPT.type == 'mistral' ? stateLoadGPT.state : 0}
                                onClick={() => onGPT('mistral')}>mistral-GPT</ButtonSpinner>
             </ButtonGroup>
         </div>
-        <input type="text" value={addText} onChange={({target}) => setAddText(target.value)} className="rounded border my-1  px-2"
+        <input type="text" value={news.textAdd} onChange={({target}) => setNews({...news, textAdd: target.value})}
+               className="rounded border my-1  px-2"
                placeholder="Дополнительный текст для особых отметок (верний левый угол видео)"/>
-        <textarea className="flex-stretch no-resize border rounded mb-1 p-2" value={textGPT || ''}
-                  onChange={({target}) => setTextGPT(target.value)}/>
-        <div style={{position: 'absolute', bottom: '6px', left: '6px', opacity: .5}}>Слов: {(textGPT.match(/ /g) || []).length}</div>
+        <textarea className="flex-stretch no-resize border rounded mb-1 p-2" value={news.textGPT || ''}
+                  onChange={({target}) => setNews({...news, textGPT: target.value})}/>
+        <div style={{position: 'absolute', bottom: '6px', left: '6px', opacity: .5}}>Слов: {(news.textGPT?.match(/ /g) || []).length}</div>
     </div>
 }

@@ -2,7 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import 'photoswipe/style.css';
 import Gallery from "./components/Gallery/Gallery";
 import axios from "axios";
-import {getData, getNameAndDate, updateDB, updateImageSizes} from "../../utils.ts";
+import {getData, updateTaskDB, updateImageSizes, updateNewsDB} from "../../utils.ts";
 import './style.css'
 import {Button, ButtonGroup, Image, Tab, Tabs} from "react-bootstrap";
 import {addDay, debounce, eventBus, formatDateTime, getSelelected, insertAt} from "../../../utils.ts";
@@ -16,13 +16,6 @@ import DraggableList from "./components/DraggableList/DraggableList.tsx";
 
 let currID, _news;
 
-const writeChange: (news, text, list) => void = debounce(async (news, text, list) => {
-    if (!news) return;
-    const {id, url, dt, title, titleEn} = news;
-    const {date, name} = getNameAndDate(dt, url, id, list, titleEn);
-    await axios.post(glob.host + 'save-text', {path: `news\\${date}\\${name}\\news.txt`, data: text});
-}, 1000)
-
 export default function Editor({arrNews, setArrNews, news, setNews, listHostToData}) {
 
     const [stateUpdateAnNews, setStateUpdateAnNews] = useState(0)
@@ -34,7 +27,7 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
     const [isExistVideo, setIsExistVideo] = useState(false)
     const [stateNewsBuild, setStateNewsBuild] = useState(0)
     const [update, setUpdate] = useState((new Date()).getTime())
-    const [addText, setAddText] = useState('');
+    const [textAdd, setAddText] = useState('');
     const [speedDelta, setSpeedDelta] = useState(0);
     const [audioDuration, setAudioDuration] = useState(0);
     const [addItem, setAddItem] = useState(null);
@@ -56,58 +49,35 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
     }, [])
 
     useEffect(() => {
-        if (!news) return;
-
-        const newNews = {
-            ...news,
-            ...{
-                option: {
-                    image: arrImgAssign,
-                    text: !!textGPT?.length,
-                    audio: audioDuration,
-                    video: isExistVideo,
-                    done: !!news?.option?.done
-                }
-            }
-        }
-        setNews(newNews);
-
-        const arrNewNews = [...arrNews];
-        arrNewNews[news.index] = newNews;
-        setArrNews(arrNewNews);
-
-        (() => updateDB({values: {option: JSON.stringify(newNews.option)}, condition: {id: newNews.id}}))()
-
-    }, [arrImg, textGPT, isExistAudio, isExistVideo, arrImgAssign, audioDuration]);
-
-    useEffect(() => {
-        writeChange(news, textGPT, listHostToData)
+        updateNewsDB(news)
     }, [textGPT]);
 
     useEffect(() => {
         if (!news) return;
 
+        // console.log(news.textHadled)
+
+        updateNewsDB(news)
+
         if (currID === news.id) return;
         currID = news.id;
-        setTextGPT('')
-        setArrImgAssign(news?.option?.image ?? [])
+
+        // setTextGPT('')
+        // setArrImgAssign(news?.option?.image ?? [])
         getLocalSource(news);
 
-        const {id, url, title, tags, text, dt, titleEn} = news;
-        const {date, name} = getNameAndDate(dt, url, id, listHostToData, titleEn);
-        const src = `news\\${date}\\${name}\\`;
-        refAudio.current.querySelector('source').src = src + 'speech.mp3';
+        refAudio.current.querySelector('source').src = news.pathSrc + '/speech.mp3';
         refAudio.current.load();
         refAudio.current.addEventListener('canplay', e => setIsExistAudio(true))
 
-        refVideo.current.querySelector('source').src = src + 'news.mp4?upd=' + new Date().getTime();
+        refVideo.current.querySelector('source').src = news.pathSrc + '/news.mp4?upd=' + new Date().getTime();
         refVideo.current.load();
         refVideo.current.addEventListener('canplay', e => setIsExistVideo(true))
 
-        const _addText = text.match(/^\*.*/m)?.[0] ?? '';
-        setAddText(_addText)
+        // const _addText = news.text.match(/^\*.*/m)?.[0] ?? '';
+        // setAddText(_addText)
 
-        setArrImg([])
+        // setArrImg([])
     }, [news])
 
     useEffect(() => {
@@ -117,36 +87,14 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
     async function onBuild() {
         setStateNewsBuild(1);
         try {
-            const {id, url, title, tags, text, dt, titleEn, srcName, option} = news;
-            const {date, name} = getNameAndDate(dt, url, id, listHostToData, titleEn);
-            const from = listHostToData[(new URL(url)).host].from;
 
-            // a=[1,2,3,4,5]
-            // b=9/1.5
-            // c=Array(Math.ceil(b/a.length)).fill(a).flat().splice(0,b)
-
-            let SecPerFrame = 1.5; //сек на кадр
-            const arr = option.image;
-            const dur = option.audio / SecPerFrame
-            const arrSrcImg = Array(Math.ceil(dur / arr.length)).fill(arr).flat().splice(0, dur);
-
-
-            const {data: {respID}} = await axios.post(glob.host + 'build-an-news', {
-                title: news.title,
-                tags: news.tags,
-                text: news.text,
-                date,
-                name,
-                from: from ?? srcName,
-                addText,
-                id,
-                arrSrcImg: arrSrcImg.map(url => (new URL(url)).pathname)
-            });
+            const secPerFrame = 1.5
+            const {data: {respID}} = await axios.post(glob.host + 'build-an-news', {id: news.id, secPerFrame});
             setStateNewsBuild(0);
 
             if (currID !== +respID) return; //TODO: переделать
 
-            refVideo.current.querySelector('source').src = `/public/news/${date}/${name}/news.mp4?upd=` + new Date().getTime()
+            refVideo.current.querySelector('source').src = news.pathSrc + `/news.mp4?upd=` + new Date().getTime()
             refVideo.current.load()
 
         } catch (e) {
@@ -158,11 +106,11 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
     async function toYASpeech(voice: string, speed: number) {
         setStateText2Speech(1);
         try {
-            const {id, url, title, tags, text, dt, titleEn} = news;
-            const {date, name} = getNameAndDate(dt, url, id, listHostToData, titleEn);
-            await axios.post(glob.host + 'to-speech', {text: textGPT, date, name, voice, speed});
-            refAudio.current.querySelector('source').src = `/public/news/${date}/${name}/speech.mp3?upd=` + new Date().getTime()
+            await axios.post(glob.host + 'to-speech', {id: news.id, text: textGPT, voice, speed});
+            refAudio.current.querySelector('source').src = news.pathSrc + `/speech.mp3?upd=` + new Date().getTime()
             refAudio.current.load()
+            refAudio.current.addEventListener('loadedmetadata', () => setNews((now: {}) => ({...now, isExistAudio: true})))
+            refAudio.current.addEventListener('error', setNews((now: {}) => ({...now, isExistAudio: false})))
             setStateText2Speech(0);
         } catch (e) {
             setStateText2Speech(2);
@@ -170,16 +118,10 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
     }
 
     const getLocalSource = async (news): Promise<void> => {
-        // if (!news) return;
-        // if (_news) return;
-        // debugger
         try {
-            // console.log(news)
 
-            const {id, url, title, tags, text, dt, titleEn} = news;
-            const {date, name} = getNameAndDate(dt, url, id, listHostToData, titleEn);
             const {data: {arrImgUrls: arrSrc, textContent, isExistAudio, isExistVideo,}} =
-                await axios.get(glob.host + 'local-data', {params: {name, date}});
+                await axios.get(glob.host + 'local-data', {params: {id: news.id}});
 
             setTextGPT(textContent);
             setIsExistAudio(isExistAudio)
@@ -223,16 +165,6 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
         }
     }
 
-
-    const initialItems = [
-        'news\\25.01.10\\DZ-KomUdaKat-8ZRY7RrwO\\qZAlBNrRx.png',
-        'news\\25.01.10\\DZ-NewStaVto-zwyhoGurj\\97nrmfhru.png',
-        'news\\25.01.10\\DZ-NewStaVto-zwyhoGurj\\shEKY74qE.png',
-        'news\\25.01.10\\DZ-TelZheRod-cgecVFyy6\\A6ykTKtjx.png',
-        'news\\25.01.09\\DZ-SovTraUol-3aZcvwshS\\cd9GrJvjg.png',
-        'news\\25.01.09\\DZ-EkoPreRos-eQzOFv4wc\\924AVYD2w.png',
-    ];
-
     return (
         !news ? '' : <div className="options d-flex flex-column h-100 notranslate"
             // @ts-ignore
@@ -254,8 +186,7 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
                                 Слов: {(news?.text.match(/ /g) || []).length}</div>
                         </div>
                         <hr/>
-                        <GPT news={news} textGPT={textGPT} setTextGPT={setTextGPT} listHostToData={listHostToData}
-                             setAddText={setAddText} addText={addText}/>
+                        <GPT news={news} setNews={setNews}/>
                         <hr/>
                         <div className="d-flex flex-column w-100">
                             <div className="d-flex flex-row">
@@ -282,11 +213,7 @@ export default function Editor({arrNews, setArrNews, news, setNews, listHostToDa
                     </div>
                 </Tab>
                 <Tab eventKey="images" title="Изображения" style={{flex: 1}}>
-                    <Images news={news} setNews={setNews}
-                            arrImg={arrImg} setArrImg={setArrImg}
-                            arrImgAssign={arrImgAssign} setArrImgAssign={setArrImgAssign}
-                            listHostToData={listHostToData}
-                            maxImage={audioDuration}/>
+                    <Images news={news} setNews={setNews} arrImg={arrImg} setArrImg={setArrImg} maxImage={audioDuration}/>
                 </Tab>
                 <Tab eventKey="build" title="Видео">
                     <div className="flex-stretch" style={{flex: 1}}>

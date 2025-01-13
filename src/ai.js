@@ -21,12 +21,10 @@ export async function yandexGPT(prompt, text, res) {
             params: {folderId: FOLDER_ID,},
         })
 
-        let text = data.result.alternatives.map(({message: {text}}) => text).join('\n')
-
-        res.send(text);
+        return data.result.alternatives.map(({message: {text}}) => text).join('\n')
     } catch (error) {
         console.log(error)
-        res.status(error.status || 500).send({error: error?.message || error},);
+        throw error;
     }
 }
 
@@ -44,11 +42,10 @@ export async function arliGPT(prompt, text, res) {
                 "Authorization": `Bearer ${ARLIAI_API_KEY}`, "Content-Type": "application/json"
             }
         })
-        const answerGPT = data.choices.map(({message: {content}}) => content).join('\n');
-        res.send(answerGPT);
+        return data.choices.map(({message: {content}}) => content).join('\n');
     } catch (error) {
         console.log(error)
-        res.status(error.status || 500).send({error: error?.message || error},);
+        throw error;
     }
 }
 
@@ -66,15 +63,14 @@ export async function mistralGPT(prompt, text, res) {
             }
         });
 
-        const respText = data.choices.map(({message: {content}}) => content).join('\n');
-        res.status(200).send(respText);
+        return data.choices.map(({message: {content}}) => content).join('\n');
     } catch (error) {
         console.log(error)
-        res.status(error.status || 500).send({error: error?.message || error},);
+        throw error;
     }
 }
 
-export async function yandexToSpeech({text, date, name, voice = 'marina', speed = 1.4}) {
+export async function yandexToSpeech({text, path, voice = 'marina', speed = 1.4}) {
     try {
         const iam_token = await getIAM();
         const url = 'https://tts.api.cloud.yandex.net/speech/v1/tts:synthesize';
@@ -92,7 +88,7 @@ export async function yandexToSpeech({text, date, name, voice = 'marina', speed 
             })
         })
 
-        await writeFileAsync(`./public/public/news/${date}/${name}/speech.mp3`, data);
+        await writeFileAsync(`./${path}/speech.mp3`, data);
         console.log('Аудиофайл успешно создан.');
     } catch (error) {
         console.log(error)
