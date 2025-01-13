@@ -27,6 +27,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+*tst.*
 /iam.json
 /.env
 /_urls.json
@@ -34,3 +35,4 @@ dist-ssr
 /content/
 /public/public/news/
 /public/test.html
+/public/public/done/
