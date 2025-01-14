@@ -588,7 +588,10 @@ export class CreateVideo {
     async joinVideoAudio({pathVideo, pathAudio, pathVideoOut = pathVideo, replace = true}) {
 
         let cmdJoinVideoAudio;
-        if (replace) cmdJoinVideoAudio = `${this.dir_ffmpeg}ffmpeg.exe -y -hwaccel auto -i ${this.setDir(pathVideo)} -i ${this.setDir(pathAudio)} -c:v copy -c:a copy ${this.setDir(pathVideo, pathVideoOut === pathVideo ? '_' : '')}`; else cmdJoinVideoAudio = `${this.dir_ffmpeg}ffmpeg.exe -y -hwaccel auto -i ${this.setDir(pathVideo)} -stream_loop -1 -i ${this.setDir(pathAudio)} -filter_complex "[0:a]volume=.5[a0];[1:a]volume=.5[a1];[a0][a1]amerge=inputs=2[a];" -map 0:v -map "[a]" -c:v copy -c:a aac -ac 2 ${this.setDir(pathVideo, pathVideoOut === pathVideo ? '_' : '')}`;
+        if (replace)
+            cmdJoinVideoAudio = `${this.dir_ffmpeg}ffmpeg.exe -y -hwaccel auto -i ${this.setDir(pathVideo)} -i ${this.setDir(pathAudio)} -c:v copy -c:a copy ${this.setDir(pathVideo, pathVideoOut === pathVideo ? '_' : '')}`;
+        else
+            cmdJoinVideoAudio = `${this.dir_ffmpeg}ffmpeg.exe -y -hwaccel auto -i ${this.setDir(pathVideo)} -stream_loop -1 -i ${this.setDir(pathAudio)} -filter_complex "[0:a]volume=.7[a0];[1:a]volume=.5[a1];[a0][a1]amerge=inputs=2[a];" -map 0:v -map "[a]" -c:v copy -c:a aac -ac 2 ${this.setDir(pathVideo, pathVideoOut === pathVideo ? '_' : '')}`;
         // cmdJoinVideoAudio = `${this.dir_ffmpeg}ffmpeg.exe -y -hwaccel auto -i ${this.setDir(pathVideo)} -stream_loop -1 -i ${this.setDir(pathAudio)} -filter_complex "[0:a]volume=.1[a0];[1:a]volume=.1[a1];[a0][a1]amerge=inputs=2[a];[a]dynaudnorm[aout]" -map 0:v -map "[aout]" -c:v copy -c:a aac -ac 2 ${this.setDir(pathVideo, pathVideoOut === pathVideo ? '_' : '')}`;
         // cmdJoinVideoAudio = `${this.dir_ffmpeg}ffmpeg.exe -y -hwaccel auto -i ${this.setDir(pathVideo)} -stream_loop -1 -i ${this.setDir(pathAudio)} -filter_complex "[0:a][1:a]amerge=inputs=2[a]" -map 0:v -map "[a]" -c:v copy -c:a aac -ac 2 ${this.setDir(pathVideo, pathVideoOut === pathVideo ? '_' : '')}`;
         // cmdJoinVideoAudio = `${this.dir_ffmpeg}ffmpeg.exe -y -hwaccel auto -i ${this.setDir(pathVideo)} -i ${this.setDir(pathAudio)} -filter_complex "[0:a][1:a]amix=inputs=2:duration=longest" -c:v copy -c:a aac -b:a 192k ${this.setDir(pathVideo, pathVideoOut === pathVideo ? '_' : '')}`;

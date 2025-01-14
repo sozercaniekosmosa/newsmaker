@@ -10,9 +10,14 @@
   flex-wrap: nowrap;
 }
 
-.scroll-child {
+.scroll-child-y {
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+.scroll-child-x {
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 /*# sourceMappingURL=style.css.map */

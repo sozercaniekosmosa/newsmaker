@@ -21,8 +21,10 @@ const toLocalPos = ({target, clientX, clientY}) => {
 };
 
 
-
-const DraggableList = ({className = '', onChange = (i:any,to:any) => {}, children = null}) => {
+const DraggableList = ({
+                           className = '', onChange = (i: any, to: any) => {
+    }, children = null
+                       }) => {
     const [nodeDragging, setNodeDragging] = useState(null);
     const [selectIndex, setSelectIndex] = useState(null);
     const [isCenter, setIsCenter] = useState(false);
@@ -43,6 +45,7 @@ const DraggableList = ({className = '', onChange = (i:any,to:any) => {}, childre
         const target = event.target;
         const {x, y} = toLocalPos(event);
 
+        if (!event.target.draggable) return;
         if (!nodeDragging) return;
 
         target.classList.remove('dragover');
@@ -82,13 +85,11 @@ const DraggableList = ({className = '', onChange = (i:any,to:any) => {}, childre
         onChange(nodeIndex, targetIndex);
     };
 
-    return (
-        <div>
-            <div ref={nodeContainerRef} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} className={className}>
-                {children}
-            </div>
-        </div>
-    );
+    return <div ref={nodeContainerRef} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} className={className}>
+        {React.Children.map(children, (child, index) => {
+            return React.cloneElement(child, {draggable: true, ['data-index']: index})
+        })}
+    </div>
 };
 
 export default DraggableList;

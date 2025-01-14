@@ -29,9 +29,11 @@ export default function Gallery(props) {
         window.saveAs = async (blob, namePath) => {
 
             try {
+                const path = (namePath.includes('?')) ? namePath.split('?')[0] : namePath;
+
                 const formData = new FormData();
                 formData.append('image', blob);
-                formData.append('path', namePath);
+                formData.append('path', path);
 
                 await axios.post(global.host + 'save-image', formData, {
                     headers: {
@@ -55,8 +57,8 @@ export default function Gallery(props) {
     let onConfirmRemoveImage = async (src: string = null) => {
         try {
             console.log(itemToDelete)
-            // await axios.get(global.host + 'images-remove', {params: {path: src.substring(0, src.lastIndexOf('?')) ?? itemToDelete}});
-            await axios.get(global.host + 'images-remove', {params: {path: src ?? itemToDelete}});
+            const path = (src.includes('?')) ? src.split('?')[0] : src;
+            await axios.get(global.host + 'images-remove', {params: {path}});
         } catch (e) {
             console.log(e)
         }

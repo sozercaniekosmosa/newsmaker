@@ -38,17 +38,23 @@ export class noSQL {
     // get a news item by ID
     getByID = (id) => this.db[id];
 
-    // Update a news item by ID
-    update(id, updatedFields) {
-        const news = this.db[id];
-        if (!news) {
-            throw new Error(`News with ID ${id} not found.`);
+    /**
+     * Update a news item by ID
+     * @param props may be object of [object] !!!must have id-prop
+     */
+    update(props) {
+
+        if (!Array.isArray(props)) props = [props];
+
+        for (let i = 0; i < props.length; i++) {
+            const uf = props[i];
+            const news = this.db[uf.id];
+            if (!news) throw new Error(`News with ID ${id} not found.`);
+
+            this.db[uf.id] = {...news, ...uf};
+            this.debouncedDumpDatabase();
         }
 
-        const updatedNews = {...news, ...updatedFields};
-        this.db[id] = updatedNews;
-        this.debouncedDumpDatabase();
-        return updatedNews;
     }
 
     // Get news with sorting and optional date range filter
@@ -63,7 +69,7 @@ export class noSQL {
             }
         }
 
-        return newsList.sort((a, b) => b.dt - a.dt);
+        return newsList.sort((a, b) => b.date - a.date);
     }
 
     // Get filter items

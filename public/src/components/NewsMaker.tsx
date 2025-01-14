@@ -34,11 +34,34 @@ function NewsMaker() {
     const [doneTasks, setDoneTasks] = useState(false)
     const [donePre, setDonePre] = useState(false)
 
-
     useEffect(() => {
-        eventBus.addEventListener('message-socket', ({type, data}) => {
+        const socketHandler = ({type, data}) => {
             if (type === 'progress') setProgress(data)
+        };
+
+        const localHandler = (({type, data: arrUpdNews}) => {
+            if (type === 'update-news-arr-item') {
+
+                setArrNews((nowArrNews) => {
+                    const newArrNews = [...nowArrNews];
+                    for (let i = 0; i < arrUpdNews.length; i++) {
+                        const index = nowArrNews.findIndex(it => it.id == arrUpdNews[i].id);
+                        if (!~index) throw 'update-news-arr-item: ID does not exist'
+                        newArrNews[index] = arrUpdNews[i];
+                    }
+                    return newArrNews;
+                });
+
+            }
         });
+
+        eventBus.addEventListener('message-socket', socketHandler);
+        eventBus.addEventListener('message-local', localHandler)
+
+        return () => {
+            eventBus.removeEventListener('message-socket', socketHandler);
+            eventBus.removeEventListener('message-local', localHandler);
+        }
     }, [])
 
 
@@ -72,7 +95,7 @@ function NewsMaker() {
                     <Editor news={news} setNews={setNews} listHostToData={listHostToIcon}/>
                 </Pane>
                 <Pane id="P2" size={4}>
-                    <Tools news={news} listHostToData={listHostToIcon}/>
+                    <Tools news={news}/>
                 </Pane>
             </ResizablePanes>
         </div>

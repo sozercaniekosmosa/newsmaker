@@ -5,7 +5,7 @@ import './style.css'
 import Dialog from "../../../Dialog/Dialog";
 import {eventBus} from "../../../../../utils.ts";
 
-const ListComponent = ({arrData, onChangeData}) => {
+const ListComponent = ({arrData, onChangeList}) => {
     const [showModal, setShowModal] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
 
@@ -17,7 +17,7 @@ const ListComponent = ({arrData, onChangeData}) => {
     const confirmDelete = () => {
         if (itemToDelete !== null) {
             arrData.splice(itemToDelete, 1)
-            onChangeData && onChangeData(arrData);
+            onChangeList && onChangeList(arrData);
             setShowModal(false);
             setItemToDelete(null);
         }
@@ -35,7 +35,7 @@ const ListComponent = ({arrData, onChangeData}) => {
         const reorderedItems = Array.from(arrData as []);
         const [movedItem] = reorderedItems.splice(result.source.index, 1);
         reorderedItems.splice(result.destination.index, 0, movedItem);
-        onChangeData && onChangeData(reorderedItems);
+        onChangeList && onChangeList(reorderedItems);
         console.log(reorderedItems)
     };
 
@@ -53,7 +53,7 @@ const ListComponent = ({arrData, onChangeData}) => {
                                             ref={provided.innerRef}{...provided.draggableProps}{...provided.dragHandleProps}
                                             className="d-flex justify-content-between align-items-center px-1 py-1 m-0">
                                             <div className="text-truncate pe-1" title={title}>{title}</div>
-                                            <Button variant="secondary btn-sm p-0" style={{height:'27px', width:'27px', flex:'none'}}
+                                            <Button variant="secondary btn-sm p-0" style={{height: '27px', width: '27px', flex: 'none'}}
                                                     onClick={() => handleDelete(index)}>X</Button>
                                         </ListGroup.Item>
                                     )}

@@ -61,7 +61,6 @@ export const buildAnNews = async ({dir_ffmpeg, dir_content, arrImg, pathBridge, 
 
     global.messageSocket.send({type: 'progress', data: currPrc += prc})
     const video = new CreateVideo({dir_ffmpeg, dir_content});
-    const durationSpeech = await video.getDuration('speech.mp3')
 
     global.messageSocket.send({type: 'progress', data: currPrc += prc})
     await video.addAudioToAudio({pathisAudioExist: 'speech.mp3', pathAudioAdded: pathBridge, pathAudioOut: pathAudio})

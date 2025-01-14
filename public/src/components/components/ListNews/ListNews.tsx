@@ -12,7 +12,7 @@ export default function ListNews(
 
     useEffect(() => {
         eventBus.addEventListener('message-socket', ({type}) => {
-            if (type === 'update-news') setUpdate((new Date()).getTime());
+            // if (type === 'update-news') setUpdate((new Date()).getTime());
         })
 
         // eventBus.addEventListener('build-all-news', () => {
@@ -74,10 +74,12 @@ export default function ListNews(
                                 <span>{formatDateTime(new Date(date), 'dd.mm.yy hh:MM')}</span>&nbsp;
                                 <a href={url || ''} target="_blank">ссылка</a>&nbsp;
                                 <span>{toTranslate[type]}</span>
-                                <span className="notranslate">{arrImg?.length ? '🖼️' : ''}</span>
-                                <span className="notranslate">{textGPT ? '📝' : ''}</span>
-                                <span className="notranslate">{audioDur > 0 ? '🎵' : ''}</span>
-                                <span className="notranslate">{videoDur > 0 ? '🎥' : ''}</span>
+                                <div className="d-flex flex-row">
+                                    <span className="notranslate">{arrImg?.length ? '🖼️' : ''}</span>
+                                    <span className="notranslate">{textGPT ? '📝' : ''}</span>
+                                    <span className="notranslate">{audioDur > 0 ? '🎵' : ''}</span>
+                                    <span className="notranslate">{videoDur > 0 ? '🎥' : ''}</span>
+                                </div>
                                 <div className="n-list__title title-ru">{title}</div>
                             </div>
                         </div>);

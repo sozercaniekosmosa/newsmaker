@@ -75,7 +75,7 @@ export default function Editor({news, setNews, listHostToData}) {
     }, [news])
 
     useEffect(() => {
-        if(!news) return
+        if (!news) return
         (() => getLocalImage(news.id, setArrImg))();
     }, [update])
 
@@ -137,11 +137,14 @@ export default function Editor({news, setNews, listHostToData}) {
         !news ? '' : <div className="options d-flex flex-column h-100 notranslate"
             // @ts-ignore
                           upd={update}>
+            <Button hidden={false} variant="secondary btn-sm mb-1 notranslate"
+                    onClick={() => axios.post(glob.host + 'open-dir', {id: news.id})}>Открыть</Button>
+
+            <Button hidden={true} variant="secondary btn-sm mb-1 notranslate" onClick={onUpdateAnNews}>Обновить</Button>
+            <Button hidden={true} variant="secondary btn-sm mb-1 notranslate" onClick={onRemoveNews}>X</Button>
             <div className="d-flex flex-row">
             <textarea className="options__title d-flex flex-row flex-stretch input-text border rounded mb-1 p-2" value={news?.title || ''}
                       onChange={({target}) => setNews(was => ({...was, title: target.value}))}/>
-                <Button hidden={true} variant="secondary btn-sm mb-1 notranslate" onClick={onUpdateAnNews}>Обновить</Button>
-                <Button hidden={true} variant="secondary btn-sm mb-1 notranslate" onClick={onRemoveNews}>X</Button>
             </div>
             <Tabs defaultActiveKey="original" className="mb-1">
                 <Tab eventKey="original" title="Текст" style={{flex: 1}} className="">

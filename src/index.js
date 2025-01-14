@@ -21,6 +21,7 @@ import {arliGPT, mistralGPT, yandexGPT, yandexToSpeech} from "./ai.js";
 import multer from "multer";
 import dzen from "./parsers/dzen.js";
 import {noSQL} from "./noSQL.js";
+import {execFile} from "child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -66,7 +67,7 @@ async function createWebServer(port) {
     router.post('/update-db-news', async (req, res) => {
         const {body: news} = req;
         try {
-            dbNews.update(news.id, news)
+            dbNews.update(news)
 
             res.status(200).send('ok')
         } catch (error) {
@@ -75,9 +76,9 @@ async function createWebServer(port) {
     });
 
     router.post('/update-db-task', async (req, res) => {
-        const {body: news} = req;
+        const {body: taskProp} = req;
         try {
-            dbTask.update('config', news)
+            dbTask.update({id: 'config', ...taskProp})
 
             res.status(200).send('ok')
         } catch (error) {
@@ -215,38 +216,33 @@ async function createWebServer(port) {
     });
     router.post('/build-all-news', async (req, res) => {
         try {
-            const {body: {task, title, srcImgTitle}} = req;
+            // const {body} = req;
 
-            const arrPath = task.map(({id, title, name, date}) => {
-                const filePath = `./public/public/news/${date}/${name}/`
+            const {arrTask, title, date, srcImg} = dbTask.getByID('config')
+
+            const arrPath = arrTask.map(({pathSrc}) => {
+                const filePath = `./public/public/${pathSrc}/`
                 return pathResolveRoot(filePath + 'news.mp4')
             })
-            let filePathOut = `./public/public/done/` + formatDateTime(/*TODO:нужно получать дату с верха*/new Date(), 'yy-mm-dd_hh_MM_ss' + '/');
+            let filePathOut = `./public/public/done/` + formatDateTime(new Date(date), 'yy-mm-dd_hh_MM_ss' + '/');
             let filePathIntro = pathResolveRoot('./content/video/intro.mp4');
             let filePathEnd = pathResolveRoot('./content/video/end.mp4');
 
             await createAndCheckDir(filePathOut + '.mp4');
-            await saveTextToFile(filePathOut + 'news-all.txt', title)
 
-            await buildAllNews({
-                dir_ffmpeg: './content/ffmpeg/',
-                dir_content: `./public/public/done/`,
-                arrPathVideo: arrPath,
-                pathIntro: filePathIntro,
-                pathEnd: filePathEnd,
-                pathBackground: pathResolveRoot('./content/audio/back-05.mp3'),
-                pathOut: filePathOut + 'news-all.mp4'
-            })
+            // await buildAllNews({
+            //     dir_ffmpeg: './content/ffmpeg/',
+            //     dir_content: `./public/public/done/`,
+            //     arrPathVideo: arrPath,
+            //     pathIntro: filePathIntro,
+            //     pathEnd: filePathEnd,
+            //     pathBackground: pathResolveRoot('./content/audio/back-05.mp3'),
+            //     pathOut: filePathOut + 'news-all.mp4'
+            // })
 
-            // const promiseDB = task.map(({id, option}) => updateDB(null, {
-            //     option: JSON.stringify({
-            //         ...option, done: true
-            //     })
-            // }, {id}, 'news', dbNews));
-            // await Promise.allSettled(promiseDB);
             global?.messageSocket && global.messageSocket.send({type: 'update-news'})
 
-            const baseImagePath = pathResolveRoot(`./public/public/` + srcImgTitle);
+            const baseImagePath = pathResolveRoot(`./public/public/` + (new URL(srcImg)).pathname);
             const overlayImagePath = pathResolveRoot('./content/img/logo-lg.png');
             const outputPath = filePathOut + 'title.png';
             const x = 0; // Координата X для наложения
@@ -309,6 +305,36 @@ async function createWebServer(port) {
 
             let news = dbNews.getByID(id);
             await yandexToSpeech({text, path: news.pathSrc, voice: voice ?? 'marina', speed: speed ?? 1.4});
+
+            res.send('ok');
+        } catch (error) {
+            console.log(error)
+            res.status(error.status || 500).send({error: error?.message || error},);
+        }
+
+
+    });
+    router.post('/open-dir', async (req, res) => {
+
+        try {
+            const {body: {id}} = req;
+            let folderPath;
+
+            if (id) {
+                const news = dbNews.getByID(id);
+                folderPath = pathResolveRoot(`./public/public/${news.pathSrc}/`);
+            } else {
+                const {arrTask, title, date, srcImg} = dbTask.getByID('config')
+                folderPath = pathResolveRoot(`./public/public/done/` + formatDateTime(new Date(date), 'yy-mm-dd_hh_MM_ss' + '/'));
+            }
+
+            try {
+                execFile('explorer.exe', [folderPath], {stdio: 'ignore'});
+                console.log('Папка открыта в проводнике');
+            } catch (error) {
+                console.error(`Ошибка при открытии папки: ${error}`);
+            }
+
 
             res.send('ok');
         } catch (error) {
