@@ -36,3 +36,4 @@ dist-ssr
 /public/public/news/
 /public/test.html
 /public/public/done/
+/db*.json

@@ -416,7 +416,7 @@ export class NewsUpdater {
             let arrListUrl = await Promise.allSettled(promiseArrUrl);
             arrListUrl = arrListUrl.map(it => it.value)
 
-            await writeData('./_urls.json', JSON.stringify(arrListUrl));
+            // await writeData('./_urls.json', JSON.stringify(arrListUrl));
 
             const _DEBUG_ = false;
             let promises = [];
