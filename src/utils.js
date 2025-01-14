@@ -635,9 +635,9 @@ export class CreateVideo {
         console.log(`change volume: ${pathFile}+${pathFile}`)
     }
 
-    async concatVideo({arrPathVideo, pathOut = 'out.mp4', isExistAudio = true}) {
+    async concatVideo({arrPathVideo, pathOut = 'out.mp4', isAudioExist = true}) {
         const listInVideo = arrPathVideo.map(it => `-i ${this.setDir(it)}`).join(' ')
-        const cmd = `${this.dir_ffmpeg}ffmpeg.exe -y -hwaccel auto ${listInVideo} -filter_complex "concat=n=${arrPathVideo.length}:v=1:a=${isExistAudio ? 1 : 0}" -vn ${this.setDir(pathOut)}`
+        const cmd = `${this.dir_ffmpeg}ffmpeg.exe -y -hwaccel auto ${listInVideo} -filter_complex "concat=n=${arrPathVideo.length}:v=1:a=${isAudioExist ? 1 : 0}" -vn ${this.setDir(pathOut)}`
 
         await this.execCmd(cmd);
         console.log(`concat video: ${arrPathVideo.join(', ')}`)

@@ -25,8 +25,6 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
     const [stateImageLoad, setStateImageLoad] = useState(0)
     const [quantity, setQuantity] = useState(5);
     const [timeout, setTimeout] = useState(3);
-    const [srcImgTitle, setSrcImgTitle] = useState('');
-    // const [arrItems, setArrItems] = useState([]);
 
     useEffect(() => {
         if (currID == news?.id) return;
@@ -38,10 +36,10 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
     async function requestImages() {
         setStateImageLoad(1);
         try {
-            const {id, url, title, tags, text, dt, titleEn} = news;
+            const {id, tags} = news;
 
             const selectedText = glob.selectedText;
-            const prompt = selectedText ?? news.tagsEn;
+            const prompt = selectedText ?? tags;
 
             const {data: {arrUrl, id: respID}} = await axios.get(glob.host + 'images',
                 {params: {prompt, max: quantity, id, timeout: timeout * 1000}});
@@ -68,8 +66,8 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
     }
 
     return <div className="d-flex flex-column w-100 notranslate position-relative">
-                        <textarea className="options__tags d-flex flex-row border rounded mb-1 p-2 notranslate" value={news?.tagsEn || ''}
-                                  onChange={({target}) => setNews(was => ({...was, tagsEn: target.value}))} style={{height: '5em'}}/>
+                        <textarea className="options__tags d-flex flex-row border rounded mb-1 p-2 notranslate" value={news?.tags || ''}
+                                  onChange={({target}) => setNews(was => ({...was, tags: target.value}))} style={{height: '5em'}}/>
         <div className="d-flex flex-row mb-1">
             <ButtonSpinner className="btn-secondary btn-sm" state={stateImageLoad}
                            onClick={requestImages}>
@@ -90,11 +88,12 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
         </div>
         <div className="flex-stretch operation__img border rounded mb-1" onDrop={() => {
             if (!global.draggingElement) return;
-            let src = global.draggingElement.src.split('/').at(-1);
+            //@ts-ignore
+            let src = (new URL(global.draggingElement.src)).pathname.split('/').at(-1);
             setNews({...news, arrImg: [...news.arrImg, src]});
             global.draggingElement = null;
         }} onDragOver={e => e.preventDefault()}>
-            <DraggableList addItem={srcImgTitle} onChange={onChangeSort} className="d-flex flex-wrap flex-stretch">
+            <DraggableList onChange={onChangeSort} className="d-flex flex-wrap flex-stretch">
                 {news?.arrImg.map((item, index) => {
                     return <img key={index} className="sortable border" draggable
                                 src={'./' + news.pathSrc + '/' + item}

@@ -88,7 +88,7 @@ export async function yandexToSpeech({text, path, voice = 'marina', speed = 1.4}
             })
         })
 
-        await writeFileAsync(`./${path}/speech.mp3`, data);
+        await writeFileAsync(`./public/public/${path}/speech.mp3`, data);
         console.log('Аудиофайл успешно создан.');
     } catch (error) {
         console.log(error)

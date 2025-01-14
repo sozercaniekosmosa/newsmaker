@@ -97,7 +97,7 @@ async function createWebServer(port) {
         }
     })
     router.get('/images', async (req, res) => {
-        const {prompt, max, /*name, date,*/ id, timeout} = req.query;
+        const {prompt, max, id, timeout} = req.query;
         try {
             const news = dbNews.getByID(id);
             const ip = new ImageDownloadProcessor()
@@ -188,9 +188,11 @@ async function createWebServer(port) {
             const {body: {id}} = req;
 
             const news = dbNews.getByID(id);
-            const dur = news.audioLen / (news.secPerFrame ?? 1.5)
+            const dur = news.audioDur / (news.secPerFrame ?? 1.5)
             const _arrImg = Array(Math.ceil(dur / news.arrImg.length)).fill(news.arrImg).flat().splice(0, dur);
-            const arrImg = _arrImg.map(url => (new URL(url)).pathname);
+            const arrImg = _arrImg.map(imgName => {
+                return `./public/public/${news.pathSrc}/` + imgName;
+            });
 
             let filePath = `./public/public/${news.pathSrc}/`
             await saveTextToFile(filePath + 'title.txt', news.title)
@@ -198,7 +200,7 @@ async function createWebServer(port) {
             await buildAnNews({
                 dir_ffmpeg: './content/ffmpeg/',
                 dir_content: filePath,
-                arrImg: arrImg.map(src => pathResolveRoot('./public/public/' + src.replaceAll(/\\/g, '/'))),
+                arrImg: arrImg.map(src => pathResolveRoot(src.replaceAll(/\\/g, '/'))),
                 pathBridge: pathResolveRoot('./content/audio/bridge.mp3'),
                 pathVideoOut: filePath + 'news.mp4',
                 pathLogoMini: pathResolveRoot('./content/img/logo-mini.png'),
@@ -259,30 +261,19 @@ async function createWebServer(port) {
     });
 
     router.get('/local-data', async (req, res) => {
-        let arrImgUrls, textContent, isExistAudio, isExistVideo;
+        let arrImgUrls, textContent, isAudioExist, isExistVideo;
         const {id} = req.query;
         try {
             const news = dbNews.getByID(id);
             let filePath = `./public/public/${news.pathSrc}/`
 
-            const promArrImgUrls = findExtFiles(filePath, 'png');
-            const promTextContent = readFileAsync(filePath + 'news.txt');
-            const promIsExistAudio = checkFileExists(filePath + 'speech.mp3');
-            const promIsExistVideo = checkFileExists(filePath + 'news.mp4');
-
-            [arrImgUrls, textContent, isExistAudio, isExistVideo] = await Promise.allSettled([promArrImgUrls, promTextContent, promIsExistAudio, promIsExistVideo])
-            arrImgUrls = arrImgUrls.value.map(path => path.split('\\').splice(2).join('\\'))
+            const _arrImgUrls = await findExtFiles(filePath, 'png');
+            arrImgUrls = _arrImgUrls.map(path => path.split('\\').splice(2).join('\\'))
 
         } catch (error) {
-            // res.status(error.status || 500).send({error: error?.message || error},);
             console.error(error.message)
         } finally {
-            res.status(200).send({
-                arrImgUrls: arrImgUrls,
-                textContent: textContent?.value?.toString() ?? '',
-                isExistAudio: isExistAudio.value,
-                isExistVideo: isExistVideo.value
-            });
+            res.status(200).send(arrImgUrls);
         }
     });
 

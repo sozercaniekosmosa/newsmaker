@@ -22,7 +22,7 @@ const toLocalPos = ({target, clientX, clientY}) => {
 
 
 
-const DraggableList = ({addItem, className = '', onChange = (i:any,to:any) => {}, children = null}) => {
+const DraggableList = ({className = '', onChange = (i:any,to:any) => {}, children = null}) => {
     const [nodeDragging, setNodeDragging] = useState(null);
     const [selectIndex, setSelectIndex] = useState(null);
     const [isCenter, setIsCenter] = useState(false);
@@ -31,11 +31,6 @@ const DraggableList = ({addItem, className = '', onChange = (i:any,to:any) => {}
     const [_target, setTarget] = useState(null);
 
     const nodeContainerRef = useRef(null);
-
-    // useEffect(() => {
-    //     if (!addItem) return;
-    //     setArrItems([...arrItems, addItem])
-    // }, [addItem]);
 
     const handleDragStart = (event) => {
         const target = event.target;

@@ -69,12 +69,7 @@ function NewsMaker() {
                     />
                 </Pane>
                 <Pane id="P1" size={9}>
-                    <Editor
-                        news={news} setNews={setNews}
-                        arrNews={arrNews}
-                        setArrNews={setArrNews}
-                        listHostToData={listHostToIcon}
-                    />
+                    <Editor news={news} setNews={setNews} listHostToData={listHostToIcon}/>
                 </Pane>
                 <Pane id="P2" size={4}>
                     <Tools news={news} listHostToData={listHostToIcon}/>

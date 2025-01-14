@@ -152,8 +152,6 @@ export class noSQL {
 //         from: 'source1',
 //         textHadled: 'Processed text.',
 //         arrImg: ['https://example.com/image1.jpg'],
-//         isAudioExist: '',
-//         isVideoExist: ''
 //     });
 //
 //     // Getting news items

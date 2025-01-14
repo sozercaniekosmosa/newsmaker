@@ -487,8 +487,8 @@ export class NewsUpdater {
                 text, textGPT: null, textAdd: null,
                 pathSrc: getPathSourceNews({id, title, date, short: this.short}), //путь до ресурсной директории
                 arrImg: [], secPerFrame: 1.5,
-                isAudioExist: null, audioLen: 0,
-                isVideoExist: null,
+                audioDur: 0,
+                videoDur: 0,
                 done: false,
             };
 
