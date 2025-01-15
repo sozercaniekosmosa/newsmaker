@@ -4,7 +4,7 @@ import {JSDOM, VirtualConsole} from "jsdom";
 import randUserAgent from "random-useragent";
 import {CreateVideo, cyrb53, removeFragmentsFromUrl, toShortString, writeData} from "./utils.js";
 import {HttpsProxyAgent} from "https-proxy-agent";
-import {Database} from "./db.js";
+import {Database} from "./DB/SQLight.js";
 import sharp from "sharp";
 import {config} from "dotenv";
 import {formatDateTime, translit} from "./utils.js";

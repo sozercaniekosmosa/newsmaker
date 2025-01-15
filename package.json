@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "srv": "npx tsx watch ./src",
-    "_srv": "node src/index.js"
+    "_srv": "node src/index.js",
+    "__srv": "node --inspect ./node_modules/tsx/dist/cli.js watch ./src",
+    "___srv": "ts-node-dev --inspect --respawn ./src"
   },
   "keywords": [],
   "author": "",
@@ -28,6 +30,10 @@
     "random-useragent": "^0.5.0",
     "react-draggable": "^4.4.6",
     "sharp": "^0.33.5",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "tsx": "^4.19.2"
+  },
+  "devDependencies": {
+    "ts-node-dev": "^2.0.0"
   }
 }
