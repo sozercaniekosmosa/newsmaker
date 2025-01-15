@@ -230,15 +230,15 @@ async function createWebServer(port) {
 
             await createAndCheckDir(filePathOut + '.mp4');
 
-            // await buildAllNews({
-            //     dir_ffmpeg: './content/ffmpeg/',
-            //     dir_content: `./public/public/done/`,
-            //     arrPathVideo: arrPath,
-            //     pathIntro: filePathIntro,
-            //     pathEnd: filePathEnd,
-            //     pathBackground: pathResolveRoot('./content/audio/back-05.mp3'),
-            //     pathOut: filePathOut + 'news-all.mp4'
-            // })
+            await buildAllNews({
+                dir_ffmpeg: './content/ffmpeg/',
+                dir_content: `./public/public/done/`,
+                arrPathVideo: arrPath,
+                pathIntro: filePathIntro,
+                pathEnd: filePathEnd,
+                pathBackground: pathResolveRoot('./content/audio/back-05.mp3'),
+                pathOut: filePathOut + 'news-all.mp4'
+            })
 
             global?.messageSocket && global.messageSocket.send({type: 'update-news'})
 
