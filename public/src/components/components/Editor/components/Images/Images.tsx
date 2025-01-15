@@ -41,7 +41,7 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
             const selectedText = glob.selectedText;
             const prompt = selectedText ?? tags;
 
-            const {data: {arrUrl, id: respID}} = await axios.get(glob.host + 'images',
+            const {data: {arrUrl, id: respID}} = await axios.get(glob.hostAPI + 'images',
                 {params: {prompt, max: quantity, id, timeout: timeout * 1000}});
             setStateImageLoad(0)
 

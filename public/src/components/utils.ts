@@ -27,12 +27,12 @@ export function translit(str) {
 }
 
 export let getTasks = async () => {
-    let {data} = await axios.get(glob.host + 'list-task' + '?upd=' + new Date().getTime());
+    let {data} = await axios.get(glob.hostAPI + 'list-task' + '?upd=' + new Date().getTime());
     return data;
 }
 
 export let getData = async (from, to) => {
-    let {data} = await axios.get(glob.host + 'list-news' + '?upd=' + new Date().getTime(), {
+    let {data} = await axios.get(glob.hostAPI + 'list-news' + '?upd=' + new Date().getTime(), {
         params: {
             from: (new Date(from)).getTime(),
             to: (new Date(to)).getTime() + 3600 * 24 * 1000
@@ -51,7 +51,7 @@ type UpdateDBParams = {
 export const updateTaskDBForced = async (task: object) => {
     if (!task) return;
     try {
-        await axios.post(glob.host + 'update-db-task', task);
+        await axios.post(glob.hostAPI + 'update-db-task', task);
     } catch (e) {
         console.log(e)
     }
@@ -60,7 +60,7 @@ export const updateTaskDBForced = async (task: object) => {
 export const updateTaskDB: (task: object) => void = debounce(async (task: object) => {
     if (!task) return;
     try {
-        await axios.post(glob.host + 'update-db-task', task);
+        await axios.post(glob.hostAPI + 'update-db-task', task);
     } catch (e) {
         console.log(e)
     }
@@ -68,7 +68,7 @@ export const updateTaskDB: (task: object) => void = debounce(async (task: object
 export const updateNewsDB: (news: object) => any = debounce(async (news: object) => {
     if (!news) return null;
     try {
-        await axios.post(glob.host + 'update-db-news', news);
+        await axios.post(glob.hostAPI + 'update-db-news', news);
     } catch (e) {
         console.log(e)
     }

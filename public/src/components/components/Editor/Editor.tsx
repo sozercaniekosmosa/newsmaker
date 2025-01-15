@@ -13,22 +13,34 @@ import 'tui-image-editor/dist/tui-image-editor.css';
 
 let currID;
 
+const checkResourceAvailability = async (src: string) => {
+    try {
+        const response = await fetch(src, {method: 'HEAD'});
+        return response.ok;
+    } catch (error) {
+        console.log('Ошибка загрузки видео:', error);
+        return false;
+    }
+};
+
 function updateMedia(node, src, setNews, propName) {
-    setNews((now: {}) => ({...now, [propName]: 0}))
-    node.addEventListener('loadedmetadata', (e) => {
-        setNews((now: {}) => ({...now, [propName]: (e.target as HTMLAudioElement).duration}));
-    })
-    node.addEventListener('error', () => {
-        setNews((now: {}) => ({...now, [propName]: 0}))
-    })
-    node.querySelector('source').src = src + '?upd=' + new Date().getTime();
-    node.load()
+    (async () => {
+        const res = await checkResourceAvailability(glob.host + src)
+
+        if (res) {
+            node.addEventListener('loadedmetadata', e => setNews((now: {}) => ({...now, [propName]: (e.target as HTMLAudioElement).duration})));
+            node.querySelector('source').src = glob.host + src + '?upd=' + new Date().getTime();
+            node.load()
+        } else {
+            setNews((now: {}) => ({...now, [propName]: 0}))
+        }
+    })()
 }
 
 const getLocalImage = async (id, setArrImg): Promise<void> => {
     try {
-        const {data: arrSrc} = await axios.get(glob.host + 'local-data', {params: {id}});
-        setArrImg(arrSrc.map((src: string) => ({src: src + '?d=' + (new Date()).getTime(), width: 1920, height: 1080})))
+        const {data: arrSrc} = await axios.get(glob.hostAPI + 'local-data', {params: {id}});
+        setArrImg(arrSrc.map((src: string) => ({src, width: 1920, height: 1080})))
     } catch (e) {
         // setArrImg([])
     }
@@ -84,7 +96,7 @@ export default function Editor({news, setNews, listHostToData}) {
         try {
 
             const secPerFrame = 1.5
-            const {data: {respID}} = await axios.post(glob.host + 'build-an-news', {id: news.id, secPerFrame});
+            const {data: {respID}} = await axios.post(glob.hostAPI + 'build-an-news', {id: news.id, secPerFrame});
             setStateNewsBuild(0);
 
             if (currID !== +respID) return; //TODO: переделать
@@ -99,7 +111,7 @@ export default function Editor({news, setNews, listHostToData}) {
     async function toYASpeech(voice: string, speed: number) {
         setStateText2Speech(1);
         try {
-            await axios.post(glob.host + 'to-speech', {id: news.id, text: news.textGPT, voice, speed});
+            await axios.post(glob.hostAPI + 'to-speech', {id: news.id, text: news.textGPT, voice, speed});
             updateMedia(refAudio.current, news.pathSrc + `/speech.mp3`, setNews, 'audioDur');
             setStateText2Speech(0);
         } catch (e) {
@@ -113,7 +125,7 @@ export default function Editor({news, setNews, listHostToData}) {
             const {id, url, title, tags, text, dt, type} = news;
             const short = listHostToData[(new URL(url)).host].short;
 
-            const {data} = await axios.post(glob.host + 'update-one-news-type', {typeNews: type, newsSrc: short, url})
+            const {data} = await axios.post(glob.hostAPI + 'update-one-news-type', {typeNews: type, newsSrc: short, url})
 
             setStateUpdateAnNews(0)
 
@@ -126,7 +138,7 @@ export default function Editor({news, setNews, listHostToData}) {
     async function onRemoveNews() {
         try {
             const {id, url, title, tags, text, dt, type} = news;
-            await axios.post(glob.host + 'remove-news', {id})
+            await axios.post(glob.hostAPI + 'remove-news', {id})
         } catch (e) {
             console.log(e)
             setStateUpdateAnNews(2)
@@ -138,7 +150,7 @@ export default function Editor({news, setNews, listHostToData}) {
             // @ts-ignore
                           upd={update}>
             <Button hidden={false} variant="secondary btn-sm mb-1 notranslate"
-                    onClick={() => axios.post(glob.host + 'open-dir', {id: news.id})}>Открыть</Button>
+                    onClick={() => axios.post(glob.hostAPI + 'open-dir', {id: news.id})}>Открыть</Button>
 
             <Button hidden={true} variant="secondary btn-sm mb-1 notranslate" onClick={onUpdateAnNews}>Обновить</Button>
             <Button hidden={true} variant="secondary btn-sm mb-1 notranslate" onClick={onRemoveNews}>X</Button>

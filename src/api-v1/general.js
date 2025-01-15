@@ -1,3 +1,4 @@
+//import global from "../global.js";
 import {formatDateTime, pathResolveRoot, saveTextToFile} from "../utils.js";
 import {execFile} from "child_process";
 import express from "express";

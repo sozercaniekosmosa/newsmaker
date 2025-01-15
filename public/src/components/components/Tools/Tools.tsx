@@ -59,7 +59,7 @@ export default function Tools({news}) {
 
             const textContent = arrTaskList.map(({title}) => title).join(' | ');
 
-            const {data: text} = await axios.post(global.host + 'gpt', {type, text: textContent, prompt});
+            const {data: text} = await axios.post(global.hostAPI + 'gpt', {type, text: textContent, prompt});
             setTitleGPT(text)
 
             updateTaskDB({title: text});
@@ -79,7 +79,7 @@ export default function Tools({news}) {
         try {
             setStateBuildALl(1)
 
-            await axios.post(global.host + 'build-all-news');
+            await axios.post(global.hostAPI + 'build-all-news');
 
             const arrUpdateDb = arrTaskList.map(it => ({...it, done: true}));
             updateNewsDB(arrUpdateDb);
@@ -121,7 +121,7 @@ export default function Tools({news}) {
     }
 
     let onRemoveAll = () => {
-        const list = {arrTask: [], title: '', date: null, srcImg: ''}
+        const list = {arrTask: [], title: '', date: '', srcImg: ''}
         setDatePublic('');
         setTitleGPT(list.title);
         setArrTaskList(list.arrTask);
@@ -156,7 +156,10 @@ export default function Tools({news}) {
                 </Button>
             </ButtonGroup>
             <ScrollChildY className="my-1 border rounded p-1">
-                <ListTask arrData={arrTaskList} onChangeList={onChangeList}/>
+                <ListTask arrData={arrTaskList} onChangeList={onChangeList} onClick={(e) => {
+                    eventBus.dispatchEvent('message-local', {type: 'news-show', data: e.target.dataset.id})
+                    console.log(e)
+                }}/>
                 {/*<DraggableList onChange={onChangeSort} className="d-flex flex-column flex-stretch">*/}
                 {/*    {arrTaskList.map(({title}, index) => {*/}
                 {/*        return <div className="d-flex justify-content-between align-items-center px-1 py-1 m-0" key={index}>*/}
@@ -186,7 +189,7 @@ export default function Tools({news}) {
             </div>
             <ButtonGroup>
                 <ButtonSpinner state={0} hidden={false} className="btn-secondary btn-sm"
-                               onClick={() => axios.post(glob.host + 'open-dir')}>
+                               onClick={() => axios.post(glob.hostAPI + 'open-dir')}>
                     Открыть
                 </ButtonSpinner>
                 <ButtonSpinner state={stateBuildALl} className="btn-secondary btn-sm" onClick={buildAllNews}>

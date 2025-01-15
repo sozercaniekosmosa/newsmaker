@@ -16,6 +16,10 @@ body {
   -webkit-user-select: none;
 }
 
+.ev-none {
+  pointer-events: none;
+}
+
 ::-webkit-scrollbar {
   width: 4px;
 }

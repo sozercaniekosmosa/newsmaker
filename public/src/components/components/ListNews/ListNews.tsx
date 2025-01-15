@@ -12,12 +12,17 @@ export default function ListNews(
 
     useEffect(() => {
         eventBus.addEventListener('message-socket', ({type}) => {
-            // if (type === 'update-news') setUpdate((new Date()).getTime());
+            if (type === 'update-news') setUpdate((new Date()).getTime());
         })
 
-        // eventBus.addEventListener('build-all-news', () => {
-        //     document.querySelector('.n-list .selected')?.classList.remove('selected')
-        // })
+        eventBus.addEventListener('message-local', ({type, data}) => {
+            if (type == 'news-show') {
+                const id = data;
+                const node = document.querySelector('#news-item-' + id);
+                node.scrollIntoView({behavior: 'smooth'});
+                (node as HTMLElement).click()
+            }
+        })
 
     }, [])
 
@@ -30,26 +35,26 @@ export default function ListNews(
 
     const toTranslate = arrTypes.reduce((acc, val) => ({...acc, ...val}), {})
 
-    function onClickNews({target}) {
-        if (!target?.dataset?.index) return
+    function onClickNews(node) {
+        if (!node?.dataset?.index) return
 
         global.selectedText = undefined;
 
-        let title_ru = target.querySelector('.title-ru').textContent;
-        let text_ru = target.querySelector('.text-ru').textContent
-        let tags_ru = target.querySelector('.tags-ru').textContent
+        let title_ru = node.querySelector('.title-ru').textContent;
+        let text_ru = node.querySelector('.text-ru').textContent
+        let tags_ru = node.querySelector('.tags-ru').textContent
 
-        const {id, url, title, tags, text, dt, option, type, srcName} = arrNews[target.dataset.index]
-        target.parentNode.parentNode.querySelector('.selected')?.classList.remove('selected')
-        target.parentNode.classList.add('selected')
+        const {id, url, title, tags, text, dt, option, type, srcName} = arrNews[node.dataset.index]
+        node.parentNode.parentNode.querySelector('.selected')?.classList.remove('selected')
+        node.parentNode.classList.add('selected')
 
         currID = id;
 
         // setNews({
         //     id, url, title: title_ru, tags: tags_ru, text: text_ru, titleEn: title,
-        //     dt, tagsEn: tags, option, type, index: target.dataset.index, srcName
+        //     dt, tagsEn: tags, option, type, index: node.dataset.index, srcName
         // });
-        setNews(arrNews[target.dataset.index])
+        setNews(arrNews[node.dataset.index])
     }
 
     return (
@@ -67,7 +72,7 @@ export default function ListNews(
                     return (
                         <div className={"n-list__item ps-1" + ((id == currID) ? ' selected' : '')} key={idx}
                              style={done ? {backgroundColor: 'rgba(151,151,184,0.73)'} : {}}>
-                            <div data-index={idx} data-id={id} onClick={onClickNews}>
+                            <div data-index={idx} data-id={id} onClick={(e) => onClickNews((e as any).target)} id={'news-item-' + id}>
                                 <div className="text-ru">{text}</div>
                                 <div className="tags-ru">{tags}</div>
                                 <img src={icon} className="news-icon me-1" alt={icon}/>

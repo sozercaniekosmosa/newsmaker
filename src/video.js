@@ -1,5 +1,7 @@
-// const DIR_CONTENT = '../public/public/news/24.11.07/tg-nodJVO9st/img/';
+//import global from "./global.js";
 import {CreateVideo, findExtFiles, findExtFilesAbs, pathResolveRoot} from "./utils.js";
+
+// const DIR_CONTENT = '../public/public/news/24.11.07/tg-nodJVO9st/img/';
 
 const DIR_CONTENT = '../public/public/news/24.11.28/tg-c6Hxu7RJ3/';
 const DIR_IMG = '../content/img/';
@@ -88,6 +90,8 @@ export const buildAnNews = async ({dir_ffmpeg, dir_content, arrImg, pathBridge, 
 
     global.messageSocket.send({type: 'progress', data: -1})
 // -----------
+
+    return duration;
 }
 export const test = async ({dir_ffmpeg, pathVideo, dir_content, pathLogoMini, pathOut}) => {
     const video = new CreateVideo({dir_ffmpeg, dir_content});

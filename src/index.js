@@ -1,16 +1,17 @@
+//import global from "./global.js";
 import express from "express";
 import {fileURLToPath} from 'url';
 import path, {dirname} from 'path';
 import {config} from "dotenv";
 import bodyParser from "body-parser";
 import {WEBSocket} from "./utils.js";
-import routerGeneral from "./api-v1/general.js";
 import {noSQL} from "./DB/noSQL.js";
+import routerGeneral from "./api-v1/general.js";
 import routerImage from "./api-v1/images.js";
 import routerNews from "./api-v1/news.js";
 import routerGPT from "./api-v1/gpt.js";
-
-console.log(process.cwd())
+import {NewsUpdater} from "./parser.js";
+import dzen from "./parsers/dzen.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -23,6 +24,12 @@ const port = +process.env.PORT || +PORT;
 global.port = port
 global.dbNews = new noSQL('./dbNews.json');
 global.dbTask = new noSQL('./dbTask.json');
+global.listNewsSrc = {
+    // TG: new NewsUpdater({host: 'https://www.theguardian.com', dbNews, ...theGuardian}),
+    // RT: new NewsUpdater({host: 'https://russian.rt.com', dbNews, ...russiaToday}),
+    DZ: new NewsUpdater({host: 'https://dzen.ru/news', short: 'DZ', db: global.dbNews, ...dzen}),
+}
+
 
 async function createWebServer(port) {
     const app = express();
@@ -45,8 +52,12 @@ async function createWebServer(port) {
     });
 
     app.get('/', (req, res) => {// путь к корневой директории
-        res.sendFile(path.join(__dirname, dir, 'index.html'));
+        res.sendFile(path.join(__dirname, WEB_DIR, 'index.html'));
     })
+
+    app.use((req, res, next) => {
+        res.status(404).send('Запрошеный ресурс не найден!');
+    });
 
     global.messageSocket = new WEBSocket(webServ, {
         clbAddConnection: async ({ws, arrActiveConnection}) => {

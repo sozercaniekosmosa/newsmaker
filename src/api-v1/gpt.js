@@ -1,3 +1,4 @@
+//import global from "../global.js";
 import express from "express";
 import {arliGPT, mistralGPT, yandexGPT, yandexToSpeech} from "../ai.js";
 

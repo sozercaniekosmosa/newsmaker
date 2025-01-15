@@ -5,7 +5,7 @@ import './style.css'
 import Dialog from "../../../Dialog/Dialog";
 import {eventBus} from "../../../../../utils.ts";
 
-const ListComponent = ({arrData, onChangeList}) => {
+const ListComponent = ({arrData, onChangeList, onClick = null}) => {
     const [showModal, setShowModal] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
 
@@ -40,7 +40,7 @@ const ListComponent = ({arrData, onChangeList}) => {
     };
 
     return (
-        <div className="container px-0">
+        <div className="container px-0" onClick={onClick!}>
             <DragDropContext onDragEnd={onDragEnd}>
                 <Droppable droppableId="droppable">
                     {(provided) => (
@@ -50,9 +50,10 @@ const ListComponent = ({arrData, onChangeList}) => {
                                 <Draggable key={index} draggableId={`item-${index}`} index={index}>
                                     {provided => (
                                         <ListGroup.Item
+                                            data-id={id}
                                             ref={provided.innerRef}{...provided.draggableProps}{...provided.dragHandleProps}
                                             className="d-flex justify-content-between align-items-center px-1 py-1 m-0">
-                                            <div className="text-truncate pe-1" title={title}>{title}</div>
+                                            <div className="text-truncate pe-1 ev-none" title={title}>{title}</div>
                                             <Button variant="secondary btn-sm p-0" style={{height: '27px', width: '27px', flex: 'none'}}
                                                     onClick={() => handleDelete(index)}>X</Button>
                                         </ListGroup.Item>

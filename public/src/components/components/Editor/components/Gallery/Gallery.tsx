@@ -35,7 +35,7 @@ export default function Gallery(props) {
                 formData.append('image', blob);
                 formData.append('path', path);
 
-                await axios.post(global.host + 'save-image', formData, {
+                await axios.post(global.hostAPI + 'save-image', formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
                     }
@@ -58,7 +58,7 @@ export default function Gallery(props) {
         try {
             console.log(itemToDelete)
             const path = (src.includes('?')) ? src.split('?')[0] : src;
-            await axios.get(global.host + 'images-remove', {params: {path}});
+            await axios.get(global.hostAPI + 'images-remove', {params: {path}});
         } catch (e) {
             console.log(e)
         }

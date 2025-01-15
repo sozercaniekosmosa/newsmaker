@@ -76,7 +76,7 @@ export default function HeaderMenu({
 
         listSetStateNews[newsSrc](1)
         try {
-            await axios.post(glob.host + 'update-news-type', {typeNews, newsSrc})
+            await axios.post(glob.hostAPI + 'update-news-type', {typeNews, newsSrc})
             const from = formatDateTime(addDay(dayFrom, new Date()), 'yyyy-mm-dd');
             let to = formatDateTime(new Date(), 'yyyy-mm-dd');
 

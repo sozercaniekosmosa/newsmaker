@@ -1,3 +1,4 @@
+//import global from "../global.js";
 import {findExtFiles, removeFile, writeFileAsync} from "../utils.js";
 import express from "express";
 import {downloadImages, ImageDownloadProcessor} from "../parser.js";

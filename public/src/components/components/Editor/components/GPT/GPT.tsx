@@ -18,7 +18,7 @@ export default function GPT({news, setNews}) {
         try {
             let nodeNewsTextContainer = document.querySelector('.news-text');
             const textContent = glob.selectedText ?? nodeNewsTextContainer.textContent;
-            const {data: text} = await axios.post(glob.host + 'gpt', {id: news.id, type, text: textContent, prompt: promptCmd ?? prompt});
+            const {data: text} = await axios.post(glob.hostAPI + 'gpt', {id: news.id, type, text: textContent, prompt: promptCmd ?? prompt});
 
             if (text.toLocaleLowerCase().includes('в интернете есть много сайтов с информацией на эту')) throw 'ошибка';
 

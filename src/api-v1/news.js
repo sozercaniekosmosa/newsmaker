@@ -1,15 +1,11 @@
-import {formatDateTime, pathResolveRoot, saveTextToFile} from "../utils.js";
+//import global from "../global.js";
+import {createAndCheckDir, formatDateTime, pathResolveRoot, saveTextToFile} from "../utils.js";
 import express from "express";
-import {getListTask, NewsUpdater} from "../parser.js";
 import dzen from "../parsers/dzen.js";
+import {buildAllNews, buildAnNews} from "../video.js";
+import {getListNews, getListTask, NewsUpdater, overlayImages} from "../parser.js";
 
 const routerNews = express.Router();
-
-const listNewsSrc = {
-    // TG: new NewsUpdater({host: 'https://www.theguardian.com', dbNews, ...theGuardian}),
-    // RT: new NewsUpdater({host: 'https://russian.rt.com', dbNews, ...russiaToday}),
-    DZ: new NewsUpdater({host: 'https://dzen.ru/news', short: 'DZ', db: global.dbNews, ...dzen}),
-}
 
 routerNews.post('/update-db-news', async (req, res) => {
     const {body: news} = req;
@@ -44,7 +40,7 @@ routerNews.post('/update-one-news-type', async (req, res) => {
 routerNews.post('/update-news-type', async (req, res) => {
     try {
         const {body: {typeNews, newsSrc}} = req;
-        await listNewsSrc[newsSrc].updateByType(typeNews);
+        await global.listNewsSrc[newsSrc].updateByType(typeNews);
         res.send('ok');
     } catch (error) {
         res.status(error.status || 500).send({error: error?.message || error},);
@@ -64,7 +60,7 @@ routerNews.post('/build-an-news', async (req, res) => {
         let filePath = `./public/public/${news.pathSrc}/`
         await saveTextToFile(filePath + 'title.txt', news.title)
 
-        await buildAnNews({
+        const duration = await buildAnNews({
             dir_ffmpeg: './content/ffmpeg/',
             dir_content: filePath,
             arrImg: arrImg.map(src => pathResolveRoot(src.replaceAll(/\\/g, '/'))),
@@ -75,6 +71,8 @@ routerNews.post('/build-an-news', async (req, res) => {
             textAdd: news.textAdd
         })
 
+        dbNews.update({...news, videoDur: duration})
+        global?.messageSocket && global.messageSocket.send({type: 'update-news'});
         res.status(200).send({respID: id});
     } catch (error) {
         res.status(error.status || 500).send({error: error?.message || error},);

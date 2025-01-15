@@ -1,3 +1,4 @@
+//import global from "./global.js";
 import fs, {promises} from "fs";
 import axios from "axios";
 import {JSDOM, VirtualConsole} from "jsdom";
@@ -14,56 +15,6 @@ const {parsed: {IMG_COOKIE, IMG_XBROWS_VALID, IMG_XCLIENT}} = config();
 function getUserAgent() {
     return randUserAgent.getRandom()
 }
-
-export async function connectDB() {
-    const db = new Database('./news.db')
-    await db.connect();
-    try {
-        await db.run(`
-            CREATE TABLE IF NOT EXISTS news (
-                id INTEGER PRIMARY KEY,
-                url TEXT,
-                title TEXT,
-                tags TEXT,
-                text TEXT,
-                dt INTEGER,
-                type TEXT,
-                option TEXT,
-                srcName TEXT
-            )
-        `);
-        await db.run(`
-            CREATE TABLE IF NOT EXISTS tasks (
-                id INTEGER PRIMARY KEY,
-                task TEXT
-            )
-        `);
-
-        const res = await db.get(`SELECT id FROM tasks WHERE id = ?`, [0]);
-        if (!res) await db.run(`INSERT INTO tasks (id, task) VALUES (?, ?)`, [0, '{}']);
-
-    } catch (e) {
-        console.log(e)
-    }
-    return db;
-}
-
-// await db.run(`INSERT INTO users (name, email) VALUES (?, ?)`, ['Bob', 'bob@example.com']);
-
-// Получение всех пользователей
-/*
-const users = await db.all(`SELECT * FROM users`);
-console.log(users);
-
-// Получение одного пользователя
-const user = await db.get(`SELECT * FROM users WHERE name = ?`, ['Alice']);
-console.log(user);
-
-console.log(arr)
-
-const result = await db.run(`UPDATE users SET email = ? WHERE id = ?`, [newEmail, userId]);
-console.log(`Updated ${result.changes} row(s)`);
-*/
 
 export async function getListTask(db) {
     let res;
@@ -183,17 +134,6 @@ export const getDocument = (html) => {
     const dom = new JSDOM(html.toString(), {virtualConsole});
     return dom.window.document;
 }
-
-// Пример использования
-// const imageUrls = [
-//     'https://example.com/image1.jpg',
-//     'https://example.com/image2.png',
-//     // Добавьте другие URL-адреса изображений
-// ];
-//
-// const outputDirectory = './downloaded_images';
-//
-// downloadImages(imageUrls, outputDirectory);
 
 /**
  * Функция для загрузки изображений из массива URL
@@ -375,8 +315,8 @@ export class NewsUpdater {
                     host, listTask, db, getArrUrlOfType, getDateAsMls, getTitle, getArrTags,
                     getTextContent, getHtmlUrl, getDocument, getSrcName, getID, short
                 }) {
-        this.HOST = host;
         this.db = db;
+        this.HOST = host;
         this.getArrUrlOfType = getArrUrlOfType;
         this.getDateAsMls = getDateAsMls;
         this.getTitle = getTitle;

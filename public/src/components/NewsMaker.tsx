@@ -10,7 +10,8 @@ import Tools from "./components/Tools/Tools.tsx";
 import glob from "../global.ts";
 import iconDZ from "../assets/dzen.ico";
 
-glob.host = 'http://localhost:3000/api/v1/'
+glob.host = 'http://localhost:3000/'
+glob.hostAPI = 'http://localhost:3000/api/v1/'
 const listHostToIcon = {
     'dzen.ru': iconDZ,
 }
@@ -66,6 +67,8 @@ function NewsMaker() {
 
 
     useEffect(() => {
+        if (!news) return;
+
         const index = arrNews.findIndex(({id}) => id == news.id)
 
         setArrNews(now => {
