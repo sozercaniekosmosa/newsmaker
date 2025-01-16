@@ -79,7 +79,7 @@ export default function ListNews(
                                 <span>{formatDateTime(new Date(date), 'dd.mm.yy hh:MM')}</span>&nbsp;
                                 <a href={url || ''} target="_blank">ссылка</a>&nbsp;
                                 <span>{toTranslate[type]}</span>
-                                <div className="d-flex flex-row">
+                                <div className="d-flex flex-row ev-none">
                                     <span className="notranslate">{arrImg?.length ? '🖼️' : ''}</span>
                                     <span className="notranslate">{textGPT ? '📝' : ''}</span>
                                     <span className="notranslate">{audioDur > 0 ? '🎵' : ''}</span>

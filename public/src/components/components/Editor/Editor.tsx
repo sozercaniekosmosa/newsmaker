@@ -5,7 +5,7 @@ import {updateNewsDB} from "../../utils.ts";
 import './style.css'
 import {Button, ButtonGroup, Tab, Tabs} from "react-bootstrap";
 import {eventBus} from "../../../utils.ts";
-import ButtonSpinner from "../ButtonSpinner/ButtonSpinner";
+import ButtonSpinner from "../Auxiliary/ButtonSpinner/ButtonSpinner";
 import GPT from "./components/GPT/GPT";
 import Images from "./components/Images/Images";
 import glob from "../../../global.ts";

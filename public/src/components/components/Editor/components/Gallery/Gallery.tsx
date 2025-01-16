@@ -3,7 +3,7 @@ import PhotoSwipeLightbox from 'photoswipe/lightbox';
 import 'photoswipe/style.css';
 import './style.css'
 import {Button} from "react-bootstrap";
-import Dialog from "../../../Dialog/Dialog.tsx";
+import Dialog from "../../../Auxiliary/Dialog/Dialog.tsx";
 import axios from "axios";
 import global from "../../../../../global.ts";
 import 'tui-image-editor/dist/tui-image-editor.css';
@@ -67,7 +67,7 @@ export default function Gallery(props) {
     return (
         <div className="pswp-gallery d-flex flex-wrap justify-content-center" id={props.galleryID} style={{height: 0}}>
             {props.images.length === 0 && <div>
-                <center>Пусто</center>
+                <center className="opacity-25"><h6>Загрузите изображения...</h6></center>
             </div>}
             {props.images.map((image, index) => (
                 <div style={{width: 'fit-content'}} key={index}>
@@ -97,7 +97,7 @@ export default function Gallery(props) {
                         <img src={image.src} alt="" onDragStart={e => global.draggingElement = e.target} onContextMenu={(e) => {
                             onConfirmRemoveImage(image.src);
                             e.preventDefault();
-                        }}/>
+                        }} className="shadow-sm"/>
                     </a>
                 </div>
 

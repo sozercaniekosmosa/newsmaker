@@ -2,15 +2,15 @@ import React, {useEffect, useState} from 'react';
 import './style.css';
 import 'photoswipe/style.css';
 import {Button, ButtonGroup} from "react-bootstrap";
-import Dialog from "../Dialog/Dialog";
+import Dialog from "../Auxiliary/Dialog/Dialog";
 import {getTasks, updateNewsDB, updateTaskDB, updateTaskDBForced} from "../../utils.ts";
 import axios from "axios";
 import global from "../../../global.ts";
 import glob from "../../../global.ts";
-import ButtonSpinner from "../ButtonSpinner/ButtonSpinner.tsx";
-import {ScrollChildY, ScrollParent} from "../Scrollable/Scrollable.tsx";
+import ButtonSpinner from "../Auxiliary/ButtonSpinner/ButtonSpinner.tsx";
+import {ScrollChildY, ScrollParent} from "../Auxiliary/Scrollable/Scrollable.tsx";
 import {eventBus, formatDateTime} from "../../../utils.ts";
-import DraggableList from "../Editor/components/DraggableList/DraggableList.tsx";
+import DraggableList from "../Auxiliary/DraggableList/DraggableList.tsx";
 
 function arrMoveItem(arr, fromIndex, toIndex) {
     if (fromIndex < 0 || fromIndex >= arr.length || toIndex < 0 || toIndex >= arr.length) {
@@ -26,7 +26,7 @@ function arrMoveItem(arr, fromIndex, toIndex) {
     return arr;
 }
 
-export default function Tools({news}) {
+export default function Tools({news, arrNews}) {
 
     const [arrTaskList, setArrTaskList] = useState([]);
     const [ModalRemoveAnTask, setShowModalRemoveAnTask] = useState(false);
@@ -102,7 +102,7 @@ export default function Tools({news}) {
             updateTaskDBForced({date});
         }
 
-        onChangeData({arrTask: [...arrTaskList, news]}, setArrTaskList);
+        onChangeData({arrTask: [...arrTaskList, {id: news.id, title: news.title}]}, setArrTaskList);
     };
 
     let onChangeData = (obj, stateForUpd) => {
@@ -178,9 +178,19 @@ export default function Tools({news}) {
                         data: target.dataset.id
                     })}>
                     {arrTaskList.map(({title, id}, index) => {
+
+                        const indexNews = arrNews.findIndex(it => it.id == id);
+
                         return <div
                             className="sortable d-flex justify-content-between align-items-center px-1 py-1 m-0 border list-group-item"
                             key={index} data-id={id}>
+                            <div className="d-flex flex-row">
+                                <span className="notranslate">{arrNews[indexNews].arrImg?.length ? '🖼️' : ''}</span>
+                                <span className="notranslate">{arrNews[indexNews].textGPT ? '📝' : ''}</span>
+                                <span className="notranslate">{arrNews[indexNews].audioDur > 0 ? '🎵' : ''}</span>
+                                <span className="notranslate">{arrNews[indexNews].videoDur > 0 ? '🎥' : ''}</span>
+                                <span className="notranslate">{arrNews[indexNews].donde > 0 ? '✅' : ''}</span>
+                            </div>
                             <div className="text-truncate pe-1 ev-none" title={title}>{title}</div>
                             <Button variant="secondary btn-sm p-0" style={{height: '27px', width: '27px', flex: 'none'}}
                                     onClick={(e) => {

@@ -1,10 +1,10 @@
 import React, {useEffect, useState} from "react";
-import ButtonSpinner from "../../../ButtonSpinner/ButtonSpinner";
+import ButtonSpinner from "../../../Auxiliary/ButtonSpinner/ButtonSpinner";
 import Gallery from "../Gallery/Gallery";
 import axios from "axios";
 import glob from "../../../../../global.ts";
 import global from "../../../../../global.ts";
-import DraggableList from "../DraggableList/DraggableList.tsx";
+import DraggableList from "../../../Auxiliary/DraggableList/DraggableList.tsx";
 
 function arrMoveItem(arr, fromIndex, toIndex) {
     if (fromIndex < 0 || fromIndex >= arr.length || toIndex < 0 || toIndex >= arr.length) {
@@ -65,6 +65,14 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
         e.preventDefault()
     }
 
+    const onDropSortImg = () => {
+        if (!global.draggingElement) return;
+        //@ts-ignore
+        let src = (new URL(global.draggingElement.src)).pathname.split('/').at(-1);
+        setNews({...news, arrImg: [...news.arrImg, src]});
+        global.draggingElement = null;
+    }
+
     return <div className="d-flex flex-column w-100 notranslate position-relative">
                         <textarea className="options__tags d-flex flex-row border rounded mb-1 p-2 notranslate"
                                   value={news?.tags || ''}
@@ -82,22 +90,20 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
                    step={1} onChange={({target}) => setTimeout(+target.value)} title="Таймаут"/>
             <span className="p-1 text-center" style={{width: '3.5em'}}>{timeout + ' сек'}</span>
         </div>
-        <div className="flex-stretch operation__img border rounded mb-1">
+        <div className="operation__img border rounded mb-1">
             <Gallery galleryID="my-test-gallery" images={arrImg}/>
             <div className="position-absolute" style={{bottom: '6px', right: '6px', opacity: .5}}>
                 Всего: {arrImg.length} ({maxImage} сек)
             </div>
         </div>
-        <div className="flex-stretch operation__img border rounded mb-1" onDrop={() => {
-            if (!global.draggingElement) return;
-            //@ts-ignore
-            let src = (new URL(global.draggingElement.src)).pathname.split('/').at(-1);
-            setNews({...news, arrImg: [...news.arrImg, src]});
-            global.draggingElement = null;
-        }} onDragOver={e => e.preventDefault()}>
-            <DraggableList onChange={onChangeSort} className="d-flex flex-wrap flex-stretch">
+        <div className="flex-stretch border rounded mb-1" onDrop={onDropSortImg}
+             onDragOver={e => e.preventDefault()}>
+            {news?.arrImg?.length === 0 && <div>
+                <center className="opacity-25"><h6>Перетащите изображения (сверху) из загруженых...</h6></center>
+            </div>}
+            <DraggableList onChange={onChangeSort} className="d-flex flex-wrap flex-stretch justify-content-center">
                 {news?.arrImg.map((item, index) => {
-                    return <img key={index} className="sortable sortable-img border" draggable
+                    return <img key={index} className="sortable sortable-img border m-1 rounded shadow-sm" draggable
                                 src={'./' + news.pathSrc + '/' + item}
                                 data-index={index}
                                 onContextMenu={(e) => onRemoveImage(e)}/>

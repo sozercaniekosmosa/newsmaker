@@ -1,4 +1,4 @@
-import ButtonSpinner from "../../../ButtonSpinner/ButtonSpinner";
+import ButtonSpinner from "../../../Auxiliary/ButtonSpinner/ButtonSpinner";
 import React, {useState} from "react";
 import {getSelelected, insertAt} from "../../../../../utils";
 import axios from "axios";

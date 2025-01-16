@@ -20,6 +20,7 @@
 }
 
 .operation__img {
+  height: 33vh;
   overflow: auto;
   border: 1px solid #dee2e6;
   border-radius: 0.18em;
@@ -27,6 +28,7 @@
   flex-wrap: wrap;
   flex-direction: column;
   justify-content: space-between;
+  resize: vertical;
 }
 .operation__img > * {
   text-align: center;

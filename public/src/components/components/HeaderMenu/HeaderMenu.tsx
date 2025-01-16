@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import 'photoswipe/style.css';
-import ButtonSpinner from "../ButtonSpinner/ButtonSpinner";
+import ButtonSpinner from "../Auxiliary/ButtonSpinner/ButtonSpinner";
 import {Button, ButtonGroup} from "react-bootstrap";
 import {addDay, addHour, eventBus, formatDateTime} from "../../../utils.ts";
 import {getData} from "../../utils.ts";

@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react'
 import './style.css'
 import {Pane, ResizablePanes} from "resizable-panes-react";
 import {eventBus} from "../utils";
-import ProgressBar from './components/ProgressBar/ProgressBar';
+import ProgressBar from './components/Auxiliary/ProgressBar/ProgressBar';
 import HeaderMenu from "./components/HeaderMenu/HeaderMenu";
 import ListNews from "./components/ListNews/ListNews";
 import Editor from "./components/Editor/Editor.tsx";
@@ -98,7 +98,7 @@ function NewsMaker() {
                     <Editor news={news} setNews={setNews} listHostToData={listHostToIcon}/>
                 </Pane>
                 <Pane id="P2" size={4}>
-                    <Tools news={news}/>
+                    <Tools news={news} arrNews={arrNews}/>
                 </Pane>
             </ResizablePanes>
         </div>
