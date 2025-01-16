@@ -38,3 +38,4 @@ dist-ssr
 /public/test.html
 *tst.*
 /db*.json
+/*.ass
