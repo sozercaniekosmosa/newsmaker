@@ -33,6 +33,8 @@ function updateMedia(node, src, setNews, propName) {
             node.load()
         } else {
             setNews((now: {}) => ({...now, [propName]: 0}))
+            node.querySelector('source').src = '';
+            node.load()
         }
     })()
 }
@@ -91,7 +93,7 @@ export default function Editor({news, setNews, listHostToData}) {
         (() => getLocalImage(news.id, setArrImg))();
     }, [update])
 
-    async function onBuild() {
+    async function onBuildVideo() {
         setStateNewsBuild(1);
         try {
 
@@ -202,7 +204,7 @@ export default function Editor({news, setNews, listHostToData}) {
                     <div className="flex-stretch" style={{flex: 1}}>
                         <div className="d-flex flex-column w-100">
                             <ButtonSpinner className="btn-secondary btn-sm mb-1 notranslate" state={stateNewsBuild}
-                                           onClick={onBuild}>
+                                           onClick={onBuildVideo}>
                                 Собрать видео
                             </ButtonSpinner>
                             <video controls ref={refVideo} className="w-100">

@@ -48,7 +48,7 @@ function NewsMaker() {
                     for (let i = 0; i < arrUpdNews.length; i++) {
                         const index = nowArrNews.findIndex(it => it.id == arrUpdNews[i].id);
                         if (!~index) throw 'update-news-arr-item: ID does not exist'
-                        newArrNews[index] = arrUpdNews[i];
+                        newArrNews[index] = {...newArrNews[index], ...arrUpdNews[i]};
                     }
                     return newArrNews;
                 });

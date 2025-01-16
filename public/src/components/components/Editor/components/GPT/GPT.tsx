@@ -27,7 +27,7 @@ export default function GPT({news, setNews}) {
 
             if (text.toLocaleLowerCase().includes('в интернете есть много сайтов с информацией на эту')) throw 'ошибка';
 
-            let textGPT = promptCmd ? news.textGPT.replace(textContent, text) : news.textGPT + text + '\n\n';
+            let textGPT = promptCmd ? news.textGPT?.replace(textContent, text) : (news.textGPT ?? '') + text + '\n\n';
             setNews({...news, textGPT})
 
             setStateLoadGPT({type, state: 0})

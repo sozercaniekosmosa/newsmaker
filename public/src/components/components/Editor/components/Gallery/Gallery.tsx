@@ -16,6 +16,7 @@ export default function Gallery(props) {
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
     const [srcToEdit, setSrcToEdit] = useState<number | null>(null);
     const [indexImage, setIndexImage] = useState<string | null>('');
+    const [update, setUpdate] = useState((new Date()).getTime())
 
     useEffect(() => {
         let lightbox = new PhotoSwipeLightbox({
@@ -41,6 +42,7 @@ export default function Gallery(props) {
                     }
                 })
                 setShowModalEdit(false)
+                setUpdate((new Date()).getTime());
             } catch (e) {
                 console.log(e)
             }
@@ -67,7 +69,7 @@ export default function Gallery(props) {
     return (
         <div className="pswp-gallery d-flex flex-wrap justify-content-center" id={props.galleryID} style={{height: 0}}>
             {props.images.length === 0 && <div>
-                <center className="opacity-25"><h6>Загрузите изображения...</h6></center>
+                <center className="text-secondary opacity-50"><h6>Загрузите изображения...</h6></center>
             </div>}
             {props.images.map((image, index) => (
                 <div style={{width: 'fit-content'}} key={index}>
@@ -94,10 +96,11 @@ export default function Gallery(props) {
                        target="_blank"
                        rel="noreferrer"
                     >
-                        <img src={image.src} alt="" onDragStart={e => global.draggingElement = e.target} onContextMenu={(e) => {
-                            onConfirmRemoveImage(image.src);
-                            e.preventDefault();
-                        }} className="shadow-sm"/>
+                        <img src={image.src + '?upd=' + update} alt="" onDragStart={e => global.draggingElement = e.target}
+                             onContextMenu={(e) => {
+                                 onConfirmRemoveImage(image.src);
+                                 e.preventDefault();
+                             }} className="shadow-sm"/>
                     </a>
                 </div>
 

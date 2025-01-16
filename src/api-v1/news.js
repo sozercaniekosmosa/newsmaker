@@ -84,7 +84,8 @@ routerNews.post('/build-all-news', async (req, res) => {
 
         const {arrTask, title, date, srcImg} = global.dbTask.getByID('config')
 
-        const arrPath = arrTask.map(({pathSrc}) => {
+        const arrPath = arrTask.map(({id}) => {
+            const {pathSrc} = dbNews.getByID(id);
             const filePath = `./public/public/${pathSrc}/`
             return pathResolveRoot(filePath + 'news.mp4')
         })
@@ -94,15 +95,15 @@ routerNews.post('/build-all-news', async (req, res) => {
 
         await createAndCheckDir(filePathOut + '.mp4');
 
-        await buildAllNews({
-            dir_ffmpeg: './content/ffmpeg/',
-            dir_content: `./public/public/done/`,
-            arrPathVideo: arrPath,
-            pathIntro: filePathIntro,
-            pathEnd: filePathEnd,
-            pathBackground: pathResolveRoot('./content/audio/back-05.mp3'),
-            pathOut: filePathOut + 'news-all.mp4'
-        })
+        // await buildAllNews({
+        //     dir_ffmpeg: './content/ffmpeg/',
+        //     dir_content: `./public/public/done/`,
+        //     arrPathVideo: arrPath,
+        //     pathIntro: filePathIntro,
+        //     pathEnd: filePathEnd,
+        //     pathBackground: pathResolveRoot('./content/audio/back-05.mp3'),
+        //     pathOut: filePathOut + 'news-all.mp4'
+        // })
 
         global?.messageSocket && global.messageSocket.send({type: 'update-news'})
 

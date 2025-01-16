@@ -90,16 +90,16 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
                    step={1} onChange={({target}) => setTimeout(+target.value)} title="Таймаут"/>
             <span className="p-1 text-center" style={{width: '3.5em'}}>{timeout + ' сек'}</span>
         </div>
-        <div className="operation__img border rounded mb-1">
+        <div className="operation__img border rounded mb-1" style={{backgroundColor:'#ebf0f7'}}>
             <Gallery galleryID="my-test-gallery" images={arrImg}/>
             <div className="position-absolute" style={{bottom: '6px', right: '6px', opacity: .5}}>
                 Всего: {arrImg.length} ({maxImage} сек)
             </div>
         </div>
-        <div className="flex-stretch border rounded mb-1" onDrop={onDropSortImg}
+        <div className="flex-stretch border rounded mb-1"  style={{backgroundColor:'#ebf0f7'}} onDrop={onDropSortImg}
              onDragOver={e => e.preventDefault()}>
             {news?.arrImg?.length === 0 && <div>
-                <center className="opacity-25"><h6>Перетащите изображения (сверху) из загруженых...</h6></center>
+                <center className="text-secondary opacity-50"><h6>Перетащите изображения (сверху) из загруженых...</h6></center>
             </div>}
             <DraggableList onChange={onChangeSort} className="d-flex flex-wrap flex-stretch justify-content-center">
                 {news?.arrImg.map((item, index) => {

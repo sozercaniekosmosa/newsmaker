@@ -160,7 +160,7 @@ export default function Tools({news, arrNews}) {
             <hr/>
             Список задач:
             <ButtonGroup>
-                <Button variant="secondary btn-sm" disabled={!!(news?.arrImg.length && news?.audioDur)} //TODO: убрать !
+                <Button variant="secondary btn-sm" disabled={!(news?.arrImg.length && news?.audioDur)}
                         onClick={addToTaskList}>
                     Добавить
                 </Button>
@@ -180,6 +180,7 @@ export default function Tools({news, arrNews}) {
                     {arrTaskList.map(({title, id}, index) => {
 
                         const indexNews = arrNews.findIndex(it => it.id == id);
+                        if (!~indexNews) return;
 
                         return <div
                             className="sortable d-flex justify-content-between align-items-center px-1 py-1 m-0 border list-group-item"
