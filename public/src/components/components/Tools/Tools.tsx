@@ -1,16 +1,15 @@
 import React, {useEffect, useState} from 'react';
 import './style.css';
 import 'photoswipe/style.css';
-import ListTask from "./Components/ListTask/ListTask.tsx";
 import {Button, ButtonGroup} from "react-bootstrap";
 import Dialog from "../Dialog/Dialog";
 import {getTasks, updateNewsDB, updateTaskDB, updateTaskDBForced} from "../../utils.ts";
 import axios from "axios";
 import global from "../../../global.ts";
-import ButtonSpinner from "../ButtonSpinner/ButtonSpinner.tsx";
-import {ScrollChildX, ScrollChildY, ScrollParent} from "../Scrollable/Scrollable.tsx";
-import {eventBus, formatDateTime} from "../../../utils.ts";
 import glob from "../../../global.ts";
+import ButtonSpinner from "../ButtonSpinner/ButtonSpinner.tsx";
+import {ScrollChildY, ScrollParent} from "../Scrollable/Scrollable.tsx";
+import {eventBus, formatDateTime} from "../../../utils.ts";
 import DraggableList from "../Editor/components/DraggableList/DraggableList.tsx";
 
 function arrMoveItem(arr, fromIndex, toIndex) {
@@ -30,7 +29,8 @@ function arrMoveItem(arr, fromIndex, toIndex) {
 export default function Tools({news}) {
 
     const [arrTaskList, setArrTaskList] = useState([]);
-    const [showModal, setShowModal] = useState(false);
+    const [ModalRemoveAnTask, setShowModalRemoveAnTask] = useState(false);
+    const [ModalRemoveAllTask, setShowModalRemoveAllTask] = useState(false);
     const [stateBuildALl, setStateBuildALl] = useState(0)
 
     const [prompt, setPrompt] = useState('Сделай из этих названий новостей краткий заголовок для новостного видео (вместо запятой используй вертикальную черту)')
@@ -40,6 +40,7 @@ export default function Tools({news}) {
     const [stateLoadArliGPT, setStateLoadArliGPT] = useState(0)
     const [stateLoadMistralGPT, setStateLoadMistralGPT] = useState(0)
     const [srcImgTitle, setSrcImgTitle] = useState('')
+    const [itemToDelete, setItemToDelete] = useState<number | null>(null);
 
     useEffect(() => {
         (async () => {
@@ -120,7 +121,7 @@ export default function Tools({news}) {
         updateTaskDB({arrTask: _arr});
     }
 
-    let onRemoveAll = () => {
+    let onConfirmRemoveAllTask = () => {
         const list = {arrTask: [], title: '', date: '', srcImg: ''}
         setDatePublic('');
         setTitleGPT(list.title);
@@ -130,11 +131,23 @@ export default function Tools({news}) {
         updateTaskDB(list);
     }
 
+
+    const onConfirmRemoveAnTask = () => {
+        if (itemToDelete !== null) {
+            arrTaskList.splice(itemToDelete, 1)
+            onChangeList && onChangeList(arrTaskList);
+            setShowModalRemoveAnTask(false);
+            setItemToDelete(null);
+        }
+    };
+
     return (
         <ScrollParent className="pe-1 pb-1">
-            <input type="datetime-local" value={datePublic} onChange={(e) => onChangeData({date: e.target.value}, setDatePublic)}
+            <input type="datetime-local" value={datePublic}
+                   onChange={(e) => onChangeData({date: e.target.value}, setDatePublic)}
                    className="border rounded mb-1 text-center no-select"/>
-            <textarea className="form-control me-1 operation__prompt rounded border mb-1" value={titleGPT} style={{height: '100px'}}
+            <textarea className="form-control me-1 operation__prompt rounded border mb-1" value={titleGPT}
+                      style={{height: '100px'}}
                       onChange={e => onChangeData({title: e.target.value}, setTitleGPT)}/>
             <ButtonGroup>
                 <ButtonSpinner className="btn-secondary btn-sm" state={stateLoadYaGPT}
@@ -147,28 +160,37 @@ export default function Tools({news}) {
             <hr/>
             Список задач:
             <ButtonGroup>
-                <Button variant="secondary btn-sm" disabled={!(news?.arrImg.length && news?.audioDur)}
+                <Button variant="secondary btn-sm" disabled={!!(news?.arrImg.length && news?.audioDur)} //TODO: убрать !
                         onClick={addToTaskList}>
                     Добавить
                 </Button>
-                <Button variant="secondary btn-sm" disabled={setArrTaskList.length === 0} onClick={() => setShowModal(true)}>
+                <Button variant="secondary btn-sm" disabled={setArrTaskList.length === 0} onClick={() => {
+                    setShowModalRemoveAllTask(true)
+                }}>
                     Очистить
                 </Button>
             </ButtonGroup>
             <ScrollChildY className="my-1 border rounded p-1">
-                <ListTask arrData={arrTaskList} onChangeList={onChangeList} onClick={(e) => {
-                    eventBus.dispatchEvent('message-local', {type: 'news-show', data: e.target.dataset.id})
-                    console.log(e)
-                }}/>
-                {/*<DraggableList onChange={onChangeSort} className="d-flex flex-column flex-stretch">*/}
-                {/*    {arrTaskList.map(({title}, index) => {*/}
-                {/*        return <div className="d-flex justify-content-between align-items-center px-1 py-1 m-0" key={index}>*/}
-                {/*            <div className="text-truncate pe-1" title={title}>{title}</div>*/}
-                {/*            <Button variant="secondary btn-sm p-0" style={{height: '27px', width: '27px', flex: 'none'}}*/}
-                {/*                    onClick={() => null}>X</Button>*/}
-                {/*        </div>*/}
-                {/*    })}*/}
-                {/*</DraggableList>*/}
+                <DraggableList
+                    onChange={onChangeSort} className="d-flex flex-column flex-stretch list-group"
+                    onClick={({target}) => eventBus.dispatchEvent('message-local', {
+                        type: 'news-show',
+                        data: target.dataset.id
+                    })}>
+                    {arrTaskList.map(({title, id}, index) => {
+                        return <div
+                            className="sortable d-flex justify-content-between align-items-center px-1 py-1 m-0 border list-group-item"
+                            key={index} data-id={id}>
+                            <div className="text-truncate pe-1 ev-none" title={title}>{title}</div>
+                            <Button variant="secondary btn-sm p-0" style={{height: '27px', width: '27px', flex: 'none'}}
+                                    onClick={(e) => {
+                                        setItemToDelete(index);
+                                        setShowModalRemoveAnTask(true)
+                                        e.stopPropagation();
+                                    }}>X</Button>
+                        </div>
+                    })}
+                </DraggableList>
             </ScrollChildY>
             <div className="d-flex flex-column p-2 mb-1 border rounded text-muted text-center position-relative"
                  onDrop={() => {
@@ -196,8 +218,11 @@ export default function Tools({news}) {
                     Собрать все видео
                 </ButtonSpinner>
             </ButtonGroup>
-            <Dialog title="Очистить" message="Уверены?" show={showModal} setShow={setShowModal} onConfirm={() => onRemoveAll()}
-                    props={{className: 'modal-sm'}}/>
+            <Dialog title="Удалить эелемент" message="Уверены?" show={ModalRemoveAnTask}
+                    setShow={setShowModalRemoveAnTask}
+                    onConfirm={onConfirmRemoveAnTask} props={{className: 'modal-sm'}}/>
+            <Dialog title="Очистить" message="Уверены?" show={ModalRemoveAllTask} setShow={setShowModalRemoveAllTask}
+                    onConfirm={onConfirmRemoveAllTask} props={{className: 'modal-sm'}}/>
 
         </ScrollParent>
     );

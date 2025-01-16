@@ -66,8 +66,10 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
     }
 
     return <div className="d-flex flex-column w-100 notranslate position-relative">
-                        <textarea className="options__tags d-flex flex-row border rounded mb-1 p-2 notranslate" value={news?.tags || ''}
-                                  onChange={({target}) => setNews(was => ({...was, tags: target.value}))} style={{height: '5em'}}/>
+                        <textarea className="options__tags d-flex flex-row border rounded mb-1 p-2 notranslate"
+                                  value={news?.tags || ''}
+                                  onChange={({target}) => setNews(was => ({...was, tags: target.value}))}
+                                  style={{height: '5em'}}/>
         <div className="d-flex flex-row mb-1">
             <ButtonSpinner className="btn-secondary btn-sm" state={stateImageLoad}
                            onClick={requestImages}>
@@ -95,7 +97,7 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
         }} onDragOver={e => e.preventDefault()}>
             <DraggableList onChange={onChangeSort} className="d-flex flex-wrap flex-stretch">
                 {news?.arrImg.map((item, index) => {
-                    return <img key={index} className="sortable border" draggable
+                    return <img key={index} className="sortable sortable-img border" draggable
                                 src={'./' + news.pathSrc + '/' + item}
                                 data-index={index}
                                 onContextMenu={(e) => onRemoveImage(e)}/>

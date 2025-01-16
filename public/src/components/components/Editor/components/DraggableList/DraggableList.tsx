@@ -21,10 +21,7 @@ const toLocalPos = ({target, clientX, clientY}) => {
 };
 
 
-const DraggableList = ({
-                           className = '', onChange = (i: any, to: any) => {
-    }, children = null
-                       }) => {
+const DraggableList = ({className = '', onChange = (i: any, to: any) => null, children = null, onClick = null}) => {
     const [nodeDragging, setNodeDragging] = useState(null);
     const [selectIndex, setSelectIndex] = useState(null);
     const [isCenter, setIsCenter] = useState(false);
@@ -59,6 +56,7 @@ const DraggableList = ({
     };
 
     const handleDrop = (event) => {
+        // debugger
         event.preventDefault();
         const target = event.target;
 
@@ -66,14 +64,14 @@ const DraggableList = ({
         if (target === nodeDragging) return;
 
         let node = nodeDragging;
-        node.classList.add('sortable');
-        node.setAttribute('draggable', true);
+        // node.classList.add('sortable');
+        // node.setAttribute('draggable', true);
         target.classList.remove('dragover')
 
         const targetIndex = event.target.dataset.index;
         const nodeIndex = node.dataset.index;
 
-        console.log(targetIndex, nodeIndex)
+        // console.log(targetIndex, nodeIndex)
         // target.after(node);
 
         // const _arr = arrMoveItem(arrItems, nodeIndex, targetIndex);
@@ -85,9 +83,10 @@ const DraggableList = ({
         onChange(nodeIndex, targetIndex);
     };
 
-    return <div ref={nodeContainerRef} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} className={className}>
+    return <div ref={nodeContainerRef} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop}
+                className={className}>
         {React.Children.map(children, (child, index) => {
-            return React.cloneElement(child, {draggable: true, ['data-index']: index})
+            return React.cloneElement(child, {draggable: true, ['data-index']: index, onClick: onClick});
         })}
     </div>
 };

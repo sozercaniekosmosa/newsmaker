@@ -9,9 +9,9 @@ export default ({
                     setShow,
                     title = 'Заголовок',
                     message = 'Сообщение',
-                    onConfirm = undefined,
-                    children = undefined,
-                    onClose = undefined,
+                    onConfirm = null,
+                    children = null,
+                    onClose = null,
                     confirmName = 'Да',
                     props = {},
                 }) => {
