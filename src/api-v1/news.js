@@ -123,7 +123,7 @@ routerNews.post('/build-all-news', async (req, res) => {
 routerNews.get('/list-news', async (req, res) => {
     const {from, to} = req.query;
     try {
-        let result = await getListNews(global.dbNews, from, to);
+        let result = await getListNews(from, to);
         res.send(result)
     } catch (error) {
         res.status(error.status || 500).send({error: error?.message || error},);

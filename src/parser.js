@@ -27,13 +27,14 @@ export async function getListTask(db) {
     return res;
 }
 
-export async function getListNews(db, from, to) {
+export async function getListNews(from, to) {
     let res;
     try {
         if (from && to) {
-            res = db.getNews({fromDate: +from, toDate: +to});
+            const arrTask = new Set(global.dbTask.getByID('config').arrTask.map(it => it.id));
+            res = global.dbNews.getAll(({id, date}) => date >= +from && date <= +to || arrTask.has(id));
         } else {
-            res = db.getAll();
+            res = global.dbNews.getAll();
         }
     } catch (e) {
         console.error(e)
