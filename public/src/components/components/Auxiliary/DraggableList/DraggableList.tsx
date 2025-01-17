@@ -86,7 +86,7 @@ const DraggableList = ({className = '', onChange = (i: any, to: any) => null, ch
     return <div ref={nodeContainerRef} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop}
                 className={className}>
         {React.Children.map(children, (child, index) => {
-            return React.cloneElement(child, {draggable: true, ['data-index']: index, onClick: onClick});
+            return child && React.cloneElement(child, {draggable: true, ['data-index']: index, onClick: onClick});
         })}
     </div>
 };
