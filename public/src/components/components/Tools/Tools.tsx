@@ -3,7 +3,7 @@ import './style.css';
 import 'photoswipe/style.css';
 import {Button, ButtonGroup} from "react-bootstrap";
 import Dialog from "../Auxiliary/Dialog/Dialog";
-import {getTasks, updateNewsDB, updateTaskDB, updateTaskDBForced} from "../../utils.ts";
+import {getTasks, toGPT, updateNewsDB, updateTaskDB, updateTaskDBForced} from "../../utils.ts";
 import axios from "axios";
 import global from "../../../global.ts";
 import glob from "../../../global.ts";
@@ -41,6 +41,7 @@ export default function Tools({news, arrNews}) {
     const [stateLoadMistralGPT, setStateLoadMistralGPT] = useState(0)
     const [srcImgTitle, setSrcImgTitle] = useState('')
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
+    const [stateLoadGPT, setStateLoadGPT] = useState({type: '', state: 0});
 
     useEffect(() => {
         (async () => {
@@ -53,27 +54,13 @@ export default function Tools({news, arrNews}) {
     }, []);
 
     async function onGPT(type) {
-        type === 'yandex' && setStateLoadYaGPT(1)
-        type === 'arli' && setStateLoadArliGPT(1)
-        type === 'mistral' && setStateLoadMistralGPT(1)
-        try {
-
-            const textContent = arrTaskList.map(({title}) => title).join(' | ');
-
-            const {data: text} = await axios.post(global.hostAPI + 'gpt', {type, text: textContent, prompt});
-            setTitleGPT(text)
-
-            updateTaskDB({title: text});
-
-            type === 'yandex' && setStateLoadYaGPT(0)
-            type === 'arli' && setStateLoadArliGPT(0)
-            type === 'mistral' && setStateLoadMistralGPT(0)
-        } catch (e) {
-            console.log(e)
-            type === 'yandex' && setStateLoadYaGPT(2)
-            type === 'arli' && setStateLoadArliGPT(2)
-            type === 'mistral' && setStateLoadMistralGPT(2)
-        }
+        const textContent = arrTaskList.map(({title}) => title).join(' | ');
+        setStateLoadGPT({type, state: 1})
+        const title = await toGPT(type, prompt, textContent)
+        setStateLoadGPT({type, state: title ? 0 : 2})
+        const list = '- ' + title.split(' | ').join('\n- ')
+        setTitleGPT(title + '\n' + list)
+        updateTaskDB({title: title + '\n' + list});
     }
 
     const buildAllNews = async () => {
@@ -141,7 +128,15 @@ export default function Tools({news, arrNews}) {
         }
     };
 
-    let _arr = arrTaskList.map(({id}) => arrNews[arrNews.findIndex(it => it.id == id)]);
+    const onCreateMainImg = async () => {
+        await axios.post(global.hostAPI + 'create-main-image');
+    };
+
+    let _arr = [];
+    for (const {id} of arrTaskList) {
+        let index = arrNews.findIndex(it => it.id == id);
+        if (~index) _arr.push(arrNews[index]);
+    }
     const isAllowBuildAll = _arr.every(it => it?.videoDur ?? 0)
     const totalDur = _arr.reduce((acc, it) => acc + (+it.videoDur), 0);
 
@@ -154,11 +149,11 @@ export default function Tools({news, arrNews}) {
                       style={{height: '100px'}}
                       onChange={e => onChangeData({title: e.target.value}, setTitleGPT)}/>
             <ButtonGroup>
-                <ButtonSpinner className="btn-secondary btn-sm" state={stateLoadYaGPT}
+                <ButtonSpinner className="btn-secondary btn-sm" state={stateLoadGPT.type == 'yandex' ? stateLoadGPT.state : 0}
                                onClick={() => onGPT('yandex')}>ya-GPT</ButtonSpinner>
-                <ButtonSpinner className="btn-secondary btn-sm" state={stateLoadArliGPT}
+                <ButtonSpinner className="btn-secondary btn-sm" state={stateLoadGPT.type == 'arli' ? stateLoadGPT.state : 0}
                                onClick={() => onGPT('arli')}>arli-GPT</ButtonSpinner>
-                <ButtonSpinner className="btn-secondary btn-sm" state={stateLoadMistralGPT}
+                <ButtonSpinner className="btn-secondary btn-sm" state={stateLoadGPT.type == 'mistral' ? stateLoadGPT.state : 0}
                                onClick={() => onGPT('mistral')}>mistral-GPT</ButtonSpinner>
             </ButtonGroup>
             <hr/>
@@ -234,6 +229,7 @@ export default function Tools({news, arrNews}) {
                                onClick={buildAllNews}>
                     Собрать все видео ({Math.trunc(totalDur / 60)} мин)
                 </ButtonSpinner>
+                <Button onClick={onCreateMainImg}>tst</Button>
             </ButtonGroup>
             <Dialog title="Удалить эелемент" message="Уверены?" show={showModalRemoveAnTask}
                     setShow={setShowModalRemoveAnTask}

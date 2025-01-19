@@ -14,7 +14,9 @@ export default function GPT({news, setNews}) {
 
     const onGPT = async (type: string, promptCmd = null) => {
         let textContent = (global.selectedText ?? document.querySelector('.news-text').textContent.trim());
-        const text = await toGPT(type, promptCmd ?? prompt, textContent, setStateLoadGPT);
+        setStateLoadGPT({type, state: 1})
+        const text = await toGPT(type, promptCmd ?? prompt, textContent);
+        setStateLoadGPT({type, state: text ? 0 : 2})
         let textGPT = promptCmd ? news.textGPT?.replace(textContent, text) : (news.textGPT ?? '') + text + '\n\n';
         setNews({...news, textGPT})
     }
@@ -30,13 +32,13 @@ export default function GPT({news, setNews}) {
             <Button variant="secondary btn-sm" onClick={() => onGPT(
                 'mistral',
                 'Округли числа до ближайшего целого. Все диапазоны чисел необходимо представить типа: от 12 до 137 в виде: до 137 или 15-37 в виде: до 37')}>Перефразируй</Button>
-                        <Button variant="secondary btn-sm" onClick={() => onGPT(
+            <Button variant="secondary btn-sm" onClick={() => onGPT(
                 'mistral',
                 'Переведи значения в соответствии с Российской системой мер. Ответь очень кратко в виде пересчитаного значения')}>СИ</Button>
             <Button variant="secondary btn-sm" onClick={() => onGPT(
                 'mistral',
-                'Все аббревиатуры необходимо представить в виде слов учитывая форму произношения в контексте текста. Ответ дожен быть в виде требуемого без лишних слов')}>
-                Аббр. в текст</Button>
+                'Все аббревиатуры и названия необходимо представить в виде слов учитывая форму произношения в контексте текста. Ответ дожен быть в виде требуемого без лишних слов')}>
+                Аббр. название в текст</Button>
             <Button variant="secondary btn-sm" onClick={() => onGPT(
                 'mistral',
                 'Все числа необходимо представить в виде слов учитывая форму произношения и единицы измерения в контексте текста. Ответ дожен быть в виде требуемого без лишних слов')}>

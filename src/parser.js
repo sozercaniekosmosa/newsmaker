@@ -3,12 +3,11 @@ import fs, {promises} from "fs";
 import axios from "axios";
 import {JSDOM, VirtualConsole} from "jsdom";
 import randUserAgent from "random-useragent";
-import {CreateVideo, cyrb53, removeFragmentsFromUrl, toShortString, writeData} from "./utils.js";
+import {CreateVideo, cyrb53, formatDateTime, removeFragmentsFromUrl, toShortString, translit} from "./utils.js";
 import {HttpsProxyAgent} from "https-proxy-agent";
-import {Database} from "./DB/SQLight.js";
 import sharp from "sharp";
 import {config} from "dotenv";
-import {formatDateTime, translit} from "./utils.js";
+import nodeHtmlToImage from "node-html-to-image";
 
 const {parsed: {IMG_COOKIE, IMG_XBROWS_VALID, IMG_XCLIENT}} = config();
 
@@ -609,4 +608,30 @@ export function getPathSourceNews({id, title, date, short}) {
     _title = _title.toLocaleLowerCase().split(' ').map(it => it.slice(0, 3)).map(it => it.charAt(0).toUpperCase() + it.slice(1)).slice(0, 3).join('')
     const name = short + '-' + _title + '-' + toShortString(id);
     return `news/${_date}/${name}`;
+}
+
+export async function addTextToImage(html, inputImagePath, outputImagePath, data) {
+
+    html = html.replace('\'<!<DATA>!>\'', JSON.stringify(data))
+
+    try {
+        // Генерируем изображение в формате buffer
+        const imageBuffer = await nodeHtmlToImage({
+            html,
+            puppeteerArgs: {args: ['--no-sandbox']}, // Для стабильной работы на некоторых системах
+            encoding: 'buffer',
+            transparent: true
+        });
+
+        // fs.writeFileSync(outputImagePath, imageBuffer);
+        // const textImage = await sharp(imageBuffer).png().toBuffer();
+
+        await sharp(inputImagePath)
+            .composite([{input: imageBuffer, gravity: 'center'}])
+            .toFile(outputImagePath);
+
+    } catch (error) {
+        console.error('Ошибка при преобразовании HTML в PNG:', error);
+    }
+
 }

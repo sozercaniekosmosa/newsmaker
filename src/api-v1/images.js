@@ -1,7 +1,7 @@
 //import global from "../global.js";
-import {findExtFiles, removeFile, writeFileAsync} from "../utils.js";
+import {findExtFiles, readFileAsync, removeFile, writeFileAsync} from "../utils.js";
 import express from "express";
-import {downloadImages, ImageDownloadProcessor} from "../parser.js";
+import {addTextToImage, downloadImages, ImageDownloadProcessor} from "../parser.js";
 import multer from "multer";
 
 const routerImage = express.Router();
@@ -61,4 +61,28 @@ routerImage.get('/local-data', async (req, res) => {
         res.status(200).send(arrImgUrls);
     }
 });
+
+routerImage.post('/create-main-image', async (req, res) => {
+    try {
+        const desc = dbTask.getByID('config')?.desc ?? 'Перенос инаугурации Трампа привел к потере пригласительных билетов'
+
+        const html = await readFileAsync('src\\template.html', 'utf8')
+        const image = await readFileAsync('content\\img\\logo-lg.png');
+        const base64Image = new Buffer.from(image).toString('base64');
+        const dataURI = 'data:image/jpeg;base64,' + base64Image;
+
+        await addTextToImage(
+            html,
+            `D:\\Dev\\JS\\Prj\\2024\\newsmaker\\public\\public\\done\\25-01-18_21_10_11\\title.png`,
+            `D:\\Dev\\JS\\Prj\\2024\\newsmaker\\public\\public\\done\\25-01-18_21_10_11\\title2.png`,
+            {text:desc, dataURI}
+        )
+        res.status(200).send('ok')
+    } catch (error) {
+        res.status(error.status || 500).send({error: error?.message || error},);
+    } finally {
+        global?.messageSocket && global.messageSocket.send({type: 'update-news'})
+    }
+})
+
 export default routerImage;

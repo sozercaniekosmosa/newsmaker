@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<head>
+    <style>
+        body {
+            width: 1920px;
+            height: 1080px;
+        }
+
+        .text {
+            fill: #000;
+            font-size: 24px;
+            font-family: Verdana;
+        }
+
+        .background {
+            fill: #fff;
+        }
+
+        .back {
+            height: 100%;
+            display: flex;
+            text-align: center;
+            background: rgba(0, 29, 67, 0.6);
+            align-items: flex-start;
+            position: relative;
+        }
+
+        .foreign-text {
+            font-size: 84px;
+            font-weight: bold;
+            font-family: Arial Black, serif;
+            color: #fff;
+            height: 85%;
+            text-align: left;
+            align-content: center;
+            /* border: 1px solid black; */
+            margin: 0 1.3em;
+            padding: 0 0.3em;
+            -webkit-text-stroke: 3px #000000;
+            line-height: 1em;
+            /* border-left: 8px solid white; */
+        }
+
+        .logo {
+            position: absolute;
+            bottom: 40px;
+        }
+    </style>
+</head>
+<body>
+<div class="back">
+    <div class="foreign-text">
+        <script>
+            var {text, dataURI} = '<!<DATA>!>';
+            document.write(text??'Таким образом дальнейшее развитие различных форм деятельности.');
+        </script>
+    </div>
+    <img id="img" src="" class="logo">
+    <script>
+        document.getElementById('img').src = dataURI;
+    </script>
+</div>
+</body>
+</html>

@@ -29,14 +29,14 @@ export default function HeaderMenu({
                                        arrButtonSelect, setArrNews, filterTags, typeNews, setTypeNews, setFilterTags, doneTasks, setDoneTasks,
                                        donePre, setDonePre
                                    }) {
-    const dayFrom = 0;
+    const hourFrom = -6;
 // debugger
     const d = formatDateTime(new Date(), 'yyyy-mm-dd 00:00:00')
 //     console.log(d)
 
     const [listGeneral, listPolitics, listPoliticsRU, listScience, listCulture, listSport] = arrButtonSelect as Object[];
     const [arrFilter, setArrFilter] = useState([])
-    const [dtFrom, setDtFrom] = useState(formatDateTime(addDay(dayFrom, new Date(d)), 'yyyy-mm-dd hh:MM:ss'))
+    const [dtFrom, setDtFrom] = useState(formatDateTime(addHour(hourFrom, new Date(d)), 'yyyy-mm-dd hh:MM:ss'))
     const [dtTo, setDtTo] = useState(formatDateTime(new Date(), 'yyyy-mm-dd hh:MM:ss'))
     const [stateNewsTGUpdate, setStateNewsTGUpdate] = useState(0)
     const [stateNewsRTUpdate, setStateNewsRTUpdate] = useState(0)
@@ -77,7 +77,7 @@ export default function HeaderMenu({
         listSetStateNews[newsSrc](1)
         try {
             await axios.post(glob.hostAPI + 'update-news-type', {typeNews, newsSrc})
-            const from = formatDateTime(addDay(dayFrom, new Date()), 'yyyy-mm-dd');
+            const from = formatDateTime(addDay(hourFrom, new Date()), 'yyyy-mm-dd');
             let to = formatDateTime(new Date(), 'yyyy-mm-dd');
 
             if (from + to != dtFrom + dtTo) {

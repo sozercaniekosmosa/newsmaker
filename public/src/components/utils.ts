@@ -74,8 +74,7 @@ export const updateNewsDB: (news: object) => any = debounce(async (news: object)
     }
 }, 500);
 
-export async function toGPT(type: string, promptCmd = null, textContent: string, setStateLoadGPT = null) {
-    setStateLoadGPT && setStateLoadGPT({type, state: 1})
+export async function toGPT(type: string, promptCmd = null, textContent: string) {
     textContent = glob.selectedText ?? textContent;
     try {
         const {data: text} = await axios.post(glob.hostAPI + 'gpt', {
@@ -86,11 +85,9 @@ export async function toGPT(type: string, promptCmd = null, textContent: string,
 
         if (text.toLocaleLowerCase().includes('в интернете есть много сайтов с информацией на эту')) throw 'ошибка';
 
-        setStateLoadGPT && setStateLoadGPT({type, state: 0})
         return text;
     } catch (e) {
         console.log(e)
-        setStateLoadGPT && setStateLoadGPT({type, state: 2})
         return null;
     }
 }

@@ -4,4 +4,6 @@ export default {
     hostAPI: '',
     selectedText: '',
     draggingElement: null,
+    wsHost: '',
+    wsPort: '',
 }

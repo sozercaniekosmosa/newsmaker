@@ -75,20 +75,20 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
         global.draggingElement = null;
     }
 
+    let onGetTagsGPT = async () => {
+        setStateTagGPT(1)
+        const text = await toGPT('mistral', 'Выдели основные мысли и на основе них сделай несколько не больше 4 тегов. Ни чего лишенего только ответ формата: тег, тег, тег', news?.text ?? '');
+        setStateTagGPT(text ? 0 : 2);
+        setNews(now => ({...now, tags: text}));
+    };
+
     return <div className="d-flex flex-column w-100 notranslate position-relative">
                         <textarea className="options__tags d-flex flex-row border rounded mb-1 p-2 notranslate"
                                   value={news?.tags || ''}
                                   onChange={({target}) => setNews(was => ({...was, tags: target.value}))}
                                   style={{height: '5em'}}/>
         <div className="d-flex flex-row mb-1">
-            <ButtonSpinner className="btn-secondary btn-sm" state={stateTagGPT}
-                           onClick={async () => {
-                               const text = await toGPT('mistral', 'Выдели основные мысли и на основе них сделай несколько не больше 4 тегов. Ни чего лишенего только ответ формата: тег, тег, тег', news?.text ?? '', setStateTagGPT);
-                               setNews(now => ({...now, tags: text}));
-                           }}>
-
-                Получить теги
-            </ButtonSpinner>
+            <ButtonSpinner className="btn-secondary btn-sm" state={stateTagGPT} onClick={onGetTagsGPT}>Получить теги</ButtonSpinner>
             <input className="rounded border text-end ms-2 flex-stretch" type="range" value={quantity} min={1} max={40}
                    step={1} onChange={({target}) => setQuantity(+target.value)} title="Количество изображений"/>
             <span className="p-1 text-center" style={{width: '3em'}}>{quantity}</span>

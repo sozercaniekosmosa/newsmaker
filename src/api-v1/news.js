@@ -105,6 +105,8 @@ routerNews.post('/build-all-news', async (req, res) => {
             pathOut: filePathOut + 'news-all.mp4'
         })
 
+        await saveTextToFile(filePathOut + 'title.txt', title)
+
         global?.messageSocket && global.messageSocket.send({type: 'update-news'})
 
         const baseImagePath = pathResolveRoot(`./public/public/` + (new URL(srcImg)).pathname);
