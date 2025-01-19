@@ -60,7 +60,7 @@ export default function Gallery(props) {
         try {
             console.log(itemToDelete)
             const path = (src.includes('?')) ? src.split('?')[0] : src;
-            await axios.get(global.hostAPI + 'images-remove', {params: {path}});
+            await axios.get(global.hostAPI + 'remove-image', {params: {path}});
         } catch (e) {
             console.log(e)
         }

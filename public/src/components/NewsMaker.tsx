@@ -32,7 +32,7 @@ function NewsMaker() {
     const [typeNews, setTypeNews] = useState('')
     const [progress, setProgress] = useState(0)
     const [news, setNews] = useState(null)
-    const [doneTasks, setDoneTasks] = useState(false)
+    const [doneTasks, setDoneTasks] = useState(true)
     const [donePre, setDonePre] = useState(false)
 
     useEffect(() => {

@@ -6,7 +6,7 @@ import multer from "multer";
 
 const routerImage = express.Router();
 
-routerImage.get('/images-remove', async (req, res) => {
+routerImage.get('/remove-image', async (req, res) => {
     try {
         const {path} = req.query;
         await removeFile('./public/public/' + path.replaceAll(/\\/g, '/'))

@@ -1,7 +1,8 @@
 //import global from "../global.js";
-import {formatDateTime, pathResolveRoot, saveTextToFile} from "../utils.js";
+import {formatDateTime, pathResolveRoot, removeFile, saveTextToFile} from "../utils.js";
 import {execFile} from "child_process";
 import express from "express";
+import routerImage from "./images.js";
 
 const routerGeneral = express.Router();
 
@@ -43,6 +44,19 @@ routerGeneral.post('/save-text', async (req, res) => {
         res.status(200).send('ok');
     } catch (e) {
         res.status(error.status || 500).send({error: error?.message || error},);
+    }
+})
+
+routerGeneral.get('/remove-file', async (req, res) => {
+    try {
+        const {id, filename} = req.query;
+        const {pathSrc} = dbNews.getByID(id)
+        await removeFile(`./public/public/${pathSrc}/${filename}`)
+        res.status(200).send('ok')
+    } catch (error) {
+        res.status(error.status || 500).send({error: error?.message || error},);
+    } finally {
+        global?.messageSocket && global.messageSocket.send({type: 'update-news'})
     }
 })
 

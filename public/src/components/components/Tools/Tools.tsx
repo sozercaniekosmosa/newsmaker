@@ -29,8 +29,8 @@ function arrMoveItem(arr, fromIndex, toIndex) {
 export default function Tools({news, arrNews}) {
 
     const [arrTaskList, setArrTaskList] = useState([]);
-    const [ModalRemoveAnTask, setShowModalRemoveAnTask] = useState(false);
-    const [ModalRemoveAllTask, setShowModalRemoveAllTask] = useState(false);
+    const [showModalRemoveAnTask, setShowModalRemoveAnTask] = useState(false);
+    const [showModalRemoveAllTask, setShowModalRemoveAllTask] = useState(false);
     const [stateBuildALl, setStateBuildALl] = useState(0)
 
     const [prompt, setPrompt] = useState('Сделай из этих названий новостей краткий заголовок для новостного видео (вместо запятой используй вертикальную черту)')
@@ -141,6 +141,10 @@ export default function Tools({news, arrNews}) {
         }
     };
 
+    let _arr = arrTaskList.map(({id}) => arrNews[arrNews.findIndex(it => it.id == id)]);
+    const isAllowBuildAll = _arr.every(it => it?.videoDur ?? 0)
+    const totalDur = _arr.reduce((acc, it) => acc + (+it.videoDur), 0);
+
     return (
         <ScrollParent className="pe-1 pb-1">
             <input type="datetime-local" value={datePublic}
@@ -184,7 +188,7 @@ export default function Tools({news, arrNews}) {
 
                         return <div
                             className="sortable d-flex justify-content-between align-items-center px-1 py-1 m-0 border list-group-item"
-                            key={index} data-id={id}>
+                            key={index} data-id={id} style={arrNews[indexNews].videoDur == 0 ? {backgroundColor: '#ffdddd'} : {}}>
                             <div className="d-flex flex-row">
                                 <span className="notranslate">{arrNews[indexNews].arrImg?.length ? '🖼️' : ''}</span>
                                 <span className="notranslate">{arrNews[indexNews].textGPT ? '📝' : ''}</span>
@@ -204,6 +208,7 @@ export default function Tools({news, arrNews}) {
                 </DraggableList>
             </ScrollChildY>
             <div className="d-flex flex-column p-2 mb-1 border rounded text-muted text-center position-relative"
+                 style={srcImgTitle == '' ? {backgroundColor: '#ffdddd'} : {}}
                  onDrop={() => {
                      let src = global.draggingElement.src;
                      setSrcImgTitle(src)
@@ -225,14 +230,15 @@ export default function Tools({news, arrNews}) {
                                onClick={() => axios.post(glob.hostAPI + 'open-dir')}>
                     Открыть
                 </ButtonSpinner>
-                <ButtonSpinner state={stateBuildALl} className="btn-secondary btn-sm" onClick={buildAllNews}>
-                    Собрать все видео
+                <ButtonSpinner state={stateBuildALl} disabled={srcImgTitle == '' || isAllowBuildAll == false} className="btn-secondary btn-sm"
+                               onClick={buildAllNews}>
+                    Собрать все видео ({Math.trunc(totalDur / 60)} мин)
                 </ButtonSpinner>
             </ButtonGroup>
-            <Dialog title="Удалить эелемент" message="Уверены?" show={ModalRemoveAnTask}
+            <Dialog title="Удалить эелемент" message="Уверены?" show={showModalRemoveAnTask}
                     setShow={setShowModalRemoveAnTask}
                     onConfirm={onConfirmRemoveAnTask} props={{className: 'modal-sm'}}/>
-            <Dialog title="Очистить" message="Уверены?" show={ModalRemoveAllTask} setShow={setShowModalRemoveAllTask}
+            <Dialog title="Очистить" message="Уверены?" show={showModalRemoveAllTask} setShow={setShowModalRemoveAllTask}
                     onConfirm={onConfirmRemoveAllTask} props={{className: 'modal-sm'}}/>
 
         </ScrollParent>

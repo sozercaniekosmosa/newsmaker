@@ -32,9 +32,9 @@ export async function getListNews(from, to) {
     try {
         if (from && to) {
             const arrTask = new Set(global.dbTask.getByID('config').arrTask.map(it => it.id));
-            res = global.dbNews.getAll(({id, date}) => date >= +from && date <= +to || arrTask.has(id));
+            res = global.dbNews.getAll(({id, date}) => date >= +from && date <= +to || arrTask.has(id)).sort((a, b) => b.date - a.date);
         } else {
-            res = global.dbNews.getAll();
+            res = global.dbNews.getAll().sort((a, b) => b.date - a.date);
         }
     } catch (e) {
         console.error(e)
@@ -424,7 +424,7 @@ export class NewsUpdater {
             let news = {
                 date, url,
                 type, from, short: this.short,
-                title, tags: [],
+                title, tags: '',
                 text, textGPT: null, textAdd: null,
                 pathSrc: getPathSourceNews({id, title, date, short: this.short}), //путь до ресурсной директории
                 arrImg: [], secPerFrame: 1.5,

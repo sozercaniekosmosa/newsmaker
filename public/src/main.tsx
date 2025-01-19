@@ -17,7 +17,7 @@ nodeRoot.addEventListener('dblclick', () => {
 })
 nodeRoot.addEventListener('mouseup', () => {
     const text = window.getSelection().toString()
-    if (text.length) glob.selectedText = text
+    glob.selectedText = text.length ? text.trim() : null;
     // console.log(text)
 })
 

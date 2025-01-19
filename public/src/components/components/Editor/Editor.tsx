@@ -10,6 +10,8 @@ import GPT from "./components/GPT/GPT";
 import Images from "./components/Images/Images";
 import glob from "../../../global.ts";
 import 'tui-image-editor/dist/tui-image-editor.css';
+import global from "../../../global.ts";
+import Dialog from "../Auxiliary/Dialog/Dialog.tsx";
 
 let currID;
 
@@ -50,6 +52,7 @@ const getLocalImage = async (id, setArrImg): Promise<void> => {
 
 export default function Editor({news, setNews, listHostToData}) {
 
+    const [stateAudioRemove, setStateAudioRemove] = useState(0)
     const [stateUpdateAnNews, setStateUpdateAnNews] = useState(0)
     const [stateText2Speech, setStateText2Speech] = useState(0)
     const [arrImg, setArrImg] = useState([])
@@ -58,6 +61,7 @@ export default function Editor({news, setNews, listHostToData}) {
     const [update, setUpdate] = useState((new Date()).getTime())
     const [speedDelta, setSpeedDelta] = useState(0);
     const [audioDur, setAudioDuration] = useState(0);
+    const [showModalRemoveAnAudio, setShowModalRemoveAnAudio] = useState(false);
 
     const refAudio: React.MutableRefObject<HTMLAudioElement> = useRef();
     const refVideo: React.MutableRefObject<HTMLVideoElement> = useRef();
@@ -113,8 +117,11 @@ export default function Editor({news, setNews, listHostToData}) {
     async function toYASpeech(voice: string, speed: number) {
         setStateText2Speech(1);
         try {
-            await axios.post(glob.hostAPI + 'to-speech', {id: news.id, text: news.textGPT, voice, speed});
+            const isSelText = glob.selectedText && glob.selectedText.length < 20;
+            await axios.post(glob.hostAPI + 'to-speech', {id: news.id, text: glob.selectedText ?? news.textGPT, voice, speed});
+            glob.selectedText = '';
             updateMedia(refAudio.current, news.pathSrc + `/speech.mp3`, setNews, 'audioDur');
+
             setStateText2Speech(0);
         } catch (e) {
             setStateText2Speech(2);
@@ -147,6 +154,24 @@ export default function Editor({news, setNews, listHostToData}) {
         }
     }
 
+    const onRemoveAudio = async () => {
+
+        try {
+            setStateAudioRemove(1);
+
+            await axios.get(global.hostAPI + 'remove-file', {params: {id: news.id, filename: 'speech.mp3'}});
+            await axios.get(global.hostAPI + 'remove-file', {params: {id: news.id, filename: 'out.mp3'}});
+
+            setStateAudioRemove(0);
+        } catch (e) {
+            console.log(e)
+            setStateAudioRemove(2);
+        } finally {
+            setNews(now => ({...now, audioDur: 0}));
+            updateMedia(refAudio.current, news.pathSrc + `/speech.mp3`, setNews, 'audioDur')
+        }
+    }
+
     return (
         !news ? '' : <div className="options d-flex flex-column h-100 notranslate"
             // @ts-ignore
@@ -167,7 +192,13 @@ export default function Editor({news, setNews, listHostToData}) {
                             <textarea className="news-text border rounded mb-1 p-2 w-100" value={news?.text || ''}
                                       onChange={({target}) => setNews(was => ({...was, text: target.value}))}
                                       style={{height: '15em'}}/>
-                            <div style={{position: 'absolute', bottom: '10px', left: '6px', opacity: .5}}>
+                            <div style={{
+                                position: 'absolute',
+                                bottom: '10px',
+                                left: '6px',
+                                opacity: '0.7',
+                                backgroundColor: '#ffffff'
+                            }}>
                                 Слов: {(news?.text.match(/ /g) || []).length}</div>
                         </div>
                         <hr/>
@@ -189,11 +220,16 @@ export default function Editor({news, setNews, listHostToData}) {
                                        step={0.1} onChange={({target}) => setSpeedDelta(+target.value)} title="Скорость"/>
                                 <span className="p-1 text-center" style={{width: '3em'}}>{speedDelta}</span>
                             </div>
-                            <audio controls ref={refAudio} className="w-100 mb-2" style={{height: '2em'}} onDurationChange={(e) => {
-                                setAudioDuration(~~(e.target as HTMLAudioElement).duration)
-                            }}>
-                                <source type="audio/mpeg"/>
-                            </audio>
+                            <div className="d-flex mb-1">
+                                <audio controls ref={refAudio} className="w-100" style={{height: '2em'}} onDurationChange={(e) => {
+                                    setAudioDuration(~~(e.target as HTMLAudioElement).duration)
+                                }}>
+                                    <source type="audio/mpeg"/>
+                                </audio>
+                                <ButtonSpinner state={stateAudioRemove} variant="secondary btn-sm p-0 ms-1"
+                                               style={{height: '27px', width: '27px', flex: 'none'}}
+                                               onClick={() => setShowModalRemoveAnAudio(true)}>X</ButtonSpinner>
+                            </div>
                         </div>
                     </div>
                 </Tab>
@@ -218,6 +254,9 @@ export default function Editor({news, setNews, listHostToData}) {
                 {/*    <button onClick={() => setAddItem((new Date()).getTime())}>Add Item</button>*/}
                 {/*</Tab>*/}
             </Tabs>
+            <Dialog title="Удалить эелемент" message="Уверены?" show={showModalRemoveAnAudio}
+                    setShow={setShowModalRemoveAnAudio}
+                    onConfirm={onRemoveAudio} props={{className: 'modal-sm'}}/>
         </div>
     );
-}
+};
