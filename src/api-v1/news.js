@@ -4,6 +4,7 @@ import express from "express";
 import dzen from "../parsers/dzen.js";
 import {buildAllNews, buildAnNews} from "../video.js";
 import {getListNews, getListTask, NewsUpdater, overlayImages} from "../parser.js";
+import axios from "axios";
 
 const routerNews = express.Router();
 
@@ -84,14 +85,15 @@ routerNews.post('/build-all-news', async (req, res) => {
 
         const {arrTask, title, date, srcImg} = global.dbTask.getByID('config')
 
+        let filePathOut = `./public/public/done/` + formatDateTime(new Date(date), 'yy-mm-dd_hh_MM_ss' + '/');
+        let filePathIntro = pathResolveRoot('./content/video/intro.mp4');
+        let filePathEnd = pathResolveRoot('./content/video/end.mp4');
+
         const arrPath = arrTask.map(({id}) => {
             const {pathSrc} = dbNews.getByID(id);
             const filePath = `./public/public/${pathSrc}/`
             return pathResolveRoot(filePath + 'news.mp4')
         })
-        let filePathOut = `./public/public/done/` + formatDateTime(new Date(date), 'yy-mm-dd_hh_MM_ss' + '/');
-        let filePathIntro = pathResolveRoot('./content/video/intro.mp4');
-        let filePathEnd = pathResolveRoot('./content/video/end.mp4');
 
         await createAndCheckDir(filePathOut + '.mp4');
 
@@ -146,6 +148,16 @@ routerNews.get('/list-task', async (req, res) => {
     try {
         let result = await getListTask(dbTask);
         res.status(200).send(result)
+    } catch (error) {
+        res.status(error.status || 500).send({error: error?.message || error},);
+    }
+});
+
+routerNews.get('/exist-resource', async (req, res) => {
+    try {
+        const {url} = req.query;
+        const response = await axios.head(url);
+        if (response.status === 200) res.status(200).send('Ok')
     } catch (error) {
         res.status(error.status || 500).send({error: error?.message || error},);
     }

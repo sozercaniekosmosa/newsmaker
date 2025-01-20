@@ -15,30 +15,28 @@ import Dialog from "../Auxiliary/Dialog/Dialog.tsx";
 
 let currID;
 
-const checkResourceAvailability = async (src: string) => {
+const checkResourceAvailability = async (url: string) => {
     try {
-        const response = await fetch(src, {method: 'HEAD'});
-        return response.ok;
+        const response = await axios.get(glob.hostAPI + 'exist-resource', {params: {url:url.replace('5173/', '3000/public/public/')}});
+        return response;
     } catch (error) {
         console.log('Ошибка загрузки видео:', error);
         return false;
     }
 };
 
-function updateMedia(node, src, setNews, propName) {
-    (async () => {
-        const res = await checkResourceAvailability(glob.host + src)
+async function updateMedia(node, src, setNews, propName) {
+    const res = await checkResourceAvailability(glob.host + src)
 
-        if (res) {
-            node.addEventListener('loadedmetadata', e => setNews((now: {}) => ({...now, [propName]: (e.target as HTMLAudioElement).duration})));
-            node.querySelector('source').src = glob.host + src + '?upd=' + new Date().getTime();
-            node.load()
-        } else {
-            setNews((now: {}) => ({...now, [propName]: 0}))
-            node.querySelector('source').src = '';
-            node.load()
-        }
-    })()
+    if (res) {
+        node.addEventListener('loadedmetadata', e => setNews((now: {}) => ({...now, [propName]: (e.target as HTMLAudioElement).duration})));
+        node.querySelector('source').src = glob.host + src + '?upd=' + new Date().getTime();
+        node.load()
+    } else {
+        setNews((now: {}) => ({...now, [propName]: 0}))
+        node.querySelector('source').src = '';
+        node.load()
+    }
 }
 
 const getLocalImage = async (id, setArrImg): Promise<void> => {
@@ -87,8 +85,10 @@ export default function Editor({news, setNews, listHostToData}) {
         if (currID === news.id) return;
         currID = news.id;
 
-        updateMedia(refVideo.current, news.pathSrc + `/news.mp4`, setNews, 'videoDur')
-        updateMedia(refAudio.current, news.pathSrc + `/speech.mp3`, setNews, 'audioDur')
+        (async () => {
+            await updateMedia(refVideo.current, news.pathSrc + `/news.mp4`, setNews, 'videoDur')
+            await updateMedia(refAudio.current, news.pathSrc + `/speech.mp3`, setNews, 'audioDur')
+        })()
 
     }, [news])
 
@@ -106,7 +106,7 @@ export default function Editor({news, setNews, listHostToData}) {
             setStateNewsBuild(0);
 
             if (currID !== +respID) return; //TODO: переделать
-            updateMedia(refVideo.current, news.pathSrc + `/news.mp4`, setNews, 'videoDur')
+            await updateMedia(refVideo.current, news.pathSrc + `/news.mp4`, setNews, 'videoDur')
             setStateNewsBuild(0);
         } catch (e) {
             setStateNewsBuild(2);
@@ -120,7 +120,7 @@ export default function Editor({news, setNews, listHostToData}) {
             const isSelText = glob.selectedText && glob.selectedText.length < 20;
             await axios.post(glob.hostAPI + 'to-speech', {id: news.id, text: glob.selectedText ?? news.textGPT, voice, speed});
             glob.selectedText = '';
-            updateMedia(refAudio.current, news.pathSrc + `/speech.mp3`, setNews, 'audioDur');
+            await updateMedia(refAudio.current, news.pathSrc + `/speech.mp3`, setNews, 'audioDur')
 
             setStateText2Speech(0);
         } catch (e) {
@@ -168,7 +168,7 @@ export default function Editor({news, setNews, listHostToData}) {
             setStateAudioRemove(2);
         } finally {
             setNews(now => ({...now, audioDur: 0}));
-            updateMedia(refAudio.current, news.pathSrc + `/speech.mp3`, setNews, 'audioDur')
+            await updateMedia(refAudio.current, news.pathSrc + `/speech.mp3`, setNews, 'audioDur')
         }
     }
 

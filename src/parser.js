@@ -20,7 +20,7 @@ export async function getListTask(db) {
     let res;
     try {
         res = await db.getByID('config')
-        res = res ? res : await db.add('config', {arrTask: [], title: '', date: '', srcImg: ''});
+        res = res ? res : await db.add('config', {arrTask: [], title: '', date: '', srcImg: '', mainTitle: ''});
     } catch (e) {
         console.error(e)
     }

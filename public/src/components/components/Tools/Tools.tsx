@@ -35,21 +35,25 @@ export default function Tools({news, arrNews}) {
 
     const [prompt, setPrompt] = useState('Сделай из этих названий новостей краткий заголовок для новостного видео (вместо запятой используй вертикальную черту)')
     const [datePublic, setDatePublic] = useState('')
+    const [mainTitle, setMainTitle] = useState('')
     const [titleGPT, setTitleGPT] = useState('')
     const [stateLoadYaGPT, setStateLoadYaGPT] = useState(0)
     const [stateLoadArliGPT, setStateLoadArliGPT] = useState(0)
     const [stateLoadMistralGPT, setStateLoadMistralGPT] = useState(0)
     const [srcImgTitle, setSrcImgTitle] = useState('')
+    const [srcImgMain, setSrcImgMain] = useState('')
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
     const [stateLoadGPT, setStateLoadGPT] = useState({type: '', state: 0});
 
     useEffect(() => {
         (async () => {
-            const {arrTask, title, date, srcImg} = await getTasks();
+            const {arrTask, title, date, srcImg, srcImgMain, mainTitle} = await getTasks();
             setArrTaskList(arrTask);
             setTitleGPT(title);
             setSrcImgTitle(srcImg);
+            setSrcImgMain(!!srcImgMain ? srcImgMain : srcImg);
             setDatePublic(date);
+            setMainTitle(mainTitle);
         })()
     }, []);
 
@@ -109,11 +113,13 @@ export default function Tools({news, arrNews}) {
     }
 
     let onConfirmRemoveAllTask = () => {
-        const list = {arrTask: [], title: '', date: '', srcImg: ''}
+        const list = {arrTask: [], title: '', date: '', srcImg: '', mainTitle: ''}
         setDatePublic('');
+        setMainTitle(list.mainTitle);
         setTitleGPT(list.title);
         setArrTaskList(list.arrTask);
         setSrcImgTitle(list.srcImg);
+        setSrcImgMain(list.srcImg);
 
         updateTaskDB(list);
     }
@@ -129,7 +135,11 @@ export default function Tools({news, arrNews}) {
     };
 
     const onCreateMainImg = async () => {
-        await axios.post(global.hostAPI + 'create-main-image');
+        if (!datePublic) return;
+        let filePathOut = `./public/public/done/` + formatDateTime(new Date(datePublic), 'yy-mm-dd_hh_MM_ss' + '/title.png');
+        let urlMainTitle = `/done/` + formatDateTime(new Date(datePublic), 'yy-mm-dd_hh_MM_ss' + '/title.png?' + new Date().getTime());
+        await axios.post(global.hostAPI + 'create-main-image', {filePathOut});
+        onChangeData({srcImgMain: urlMainTitle}, setSrcImgMain)
     };
 
     let _arr = [];
@@ -202,34 +212,43 @@ export default function Tools({news, arrNews}) {
                     })}
                 </DraggableList>
             </ScrollChildY>
+            <textarea className="form-control me-1 operation__prompt rounded border mb-1" value={mainTitle}
+                      style={{height: '70px'}}
+                      onChange={e => onChangeData({mainTitle: e.target.value}, setMainTitle)}/>
             <div className="d-flex flex-column p-2 mb-1 border rounded text-muted text-center position-relative"
-                 style={srcImgTitle == '' ? {backgroundColor: '#ffdddd'} : {}}
+                 style={srcImgMain == '' ? {backgroundColor: '#ffdddd'} : {}}
                  onDrop={() => {
                      let src = global.draggingElement.src;
                      setSrcImgTitle(src)
+                     setSrcImgMain(src)
                      global.draggingElement = null;
                      updateTaskDB({srcImg: src});
                  }} onDragOver={e => e.preventDefault()}>
-                <img src={srcImgTitle}/>
-                <div hidden={srcImgTitle != ''}>Добвьте изображение для обложки...</div>
-                <Button hidden={srcImgTitle == ''} variant="danger btn-sm py-0 px-0 " className="position-absolute"
+                <img src={srcImgMain}/>
+                <div hidden={srcImgMain != ''}>Добвьте изображение для обложки...</div>
+                <Button hidden={srcImgMain == ''} variant="danger btn-sm py-0 px-0 " className="position-absolute"
                         style={{lineHeight: '0', height: '22px', width: '22px', right: '12px', top: '12px'}}
                         onClick={() => {
                             setSrcImgTitle('');
+                            setSrcImgMain('');
                             updateTaskDB({srcImg: ''});
                         }}
                 >X</Button>
+                <Button hidden={srcImgMain == ''} variant="secondary btn-sm py-0 px-0 " className="position-absolute"
+                        style={{lineHeight: '0', height: '22px', width: '22px', left: '12px', top: '12px'}}
+                        onClick={onCreateMainImg}
+                ><strong>✓</strong></Button>
             </div>
             <ButtonGroup>
                 <ButtonSpinner state={0} hidden={false} className="btn-secondary btn-sm"
                                onClick={() => axios.post(glob.hostAPI + 'open-dir')}>
                     Открыть
                 </ButtonSpinner>
-                <ButtonSpinner state={stateBuildALl} disabled={srcImgTitle == '' || isAllowBuildAll == false} className="btn-secondary btn-sm"
+                <ButtonSpinner state={stateBuildALl} disabled={srcImgMain == '' || isAllowBuildAll == false} className="btn-secondary btn-sm"
                                onClick={buildAllNews}>
                     Собрать все видео ({Math.trunc(totalDur / 60)} мин)
                 </ButtonSpinner>
-                <Button onClick={onCreateMainImg}>tst</Button>
+                {/*<Button onClick={onCreateMainImg}>tst</Button>*/}
             </ButtonGroup>
             <Dialog title="Удалить эелемент" message="Уверены?" show={showModalRemoveAnTask}
                     setShow={setShowModalRemoveAnTask}

@@ -1,4 +1,4 @@
-import {findExtFiles, readFileAsync, removeFile, writeFileAsync} from "../utils.js";
+import {findExtFiles, formatDateTime, pathResolveRoot, readFileAsync, removeFile, writeFileAsync} from "../utils.js";
 import express from "express";
 import {renderToBrowser, downloadImages, ImageDownloadProcessor} from "../parser.js";
 import multer from "multer";
@@ -64,13 +64,16 @@ routerImage.get('/local-data', async (req, res) => {
 
 routerImage.post('/create-main-image', async (req, res) => {
     try {
-        const mainTitle = dbTask.getByID('config')?.mainTitle ?? 'Перенос инаугурации Трампа привел к потере пригласительных билетов'
+        const {body: {filePathOut}} = req;
+        const {arrTask, title, date, srcImg} = global.dbTask.getByID('config')
+
+        const mainTitle = dbTask.getByID('config')?.mainTitle ?? ''
         await renderToBrowser({
             urlTemplate: 'http://localhost:3000/content/templates/mainImg',
-            pathOut: './tst.png',
+            pathOut: filePathOut,
             data: {
                 mainTitle,
-                img: 'http://localhost:3000/content/img/logo-mini.png'
+                img: srcImg
             }
             // debug: true
         })

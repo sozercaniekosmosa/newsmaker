@@ -96,7 +96,7 @@ export default function Gallery(props) {
                        target="_blank"
                        rel="noreferrer"
                     >
-                        <img src={image.src + '?upd=' + update} alt="" onDragStart={e => global.draggingElement = e.target}
+                        <img src={'/'+image.src + '?upd=' + update} alt="" onDragStart={e => global.draggingElement = e.target}
                              onContextMenu={(e) => {
                                  onConfirmRemoveImage(image.src);
                                  e.preventDefault();
