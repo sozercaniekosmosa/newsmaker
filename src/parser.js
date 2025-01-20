@@ -7,7 +7,8 @@ import {CreateVideo, cyrb53, formatDateTime, removeFragmentsFromUrl, toShortStri
 import {HttpsProxyAgent} from "https-proxy-agent";
 import sharp from "sharp";
 import {config} from "dotenv";
-import nodeHtmlToImage from "node-html-to-image";
+import {chromium} from "playwright";
+import {saveVideo} from "playwright-video";
 
 const {parsed: {IMG_COOKIE, IMG_XBROWS_VALID, IMG_XCLIENT}} = config();
 
@@ -31,7 +32,9 @@ export async function getListNews(from, to) {
     try {
         if (from && to) {
             const arrTask = new Set(global.dbTask.getByID('config').arrTask.map(it => it.id));
-            res = global.dbNews.getAll(({id, date}) => date >= +from && date <= +to || arrTask.has(id)).sort((a, b) => b.date - a.date);
+            res = global.dbNews.getAll(({
+                                            id, date
+                                        }) => date >= +from && date <= +to || arrTask.has(id)).sort((a, b) => b.date - a.date);
         } else {
             res = global.dbNews.getAll().sort((a, b) => b.date - a.date);
         }
@@ -312,8 +315,19 @@ export class NewsUpdater {
     listTask;
 
     constructor({
-                    host, listTask, db, getArrUrlOfType, getDateAsMls, getTitle, getArrTags,
-                    getTextContent, getHtmlUrl, getDocument, getSrcName, getID, short
+                    host,
+                    listTask,
+                    db,
+                    getArrUrlOfType,
+                    getDateAsMls,
+                    getTitle,
+                    getArrTags,
+                    getTextContent,
+                    getHtmlUrl,
+                    getDocument,
+                    getSrcName,
+                    getID,
+                    short
                 }) {
         this.db = db;
         this.HOST = host;
@@ -421,12 +435,19 @@ export class NewsUpdater {
             let from = this.getSrcName(doc) ?? '';
 
             let news = {
-                date, url,
-                type, from, short: this.short,
-                title, tags: '',
-                text, textGPT: null, textAdd: null,
+                date,
+                url,
+                type,
+                from,
+                short: this.short,
+                title,
+                tags: '',
+                text,
+                textGPT: null,
+                textAdd: null,
                 pathSrc: getPathSourceNews({id, title, date, short: this.short}), //путь до ресурсной директории
-                arrImg: [], secPerFrame: 1.5,
+                arrImg: [],
+                secPerFrame: 1.5,
                 audioDur: 0,
                 videoDur: 0,
                 done: false,
@@ -610,25 +631,41 @@ export function getPathSourceNews({id, title, date, short}) {
     return `news/${_date}/${name}`;
 }
 
-export async function addTextToImage(html, inputImagePath, outputImagePath, data) {
-
-    html = html.replace('\'<!<DATA>!>\'', JSON.stringify(data))
+export async function renderToBrowser({
+                                          urlTemplate = 'http://localhost:3000/templates/template.html',
+                                          fps = 30,
+                                          data,
+                                          pathOut,
+                                          debug = false,
+                                          options = {devtools: true},
+                                          width = 1920,
+                                          height = 1080,
+                                      }) {
 
     try {
-        // Генерируем изображение в формате buffer
-        const imageBuffer = await nodeHtmlToImage({
-            html,
-            puppeteerArgs: {args: ['--no-sandbox']}, // Для стабильной работы на некоторых системах
-            encoding: 'buffer',
-            transparent: true
-        });
+        let capture;
 
-        // fs.writeFileSync(outputImagePath, imageBuffer);
-        // const textImage = await sharp(imageBuffer).png().toBuffer();
+        // Запускаем браузер
+        let browser = await chromium.launch({headless: debug === false, ...options});
+        const context = await browser.newContext({viewport: {width, height}});
+        const page = await context.newPage();
 
-        await sharp(inputImagePath)
-            .composite([{input: imageBuffer, gravity: 'center'}])
-            .toFile(outputImagePath);
+        await page.goto(urlTemplate);
+        const videoDur = await page.evaluate((data) => window?.renderExec(data) ?? 0, data);
+
+        if (!debug) {
+            // const savePath = join('.\\', `${Date.now()}.mp4`);
+            if (videoDur > 0) capture = await saveVideo(page, pathOut, {fps});
+
+            if (videoDur === 0) await page.screenshot({path: pathOut})
+
+            if (videoDur > 0) await page.waitForTimeout(videoDur);
+            if (videoDur > 0) await capture.stop();
+
+            await page.close();
+        } else {
+            await page.pause();
+        }
 
     } catch (error) {
         console.error('Ошибка при преобразовании HTML в PNG:', error);
