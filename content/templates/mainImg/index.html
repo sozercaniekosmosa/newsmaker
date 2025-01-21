@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<head>
+    <style>
+        body {
+            width: 1920px;
+            height: 1080px;
+            margin: 0;
+        }
+
+        .text {
+            fill: #000;
+            font-size: 24px;
+            font-family: Verdana;
+        }
+
+        .background {
+            fill: #fff;
+        }
+
+        .text-wrapper {
+            height: 100%;
+            display: flex;
+            text-align: center;
+            background: lch(0 0 0 / 0.5);
+            align-items: flex-start;
+            position: relative;
+        }
+
+        .text-title {
+            font-size: 100px;
+            font-weight: 900;
+            font-family: Arial, sans-serif;
+            color: #fff;
+            height: 75%;
+            text-align: left;
+            align-content: center;
+            /* border: 1px solid black; */
+            margin: 0 0.3em;
+            padding: 0.2em 0.2em;
+            /* -webkit-text-stroke: 5px #000000; */
+            line-height: 1.2em;
+            /* border-left: 18px solid white; */
+        }
+
+        .back-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .logo {
+            position: absolute;
+            bottom: 40px;
+        }
+    </style>
+</head>
+<body>
+<img class="back-img" src="">
+<div class="text-wrapper">
+    <div class="text-title"></div>
+    <script src="index.js" type="module" defer></script>
+    <img class="logo" src="logo-lg.png">
+</div>
+</body>
+</html>

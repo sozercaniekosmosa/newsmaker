@@ -32,7 +32,6 @@ dist-ssr
 /_urls.json
 /*.dbNews
 /*.db
-/content/
 /public/public/news/
 /public/public/done/
 /public/test.html
