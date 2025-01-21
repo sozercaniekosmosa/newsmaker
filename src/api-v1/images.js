@@ -74,7 +74,29 @@ routerImage.post('/create-main-image', async (req, res) => {
             data: {
                 mainTitle,
                 img: srcImg
-            }
+            },
+            debug: true
+        })
+        res.status(200).send('ok')
+    } catch (error) {
+        res.status(error.status || 500).send({error: error?.message || error},);
+    } finally {
+        global?.messageSocket && global.messageSocket.send({type: 'update-news'})
+    }
+})
+
+routerImage.post('/create-title-image', async (req, res) => {
+    try {
+        const {body: {id, url}} = req;
+        const news = global.dbNews.getByID(id);
+        let pathOut = `./public/public/${news.pathSrc}/title.png`
+        await renderToBrowser({
+            urlTemplate: 'http://localhost:3000/content/templates/newsTitleImg',
+            pathOut,
+            data: {
+                text: news.title,
+                img: '\\public\\public\\' + url
+            },
             // debug: true
         })
         res.status(200).send('ok')

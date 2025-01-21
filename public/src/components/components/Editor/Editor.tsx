@@ -9,16 +9,15 @@ import ButtonSpinner from "../Auxiliary/ButtonSpinner/ButtonSpinner";
 import GPT from "./components/GPT/GPT";
 import Images from "./components/Images/Images";
 import glob from "../../../global.ts";
-import 'tui-image-editor/dist/tui-image-editor.css';
 import global from "../../../global.ts";
+import 'tui-image-editor/dist/tui-image-editor.css';
 import Dialog from "../Auxiliary/Dialog/Dialog.tsx";
 
 let currID;
 
 const checkResourceAvailability = async (url: string) => {
     try {
-        const response = await axios.get(glob.hostAPI + 'exist-resource', {params: {url:url.replace('5173/', '3000/public/public/')}});
-        return response;
+        return await axios.get(glob.hostAPI + 'exist-resource', {params: {url: url.replace('5173/', '3000/public/public/')}});
     } catch (error) {
         console.log('Ошибка загрузки видео:', error);
         return false;
@@ -29,7 +28,10 @@ async function updateMedia(node, src, setNews, propName) {
     const res = await checkResourceAvailability(glob.host + src)
 
     if (res) {
-        node.addEventListener('loadedmetadata', e => setNews((now: {}) => ({...now, [propName]: (e.target as HTMLAudioElement).duration})));
+        node.addEventListener('loadedmetadata', e => setNews((now: {}) => ({
+            ...now,
+            [propName]: (e.target as HTMLAudioElement).duration
+        })));
         node.querySelector('source').src = glob.host + src + '?upd=' + new Date().getTime();
         node.load()
     } else {
@@ -42,7 +44,7 @@ async function updateMedia(node, src, setNews, propName) {
 const getLocalImage = async (id, setArrImg): Promise<void> => {
     try {
         const {data: arrSrc} = await axios.get(glob.hostAPI + 'local-data', {params: {id}});
-        setArrImg(arrSrc.map((src: string) => ({src, width: 1920, height: 1080})))
+        setArrImg(arrSrc.map((src: string) => ({src: src + '?' + new Date().getTime(), width: 1920, height: 1080})))
     } catch (e) {
         // setArrImg([])
     }
@@ -118,7 +120,12 @@ export default function Editor({news, setNews, listHostToData}) {
         setStateText2Speech(1);
         try {
             const isSelText = glob.selectedText && glob.selectedText.length < 20;
-            await axios.post(glob.hostAPI + 'to-speech', {id: news.id, text: glob.selectedText ?? news.textGPT, voice, speed});
+            await axios.post(glob.hostAPI + 'to-speech', {
+                id: news.id,
+                text: glob.selectedText ?? news.textGPT,
+                voice,
+                speed
+            });
             glob.selectedText = '';
             await updateMedia(refAudio.current, news.pathSrc + `/speech.mp3`, setNews, 'audioDur')
 
@@ -134,7 +141,11 @@ export default function Editor({news, setNews, listHostToData}) {
             const {id, url, title, tags, text, dt, type} = news;
             const short = listHostToData[(new URL(url)).host].short;
 
-            const {data} = await axios.post(glob.hostAPI + 'update-one-news-type', {typeNews: type, newsSrc: short, url})
+            const {data} = await axios.post(glob.hostAPI + 'update-one-news-type', {
+                typeNews: type,
+                newsSrc: short,
+                url
+            })
 
             setStateUpdateAnNews(0)
 
@@ -182,7 +193,8 @@ export default function Editor({news, setNews, listHostToData}) {
             <Button hidden={true} variant="secondary btn-sm mb-1 notranslate" onClick={onUpdateAnNews}>Обновить</Button>
             <Button hidden={true} variant="secondary btn-sm mb-1 notranslate" onClick={onRemoveNews}>X</Button>
             <div className="d-flex flex-row">
-            <textarea className="options__title d-flex flex-row flex-stretch input-text border rounded mb-1 p-2" value={news?.title || ''}
+            <textarea className="options__title d-flex flex-row flex-stretch input-text border rounded mb-1 p-2"
+                      value={news?.title || ''}
                       onChange={({target}) => setNews(was => ({...was, title: target.value}))}/>
             </div>
             <Tabs defaultActiveKey="original" className="mb-1">
@@ -216,14 +228,17 @@ export default function Editor({news, setNews, listHostToData}) {
                                     <ButtonSpinner className="btn-secondary btn-sm mb-2" state={stateText2Speech}
                                                    onClick={() => toYASpeech('filipp', 1.4 + speedDelta)}>Филипп</ButtonSpinner>
                                 </ButtonGroup>
-                                <input className="rounded border text-end mb-2 ms-1" type="range" value={speedDelta} min={-1} max={1}
-                                       step={0.1} onChange={({target}) => setSpeedDelta(+target.value)} title="Скорость"/>
+                                <input className="rounded border text-end mb-2 ms-1" type="range" value={speedDelta}
+                                       min={-1} max={1}
+                                       step={0.1} onChange={({target}) => setSpeedDelta(+target.value)}
+                                       title="Скорость"/>
                                 <span className="p-1 text-center" style={{width: '3em'}}>{speedDelta}</span>
                             </div>
                             <div className="d-flex mb-1">
-                                <audio controls ref={refAudio} className="w-100" style={{height: '2em'}} onDurationChange={(e) => {
-                                    setAudioDuration(~~(e.target as HTMLAudioElement).duration)
-                                }}>
+                                <audio controls ref={refAudio} className="w-100" style={{height: '2em'}}
+                                       onDurationChange={(e) => {
+                                           setAudioDuration(~~(e.target as HTMLAudioElement).duration)
+                                       }}>
                                     <source type="audio/mpeg"/>
                                 </audio>
                                 <ButtonSpinner state={stateAudioRemove} variant="secondary btn-sm p-0 ms-1"

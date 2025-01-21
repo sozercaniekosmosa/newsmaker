@@ -9,8 +9,9 @@ import global from "../../../../../global.ts";
 import 'tui-image-editor/dist/tui-image-editor.css';
 import ImageEditor from '@toast-ui/react-image-editor';
 import {theme, locale_ru} from './cfgEditor';
+import {formatDateTime} from "../../../../../utils.ts";
 
-export default function Gallery(props) {
+export default function Gallery({news, galleryID, images}) {
     const [showModalRemove, setShowModalRemove] = useState(false);
     const [showModalEdit, setShowModalEdit] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
@@ -20,7 +21,7 @@ export default function Gallery(props) {
 
     useEffect(() => {
         let lightbox = new PhotoSwipeLightbox({
-            gallery: '#' + props.galleryID,
+            gallery: '#' + galleryID,
             children: 'a',
             pswpModule: () => import('photoswipe'),
         });
@@ -67,36 +68,48 @@ export default function Gallery(props) {
     };
 
     return (
-        <div className="pswp-gallery d-flex flex-wrap justify-content-center" id={props.galleryID} style={{height: 0}}>
-            {props.images.length === 0 && <div>
+        <div className="pswp-gallery d-flex flex-wrap justify-content-center" id={galleryID} style={{height: 0}}>
+            {images.length === 0 && <div>
                 <center className="text-secondary opacity-50"><h6>Загрузите изображения...</h6></center>
             </div>}
-            {props.images.map((image, index) => (
+            {images.map((image, index) => (
                 <div style={{width: 'fit-content'}} key={index}>
-                    <Button variant="danger btn-sm py-0 px-0"
-                            style={{position: "relative", lineHeight: '0', height: '22px', width: '22px', left: '52px', top: '-32px'}}
-                            onClick={(e) => {
-                                setShowModalRemove(true);
-                                setItemToDelete(image.src)
-                            }}
-                    >X</Button>
-                    <Button variant="secondary btn-sm py-0 px-0"
-                            style={{position: "relative", lineHeight: '0', height: '22px', width: '22px', left: '175px', top: '-32px'}}
-                            onClick={(e) => {
-                                setShowModalEdit(true);
-                                setSrcToEdit(image.src)
-                                setIndexImage(index)
-                                console.log(srcToEdit)
-                            }}
-                    >…</Button>
+                    <div className="d-flex justify-content-between px-2" style={{position: "relative", top: '28px'}}>
+                        <Button variant="danger btn-sm py-0 px-0"
+                                style={{lineHeight: '0', height: '22px', width: '22px'}}
+                                onClick={(e) => {
+                                    setShowModalRemove(true);
+                                    setItemToDelete(image.src)
+                                }}
+                        >X</Button>
+                        <Button variant="secondary btn-sm py-0 px-0"
+                                style={{lineHeight: '0', height: '22px', width: '22px'}}
+                                onClick={async (e) => {
+                                    await axios.post(global.hostAPI + 'create-title-image', {
+                                        id: news.id,
+                                        url: image.src
+                                    });
+                                }}
+                        >+</Button>
+                        <Button variant="secondary btn-sm py-0 px-0"
+                                style={{lineHeight: '0', height: '22px', width: '22px'}}
+                                onClick={(e) => {
+                                    setShowModalEdit(true);
+                                    setSrcToEdit(image.src)
+                                    setIndexImage(index)
+                                    console.log(srcToEdit)
+                                }}
+                        >…</Button>
+                    </div>
                     <a href={image.src}
                        data-pswp-width={image.width}
                        data-pswp-height={image.height}
-                       key={props.galleryID + '-' + index}
+                       key={galleryID + '-' + index}
                        target="_blank"
                        rel="noreferrer"
                     >
-                        <img src={'/'+image.src + '?upd=' + update} alt="" onDragStart={e => global.draggingElement = e.target}
+                        <img src={'/' + image.src + '?' + update + new Date().getTime()} alt=""
+                             onDragStart={e => global.draggingElement = e.target}
                              onContextMenu={(e) => {
                                  onConfirmRemoveImage(image.src);
                                  e.preventDefault();

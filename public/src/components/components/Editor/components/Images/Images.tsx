@@ -70,7 +70,7 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
     const onDropSortImg = () => {
         if (!global.draggingElement) return;
         //@ts-ignore
-        let src = (new URL(global.draggingElement.src)).pathname.split('/').at(-1);
+        let src = (new URL(global.draggingElement.src)).pathname.split('/').at(-1) + '?' + new Date().getTime();
         setNews({...news, arrImg: [...news.arrImg, src]});
         global.draggingElement = null;
     }
@@ -88,7 +88,8 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
                                   onChange={({target}) => setNews(was => ({...was, tags: target.value}))}
                                   style={{height: '5em'}}/>
         <div className="d-flex flex-row mb-1">
-            <ButtonSpinner className="btn-secondary btn-sm" state={stateTagGPT} onClick={onGetTagsGPT}>Получить теги</ButtonSpinner>
+            <ButtonSpinner className="btn-secondary btn-sm" state={stateTagGPT} onClick={onGetTagsGPT}>Получить
+                теги</ButtonSpinner>
             <input className="rounded border text-end ms-2 flex-stretch" type="range" value={quantity} min={1} max={40}
                    step={1} onChange={({target}) => setQuantity(+target.value)} title="Количество изображений"/>
             <span className="p-1 text-center" style={{width: '3em'}}>{quantity}</span>
@@ -101,7 +102,7 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
             </ButtonSpinner>
         </div>
         <div className="operation__img border rounded mb-1" style={{backgroundColor: '#ebf0f7'}}>
-            <Gallery galleryID="my-test-gallery" images={arrImg}/>
+            <Gallery galleryID="my-test-gallery" images={arrImg} news={news}/>
             <div className="position-absolute" style={{bottom: '6px', right: '6px', opacity: .5}}>
                 Всего: {arrImg.length} ({maxImage} сек)
             </div>
@@ -109,7 +110,8 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
         <div className="flex-stretch border rounded mb-1" style={{backgroundColor: '#ebf0f7'}} onDrop={onDropSortImg}
              onDragOver={e => e.preventDefault()}>
             {news?.arrImg?.length === 0 && <div>
-                <center className="text-secondary opacity-50"><h6>Перетащите изображения (сверху) из загруженых...</h6></center>
+                <center className="text-secondary opacity-50"><h6>Перетащите изображения (сверху) из загруженых...</h6>
+                </center>
             </div>}
             <DraggableList onChange={onChangeSort} className="d-flex flex-wrap flex-stretch justify-content-center">
                 {news?.arrImg.map((item, index) => {

@@ -32,9 +32,9 @@ export async function getListNews(from, to) {
     try {
         if (from && to) {
             const arrTask = new Set(global.dbTask.getByID('config').arrTask.map(it => it.id));
-            res = global.dbNews.getAll(({
-                                            id, date
-                                        }) => date >= +from && date <= +to || arrTask.has(id)).sort((a, b) => b.date - a.date);
+            res = global.dbNews.getAll(({id, date}) => {
+                return date >= +from && date <= +to || arrTask.has(id);
+            }).sort((a, b) => b.date - a.date);
         } else {
             res = global.dbNews.getAll().sort((a, b) => b.date - a.date);
         }
@@ -651,21 +651,24 @@ export async function renderToBrowser({
         const page = await context.newPage();
 
         await page.goto(urlTemplate);
-        const videoDur = await page.evaluate((data) => window?.renderExec(data) ?? 0, data);
 
-        if (!debug) {
+        const videoDur = await page.evaluate((data) => window?.render(data), data) ?? 0;
+
+        // if (!debug) {
             // const savePath = join('.\\', `${Date.now()}.mp4`);
             if (videoDur > 0) capture = await saveVideo(page, pathOut, {fps});
 
-            if (videoDur === 0) await page.screenshot({path: pathOut})
+            if (videoDur === 0) {
+                await page.screenshot({path: pathOut})
+            }
 
             if (videoDur > 0) await page.waitForTimeout(videoDur);
             if (videoDur > 0) await capture.stop();
 
             await page.close();
-        } else {
-            await page.pause();
-        }
+        // } else {
+        //     await page.close();
+        // }
 
     } catch (error) {
         console.error('Ошибка при преобразовании HTML в PNG:', error);
