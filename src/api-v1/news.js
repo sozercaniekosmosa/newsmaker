@@ -1,9 +1,8 @@
 //import global from "../global.js";
 import {createAndCheckDir, formatDateTime, pathResolveRoot, saveTextToFile} from "../utils.js";
 import express from "express";
-import dzen from "../parsers/dzen.js";
 import {buildAllNews, buildAnNews} from "../video.js";
-import {getListNews, getListTask, NewsUpdater, overlayImages} from "../parser.js";
+import {getListNews, getListTask} from "../parser.js";
 import axios from "axios";
 
 const routerNews = express.Router();
@@ -55,7 +54,7 @@ routerNews.post('/build-an-news', async (req, res) => {
         const dur = news.audioDur / (news.secPerFrame ?? 1.5)
         const _arrImg = Array(Math.ceil(dur / news.arrImg.length)).fill(news.arrImg).flat().splice(0, dur);
         const arrImg = _arrImg.map(imgName => {
-            return `./public/public/${news.pathSrc}/` + imgName;
+            return `./public/public/${news.pathSrc}/` + imgName.split('?')[0];
         });
 
         let filePath = `./public/public/${news.pathSrc}/`
@@ -111,13 +110,13 @@ routerNews.post('/build-all-news', async (req, res) => {
 
         global?.messageSocket && global.messageSocket.send({type: 'update-news'})
 
-        const baseImagePath = pathResolveRoot(`./public/public/` + (new URL(srcImg)).pathname);
-        const overlayImagePath = pathResolveRoot('./content/img/logo-lg.png');
-        const outputPath = filePathOut + 'title.png';
-        const x = 0; // Координата X для наложения
-        const y = 1080 - 240; // Координата Y для наложения
-
-        await overlayImages(baseImagePath, overlayImagePath, outputPath, x, y);
+        // const baseImagePath = pathResolveRoot(`./public/public/` + (new URL(srcImg)).pathname);
+        // const overlayImagePath = pathResolveRoot('./content/img/logo-lg.png');
+        // const outputPath = filePathOut + 'title.png';
+        // const x = 0; // Координата X для наложения
+        // const y = 1080 - 240; // Координата Y для наложения
+        //
+        // await overlayImages(baseImagePath, overlayImagePath, outputPath, x, y);
 
         res.status(200).send('Ok');
     } catch (error) {

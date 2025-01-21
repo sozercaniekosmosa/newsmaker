@@ -447,7 +447,7 @@ export class NewsUpdater {
                 textAdd: null,
                 pathSrc: getPathSourceNews({id, title, date, short: this.short}), //путь до ресурсной директории
                 arrImg: [],
-                secPerFrame: 1.5,
+                secPerFrame: 1.8,
                 audioDur: 0,
                 videoDur: 0,
                 done: false,

@@ -59,6 +59,7 @@ export default function Tools({news, arrNews}) {
 
     async function onGPT(type) {
         const textContent = arrTaskList.map(({title}) => title).join(' | ');
+        console.log(textContent)
         setStateLoadGPT({type, state: 1})
         const title = await toGPT(type, prompt, textContent)
         setStateLoadGPT({type, state: title ? 0 : 2})

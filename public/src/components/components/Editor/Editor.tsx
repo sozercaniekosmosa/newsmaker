@@ -102,9 +102,7 @@ export default function Editor({news, setNews, listHostToData}) {
     async function onBuildVideo() {
         setStateNewsBuild(1);
         try {
-
-            const secPerFrame = 1.5
-            const {data: {respID}} = await axios.post(glob.hostAPI + 'build-an-news', {id: news.id, secPerFrame});
+            const {data: {respID}} = await axios.post(glob.hostAPI + 'build-an-news', {id: news.id});
             setStateNewsBuild(0);
 
             if (currID !== +respID) return; //TODO: переделать
@@ -254,10 +252,23 @@ export default function Editor({news, setNews, listHostToData}) {
                 <Tab eventKey="build" title="Видео">
                     <div className="flex-stretch" style={{flex: 1}}>
                         <div className="d-flex flex-column w-100">
-                            <ButtonSpinner className="btn-secondary btn-sm mb-1 notranslate" state={stateNewsBuild}
-                                           onClick={onBuildVideo}>
-                                Собрать видео
-                            </ButtonSpinner>
+                            <div className="d-flex flex-row align-self-end">
+                                <input className="rounded border text-end mb-2 ms-1" type="checkbox"
+                                       checked={news?.done}
+                                       min={1.5} max={4}
+                                       step={0.1} onChange={({target}) => setNews(was => ({...was, done: target.checked}))}
+                                       title="Завершено"/>
+                                <input className="rounded border text-end mb-2 ms-1" type="range"
+                                       value={news?.secPerFrame}
+                                       min={1.5} max={4}
+                                       step={0.1} onChange={({target}) => setNews(was => ({...was, secPerFrame: +target.value}))}
+                                       title="Длительность кадра"/>
+                                <span className="p-1 text-center text-nowrap ms-1 me-3" style={{width: '3em'}}>{news.secPerFrame} сек </span>
+                                <ButtonSpinner className="btn-secondary btn-sm mb-1 notranslate" state={stateNewsBuild}
+                                               onClick={onBuildVideo}>
+                                    Собрать видео
+                                </ButtonSpinner>
+                            </div>
                             <video controls ref={refVideo} className="w-100">
                                 <source type="video/mp4"/>
                                 Ваш браузер не поддерживает тег video.

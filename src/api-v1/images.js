@@ -75,7 +75,7 @@ routerImage.post('/create-main-image', async (req, res) => {
                 mainTitle,
                 img: srcImg
             },
-            debug: true
+            // debug: true
         })
         res.status(200).send('ok')
     } catch (error) {
