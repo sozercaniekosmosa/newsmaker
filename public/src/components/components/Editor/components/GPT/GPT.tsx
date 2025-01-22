@@ -17,7 +17,7 @@ export default function GPT({news, setNews}) {
         setStateLoadGPT({type, state: 1})
         const text = await toGPT(type, promptCmd ?? prompt, textContent);
         setStateLoadGPT({type, state: text ? 0 : 2})
-        let textGPT = promptCmd ? news.textGPT?.replace(textContent, text) : (news.textGPT ?? '') + text + '\n\n';
+        let textGPT = promptCmd && news.textGPT ? news.textGPT?.replace(textContent, text) : (news.textGPT ?? '') + text + '\n\n';
         setNews({...news, textGPT})
     }
 
@@ -31,7 +31,7 @@ export default function GPT({news, setNews}) {
                 30 слов</Button>
             <Button variant="secondary btn-sm" onClick={() => onGPT(
                 'mistral',
-                'Округли числа до ближайшего целого. Все диапазоны чисел необходимо представить типа: от 12 до 137 в виде: до 137 или 15-37 в виде: до 37')}>Перефразируй</Button>
+                'Перефразируй')}>Перефразируй</Button>
             <Button variant="secondary btn-sm" onClick={() => onGPT(
                 'mistral',
                 'Переведи значения в соответствии с Российской системой мер. Ответь очень кратко в виде пересчитаного значения')}>СИ</Button>

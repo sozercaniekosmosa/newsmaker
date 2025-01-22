@@ -77,7 +77,7 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
 
     let onGetTagsGPT = async () => {
         setStateTagGPT(1)
-        const text = await toGPT('mistral', 'Выдели основные мысли и на основе них сделай несколько не больше 4 тегов. Ни чего лишенего только ответ формата: тег, тег, тег', news?.text ?? '');
+        const text = await toGPT('mistral', 'Выдели основные мысли, факты, персоны и на основе них сделай несколько не больше 5 тегов. Ни чего лишенего только ответ формата: тег, тег, тег', news?.text ?? '');
         setStateTagGPT(text ? 0 : 2);
         setNews(now => ({...now, tags: text}));
     };

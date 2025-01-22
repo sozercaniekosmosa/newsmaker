@@ -8,7 +8,7 @@ window.render = async (data) => {
     const nodeImgLogo = document.querySelector('.logo-img')
 
     nodeText.innerHTML = data?.mainTitle ?? 'Something text for fun';
-    await loadImage(nodeImgLogo, 'logo-lg.png')
+    await loadImage(nodeImgLogo, '/content/img/logo-lg.png')
     await loadImage(nodeImgBack, data?.img)
 }
 window.render()

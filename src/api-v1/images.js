@@ -73,7 +73,7 @@ routerImage.post('/create-main-image', async (req, res) => {
             pathOut: filePathOut,
             data: {
                 mainTitle,
-                img: srcImg
+                img: srcImg.split('?')[0]
             },
             // debug: true
         })
@@ -95,7 +95,7 @@ routerImage.post('/create-title-image', async (req, res) => {
             pathOut,
             data: {
                 text: news.title,
-                img: '\\public\\public\\' + url
+                img: '\\public\\public\\' + url.split('?')[0]
             },
             // debug: true
         })

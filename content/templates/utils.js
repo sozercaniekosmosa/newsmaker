@@ -7,7 +7,6 @@ export function loadImage(nodeImgage, src) {
         });
     } catch (e) {
         console.log(e)
-    } finally {
         return new Promise((p) => p(null))
     }
 }

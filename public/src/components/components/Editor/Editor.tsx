@@ -12,7 +12,6 @@ import glob from "../../../global.ts";
 import global from "../../../global.ts";
 import 'tui-image-editor/dist/tui-image-editor.css';
 import Dialog from "../Auxiliary/Dialog/Dialog.tsx";
-import ImageEditor from "../Testing/Testing.tsx";
 
 let currID;
 
