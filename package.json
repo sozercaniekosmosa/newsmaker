@@ -6,16 +6,13 @@
   "type": "module",
   "scripts": {
     "srv": "npx tsx watch ./src",
-    "_srv": "node src/index.js",
-    "__srv": "node --inspect ./node_modules/tsx/dist/cli.js watch ./src",
-    "___srv": "ts-node-dev --inspect --respawn ./src"
+    "_srv": "node src/index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
-    "@mgcodeur/super-translator": "^1.0.9",
     "app-root-path": "^3.1.0",
     "axios": "^1.7.7",
     "body-parser": "^1.20.3",

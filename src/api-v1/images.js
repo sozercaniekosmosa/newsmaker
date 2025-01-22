@@ -37,7 +37,7 @@ routerImage.post('/save-image', upload.single('image'), async (req, res) => {
     try {
         const {body: {path}} = req;
         const data = req.file.buffer;
-        let filePath = `./public/public/${path}`
+        let filePath = `./public/public/${path.split('?')[0]}`
         await writeFileAsync(filePath, data)
         global?.messageSocket && global.messageSocket.send({type: 'update-news'})
         res.status(200).send('ok');

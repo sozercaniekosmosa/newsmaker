@@ -38,3 +38,4 @@ dist-ssr
 *tst.*
 /db*.json
 /*.ass
+/public/src/components/components/Testing/

@@ -7,15 +7,16 @@ import Dialog from "../../../Auxiliary/Dialog/Dialog.tsx";
 import axios from "axios";
 import global from "../../../../../global.ts";
 import 'tui-image-editor/dist/tui-image-editor.css';
-import ImageEditor from '@toast-ui/react-image-editor';
+// import ImageEditor from '@toast-ui/react-image-editor';
 import {theme, locale_ru} from './cfgEditor';
 import {formatDateTime} from "../../../../../utils.ts";
+import ImageEditor from "../ImageEditor/ImageEditor.tsx";
 
 export default function Gallery({news, galleryID, images}) {
     const [showModalRemove, setShowModalRemove] = useState(false);
     const [showModalEdit, setShowModalEdit] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
-    const [srcToEdit, setSrcToEdit] = useState<number | null>(null);
+    const [srcToEdit, setSrcToEdit] = useState<string | null>(null);
     const [indexImage, setIndexImage] = useState<string | null>('');
     const [update, setUpdate] = useState((new Date()).getTime())
 
@@ -123,35 +124,46 @@ export default function Gallery({news, galleryID, images}) {
                     props={{className: 'modal-sm'}}/>
             <Dialog title="Редактировать изображение" show={showModalEdit} setShow={setShowModalEdit}
                     props={{className: 'modal-lg', fullscreen: true}}>
-                <ImageEditor
-                    includeUI={{
-                        loadImage: {
-                            path: srcToEdit,
-                            name: srcToEdit,
-                        },
-                        options: {
-                            stroke: "#00ff08",
-                            fill: "",
-                            strokeWidth: 3
-                        },
-                        locale: locale_ru,
-                        theme,
-                        menu: ['shape', 'filter', 'icon', 'draw', 'flip', 'text'],
-                        initMenu: 'shape',
-                        uiSize: {
-                            width: '100%',
-                            height: '100%',
-                        },
-                        menuBarPosition: 'bottom',
-                    }}
-                    // cssMaxHeight={500}
-                    // cssMaxWidth={700}
-                    selectionStyle={{
-                        cornerSize: 20,
-                        rotatingPointOffset: 70,
-                    }}
-                    usageStatistics={false}
-                />
+                <ImageEditor pathImage={srcToEdit}
+                             onSaveImage={(nodeCanvas, path) => {
+                                 nodeCanvas.toBlob(async (blob) => {
+                                     const formData = new FormData();
+                                     formData.append('image', blob);
+                                     formData.append('path', path);
+
+                                     await axios.post(global.hostAPI + 'save-image', formData, {headers: {'Content-Type': 'multipart/form-data'}})
+                                 }, "image/png");
+                                 // console.log(path)
+                             }}/>
+                {/*<ImageEditor*/}
+                {/*    includeUI={{*/}
+                {/*        loadImage: {*/}
+                {/*            path: srcToEdit,*/}
+                {/*            name: srcToEdit,*/}
+                {/*        },*/}
+                {/*        options: {*/}
+                {/*            stroke: "#00ff08",*/}
+                {/*            fill: "",*/}
+                {/*            strokeWidth: 3*/}
+                {/*        },*/}
+                {/*        locale: locale_ru,*/}
+                {/*        theme,*/}
+                {/*        menu: ['shape', 'filter', 'icon', 'draw', 'flip', 'text'],*/}
+                {/*        initMenu: 'shape',*/}
+                {/*        uiSize: {*/}
+                {/*            width: '100%',*/}
+                {/*            height: '100%',*/}
+                {/*        },*/}
+                {/*        menuBarPosition: 'bottom',*/}
+                {/*    }}*/}
+                {/*    // cssMaxHeight={500}*/}
+                {/*    // cssMaxWidth={700}*/}
+                {/*    selectionStyle={{*/}
+                {/*        cornerSize: 20,*/}
+                {/*        rotatingPointOffset: 70,*/}
+                {/*    }}*/}
+                {/*    usageStatistics={false}*/}
+                {/*/>*/}
 
             </Dialog>
         </div>

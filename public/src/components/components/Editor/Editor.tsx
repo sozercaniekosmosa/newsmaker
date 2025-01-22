@@ -12,6 +12,7 @@ import glob from "../../../global.ts";
 import global from "../../../global.ts";
 import 'tui-image-editor/dist/tui-image-editor.css';
 import Dialog from "../Auxiliary/Dialog/Dialog.tsx";
+import ImageEditor from "../Testing/Testing.tsx";
 
 let currID;
 
@@ -256,14 +257,17 @@ export default function Editor({news, setNews, listHostToData}) {
                                 <input className="rounded border text-end mb-2 ms-1" type="checkbox"
                                        checked={news?.done}
                                        min={1.5} max={4}
-                                       step={0.1} onChange={({target}) => setNews(was => ({...was, done: target.checked}))}
+                                       step={0.1}
+                                       onChange={({target}) => setNews(was => ({...was, done: target.checked}))}
                                        title="Завершено"/>
                                 <input className="rounded border text-end mb-2 ms-1" type="range"
                                        value={news?.secPerFrame}
                                        min={1.5} max={4}
-                                       step={0.1} onChange={({target}) => setNews(was => ({...was, secPerFrame: +target.value}))}
+                                       step={0.1}
+                                       onChange={({target}) => setNews(was => ({...was, secPerFrame: +target.value}))}
                                        title="Длительность кадра"/>
-                                <span className="p-1 text-center text-nowrap ms-1 me-3" style={{width: '3em'}}>{news.secPerFrame} сек </span>
+                                <span className="p-1 text-center text-nowrap ms-1 me-3"
+                                      style={{width: '3em'}}>{news.secPerFrame} сек </span>
                                 <ButtonSpinner className="btn-secondary btn-sm mb-1 notranslate" state={stateNewsBuild}
                                                onClick={onBuildVideo}>
                                     Собрать видео
@@ -277,7 +281,17 @@ export default function Editor({news, setNews, listHostToData}) {
                     </div>
                 </Tab>
                 {/*<Tab eventKey="test" title="Тест">*/}
-                {/*    <button onClick={() => setAddItem((new Date()).getTime())}>Add Item</button>*/}
+                {/*    <ImageEditor pathImage="/news\25.01.22\DZ-NatKitUch-8uy0JhC9m\4fSIutQR0.png"*/}
+                {/*                 onSaveImage={(nodeCanvas, path) => {*/}
+                {/*                     nodeCanvas.toBlob(async (blob) => {*/}
+                {/*                         const formData = new FormData();*/}
+                {/*                         formData.append('image', blob);*/}
+                {/*                         formData.append('path', path);*/}
+
+                {/*                         await axios.post(global.hostAPI + 'save-image', formData, {headers: {'Content-Type': 'multipart/form-data'}})*/}
+                {/*                     }, "image/png");*/}
+                {/*                     // console.log(path)*/}
+                {/*                 }}/>*/}
                 {/*</Tab>*/}
             </Tabs>
             <Dialog title="Удалить эелемент" message="Уверены?" show={showModalRemoveAnAudio}

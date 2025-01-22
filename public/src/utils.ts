@@ -164,7 +164,7 @@ export const getRandomRange = (min, max, fix = 2) => {
  * @param ms
  * @returns {(function(): void)|*}
  */
-export const debounce = (func: (setTextGPT, news, text, host) => Promise<void>, ms: number) => {
+export const debounce = (func: any, ms: number) => {
     let timeout;
     return function () {
         clearTimeout(timeout);
@@ -243,7 +243,16 @@ export function getSelelected(node): { selectedText: string; startPos: number; e
 export const insertAt = (str, sub, pos) => `${str.slice(0, pos)}${sub}${str.slice(pos)}`;//вставить подстроку в позицию внутри строки
 
 export function webSocket(
-    {host, port, protocol = 'json', clbOpen = null, clbMessage = null, clbClose = null, clbError = null, timeReconnect = 1000}) {
+    {
+        host,
+        port,
+        protocol = 'json',
+        clbOpen = null,
+        clbMessage = null,
+        clbClose = null,
+        clbError = null,
+        timeReconnect = 1000
+    }) {
 
     let isConnected = false;
     const reconnect = (param) => {
