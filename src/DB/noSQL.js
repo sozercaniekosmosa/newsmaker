@@ -8,20 +8,37 @@ const pathRoot = root.path;
 const pathResolveRoot = (path) => path.startsWith('.') ? resolve(pathRoot, ...path.split(/\\|\//)) : path;
 
 export class noSQL {
+
+    #__id = 0;
+    #base64Language = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
     constructor(dumpFilePath = './news_dump.json') {
         this.dumpFilePath = pathResolveRoot(dumpFilePath);
 
 
-        const strDump = this.getDumpDatabase(this.dumpFilePath);
-        if (!strDump) this.writeFileAsync(dumpFilePath, '{}')
-        this.db = JSON.parse(strDump ?? '{}');
+        const strDump = this.getDumpDatabase(this.dumpFilePath).toString();
+        if (!strDump) this.writeFileAsync(this.dumpFilePath, '{}')
+        this.db = JSON.parse(strDump?strDump:'{}');
 
         // Debounced function to dump database
         this.debouncedDumpDatabase = _.debounce(this.dumpDatabase.bind(this), 1000);
     }
 
+    #toShortString = (value, language = this.#base64Language) => {
+        const len = language.length;
+        let acc = "";
+        while (value > 0) {
+            const index = value % len;
+            acc += language.charAt(index);
+            value /= len;
+        }
+        return acc.split('').reverse().join('').replace(/^0+/g, '');
+    };
+    generateUID = (pre = '') => pre + this.#toShortString((new Date().getTime() + Math.ceil(Math.random() * 100) + (this.#__id++)))
+
     // Add an item
     add(id, news) {
+        if (this.db[id]) return
         news.id = id;
         this.db[id] = news;
         this.debouncedDumpDatabase();
@@ -48,7 +65,7 @@ export class noSQL {
 
         for (let i = 0; i < props.length; i++) {
             const uf = props[i];
-            const news = this.db[uf.id];
+            const news = this.db[uf.id] ?? {};
             if (!news) throw new Error(`News with ID ${id} not found.`);
 
             this.db[uf.id] = {...news, ...uf};

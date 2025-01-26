@@ -2,8 +2,9 @@
 import {createAndCheckDir, formatDateTime, pathResolveRoot, saveTextToFile} from "../utils.js";
 import express from "express";
 import {buildAllNews, buildAnNews} from "../video.js";
-import {getListNews, getListTask} from "../parser.js";
+import {getListNews, getListTask, renderToBrowser} from "../parser.js";
 import axios from "axios";
+import routerImage from "./images.js";
 
 const routerNews = express.Router();
 
@@ -21,7 +22,7 @@ routerNews.post('/remove-news', async (req, res) => {
     try {
         const {body: {id}} = req;
         // const data = await global.dbNews.run('DELETE FROM news WHERE ID = ?', [id]);
-        const data = await global.dbNews.del('news', id);
+        const data = await global.dbNews.del(id);
         res.send(data);
         global?.messageSocket?.send({type: 'update-list-news'})
     } catch (error) {
@@ -161,5 +162,27 @@ routerNews.get('/exist-resource', async (req, res) => {
         res.status(error.status || 500).send({error: error?.message || error},);
     }
 });
+
+routerNews.post('/create-news', async (req, res) => {
+    try {
+        // const {body: {id, url}} = req;
+        // const news = global.dbNews.getByID(id);
+        // let pathOut = `./public/public/${news.pathSrc}/title.png`
+        await renderToBrowser({
+            urlTemplate: 'http://localhost:3000/content/templates/buildNews',
+            pathOut:'tst.mp4',
+            data: {
+                // text: news.title,
+                // img: '\\public\\public\\' + url.split('?')[0]
+            },
+            debug: true
+        })
+        res.status(200).send('ok')
+    } catch (error) {
+        res.status(error.status || 500).send({error: error?.message || error},);
+    } finally {
+        global?.messageSocket && global.messageSocket.send({type: 'update-news'})
+    }
+})
 
 export default routerNews;

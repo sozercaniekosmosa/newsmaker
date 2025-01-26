@@ -114,7 +114,7 @@ export default function Tools({news, arrNews}) {
     }
 
     let onConfirmRemoveAllTask = () => {
-        const list = {arrTask: [], title: '', date: '', srcImg: '', mainTitle: ''}
+        const list = {arrTask: [], title: '', date: '', srcImg: '', srcImgMain: '', mainTitle: ''}
         setDatePublic('');
         setMainTitle(list.mainTitle);
         setTitleGPT(list.title);
@@ -141,6 +141,13 @@ export default function Tools({news, arrNews}) {
         let urlMainTitle = `/done/` + formatDateTime(new Date(datePublic), 'yy-mm-dd_hh_MM_ss' + '/title.png?' + new Date().getTime());
         await axios.post(global.hostAPI + 'create-main-image', {filePathOut});
         onChangeData({srcImgMain: urlMainTitle}, setSrcImgMain)
+    };
+
+    const onTest = async () => {
+        let filePathOut = `./public/public/done/` + formatDateTime(new Date(datePublic), 'yy-mm-dd_hh_MM_ss' + '/title.png');
+        let urlMainTitle = `/done/` + formatDateTime(new Date(datePublic), 'yy-mm-dd_hh_MM_ss' + '/title.png?' + new Date().getTime());
+        await axios.post(global.hostAPI + 'create-news', {filePathOut});
+        // onChangeData({srcImgMain: urlMainTitle}, setSrcImgMain)
     };
 
     let _arr = [];
@@ -249,7 +256,7 @@ export default function Tools({news, arrNews}) {
                                onClick={buildAllNews}>
                     Собрать все видео ({Math.trunc(totalDur / 60)} мин)
                 </ButtonSpinner>
-                {/*<Button onClick={onCreateMainImg}>tst</Button>*/}
+                {/*<Button onClick={onTest}>tst</Button>*/}
             </ButtonGroup>
             <Dialog title="Удалить эелемент" message="Уверены?" show={showModalRemoveAnTask}
                     setShow={setShowModalRemoveAnTask}
