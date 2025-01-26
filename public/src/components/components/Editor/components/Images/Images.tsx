@@ -35,7 +35,7 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
         setArrImg([]);
     }, [news])
 
-    async function requestImages() {
+    async function reqImg({quant}) {
         setStateImageLoad(1);
         try {
             const {id, tags} = news;
@@ -44,14 +44,16 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
             const prompt = selectedText ?? tags;
 
             const {data: {arrUrl, id: respID}} = await axios.get(global.hostAPI + 'images',
-                {params: {prompt, max: quantity, id, timeout: timeout * 1000}});
+                {params: {prompt, max: quant ?? quantity, id, timeout: timeout * 1000}});
             setStateImageLoad(0)
 
-            if (currID !== +respID) return; //TODO: переделать
+            if (currID !== +respID) return 0; //TODO: переделать
             setArrImg(arrUrl.map(src => ({src, width: undefined, height: undefined,})))
+            return 0
         } catch (e) {
             console.log(e)
             setStateImageLoad(2)
+            return 2
         }
     }
 
@@ -87,19 +89,18 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
                                   value={news?.tags || ''}
                                   onChange={({target}) => setNews(was => ({...was, tags: target.value}))}
                                   style={{height: '5em'}}/>
-        <div className="d-flex flex-row mb-1">
+        <div className="d-flex flex-row mb-1 gap-1 w-auto">
             <ButtonSpinner className="btn-secondary btn-sm" state={stateTagGPT} onClick={onGetTagsGPT}>Получить
                 теги</ButtonSpinner>
-            <input className="rounded border text-end ms-2 flex-stretch" type="range" value={quantity} min={1} max={40}
-                   step={1} onChange={({target}) => setQuantity(+target.value)} title="Количество изображений"/>
-            <span className="p-1 text-center" style={{width: '3em'}}>{quantity}</span>
-            <input className="rounded border text-end ms-2 flex-stretch" type="range" value={timeout} min={1} max={20}
-                   step={1} onChange={({target}) => setTimeout(+target.value)} title="Таймаут"/>
-            <span className="p-1 text-center" style={{width: '3.5em'}}>{timeout + ' сек'}</span>
-            <ButtonSpinner className="btn-secondary btn-sm" state={stateImageLoad}
-                           onClick={requestImages}>
-                Загрузить изображения
-            </ButtonSpinner>
+            <div className={"d-flex gap-1 " + (news.tags.length ? '' : 'ev-none opacity-25')}>
+                {[1, 3, 5, 10, 15, 20, 25, 35, 40]
+                    .map((n, ik) => (<ButtonSpinner className="btn-secondary btn-sm" key={ik} style={{width:'2.4em'}}
+                                                    onAction={() => reqImg({quant: n})}>{n}</ButtonSpinner>))}
+                <input className="rounded border text-end ms-2 flex-stretch" type="range" value={timeout} min={1}
+                       max={20}
+                       step={1} onChange={({target}) => setTimeout(+target.value)} title="Таймаут"/>
+                <span className="p-1 text-center" style={{width: '3.5em'}}>{timeout + ' сек'}</span>
+            </div>
         </div>
         <div className="operation__img border rounded mb-1" style={{backgroundColor: '#ebf0f7'}}>
             <Gallery galleryID="my-test-gallery" images={arrImg} news={news}/>
