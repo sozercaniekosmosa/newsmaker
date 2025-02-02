@@ -5,7 +5,7 @@ import {buildAllNews, buildAnNews} from "../video.js";
 import {getListNews, getListTask, renderToBrowser} from "../parser.js";
 import axios from "axios";
 import routerImage from "./images.js";
-import {clearImage} from "../tst/cleaner.js";
+// import {clearImage} from "../tst/cleaner.js";
 
 const routerNews = express.Router();
 

@@ -12,48 +12,22 @@ async function checkFileExists(filePath) {
     }
 }
 
-async function resizeImage(pathFile, outputFilePath, width, height) {
+export async function resizeImage(inputArrBufOrPath, outputFilePath, width = null, height = null) {
     try {
-        const inputImage = sharp(pathFile);
-        const inputImageBlur = sharp(await inputImage.toBuffer());
-        const resizeImageBlur = inputImageBlur.resize({
-            width, height, fit: 'fill'// fit: sharp.fit.cover, // Заполнение с обрезкой
-        });
+        let image = sharp(inputArrBufOrPath).toFormat('png');
 
-        const obj = await inputImage.metadata();
-        console.log(obj)
-        const {width: w, height: h} = obj
+        if (width) {
+            const resizeImageBlur = image.clone().resize({width, height, fit: 'fill'});
+            const imgBackBlur = await resizeImageBlur.blur(25).toBuffer();
 
-        const mask = await sharp({
-            create: {
-                width: w,
-                height: h,
-                channels: 4,
-                background: {r: 0, g: 0, b: 0, alpha: .8}
-            }
-        }).png().blur(80).toBuffer();
+            const foregroundImage = await image
+                .resize({width, height, fit: 'contain', background: {r: 128, g: 200, b: 255, alpha: 0.5}})
+                .toBuffer();
 
-
-        const imgBackBlur = await resizeImageBlur.blur(25).toBuffer();
-
-        // Создать основное изображение с учётом "contain"
-        // const foregroundImage = await inputImage
-        //     .resize({
-        //         width, height, fit: 'contain', background: {r: 128, g: 200, b: 255, alpha: 0.5}, // Прозрачный фон
-        //     })
-        //     .toBuffer();
-
-        const foregroundImage2 = await sharp(await inputImage.toBuffer())
-            .composite([{
-                input: mask,
-                blend: 'dest-in'
-            }])/*.toFile(outputFilePath)*/.toBuffer();
-
-
-        // Скомбинировать изображения
-        await sharp(imgBackBlur)
-            .composite([{input: foregroundImage2, gravity: 'center'}]).normalize().sharpen()
-            .toFile(outputFilePath);
+            image = await sharp(imgBackBlur)
+                .composite([{input: foregroundImage, gravity: 'center'}]).normalize().sharpen()
+        }
+        image.toFile(outputFilePath);
 
         console.log('Изображение успешно обработано и сохранено в', outputFilePath);
     } catch (error) {
@@ -61,23 +35,7 @@ async function resizeImage(pathFile, outputFilePath, width, height) {
     }
 }
 
-
-const toPng = async ({inputPath, outputPath, arrayBuffer}) => {
-    try {
-        arrayBuffer = inputPath ? await fsPromises.readFile(inputPath) : arrayBuffer;
-
-        const info = await sharp(arrayBuffer)
-            .toFormat('png') // Указываем формат вывода
-            .toFile(outputPath);
-
-        console.log('Конвертация завершена:', info);
-    } catch (err) {
-        console.error('Ошибка при конвертации:', err);
-        throw err;
-    }
-};
-
-// await resizeImage('img.png', 'out.png', 1920, 1080)
+await resizeImage('img.png', 'out.png', 1920, 1080)
 
 async function createVignetteOverlay(pathFile, outputFilePath, width, height) {
     // Размеры изображения (должны совпадать с исходным)
@@ -147,4 +105,4 @@ async function createVignetteOverlay(pathFile, outputFilePath, width, height) {
     }
 }
 
-await createVignetteOverlay('img.png', 'out.png', 1920, 1080)
+// await createVignetteOverlay('img.png', 'out.png', 1920, 1080)

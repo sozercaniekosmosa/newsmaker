@@ -9,6 +9,7 @@ import sharp from "sharp";
 import {config} from "dotenv";
 import {chromium} from "playwright";
 import {saveVideo} from "playwright-video";
+import {resizeImage} from "./services/imagePrcessing.js";
 
 const {parsed: {IMG_COOKIE, IMG_XBROWS_VALID, IMG_XCLIENT}} = config();
 
@@ -146,18 +147,24 @@ export const getDocument = (html) => {
  * @param ext
  * @param max
  */
-export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.jfif', count = 10, timeout = 3000, isResize = true}) {
+export async function downloadImages({
+                                         arrUrl,
+                                         outputDir,
+                                         pfx = 'img-',
+                                         ext = '.jfif',
+                                         count = 10,
+                                         timeout = 3000,
+                                         width,
+                                         height
+                                     }) {
     let counter = 0.01
     let max = arrUrl.length;
 
     // Создаем директорию, если она не существует
-    if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir, {recursive: true});
-    }
+    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, {recursive: true});
 
     // Загружаем изображения по каждому URL
     const arrOutNames = [], arrPromiseTask = [];
-    const cv = new CreateVideo({dir_content: outputDir})
 
     const headers = {
         'Referer': 'http://localhost:5173/',
@@ -179,12 +186,11 @@ export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.j
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
     };
 
-
     async function loadAndSaveImage(url, outPath) {
         try {
             const {data} = await axios.get(url, {headers, responseType: 'arraybuffer', timeout});
             console.log(`Получено: ${url}`);
-            await cv.toPng({arrayBuffer: data, outputPath: outPath})
+            await resizeImage(data, outputDir + outPath, width, height);
         } catch (error) {
             console.error(`Ошибка при загрузке ${url}: ${error.message}`);
         } finally {
@@ -199,7 +205,6 @@ export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.j
         if (i >= count) break;
 
         const url = arrUrl[i];
-        // let outPath = pfx + i + ext;
         let outPath = pfx + toShortString(cyrb53(url)) + ext;
         arrOutNames.push(outPath)
         arrPromiseTask.push(loadAndSaveImage(url, outPath))
@@ -208,16 +213,7 @@ export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.j
 
     await Promise.allSettled(arrPromiseTask)
 
-    if (isResize) {
-        const targetWidth = 1920; // Ширина
-        const targetHeight = 1080; // Высота
-        const backgroundColor = {r: 32, g: 32, b: 32, alpha: 0};
-        await cv.packageResizeImage({arrPathImage: arrOutNames, ext: 'png', targetWidth, targetHeight, backgroundColor})
-        // console.log(`Загружено!!!`);
-    }
-
     global?.messageSocket?.send({type: 'progress', data: -1})
-
     return arrOutNames;
 }
 

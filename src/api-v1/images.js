@@ -3,6 +3,7 @@ import express from "express";
 import {renderToBrowser, downloadImages, ImageDownloadProcessor} from "../parser.js";
 import multer from "multer";
 import {fileURLToPath} from "url";
+import general from "./general.js";
 
 const routerImage = express.Router();
 
@@ -25,7 +26,10 @@ routerImage.get('/images', async (req, res) => {
         const arrUrl = (await ip.getArrImage(prompt)).slice(0, max)
         res.status(200).send({arrUrl, id})
         await downloadImages({
-            arrUrl, outputDir: `./public/public/${news.pathSrc}/`, pfx: '', ext: '.png', count: +max, timeout
+            arrUrl,
+            outputDir: global.root + `/public/public/${news.pathSrc}/`, pfx: '', ext: '.png',
+            count: +max, timeout,
+            width: 1920, height: 1080
         })
         global?.messageSocket && global.messageSocket.send({type: 'update-news'})
     } catch (error) {
@@ -41,7 +45,9 @@ routerImage.get('/images-tg', async (req, res) => {
         const arrUrl = (await ip.getArrImage(prompt)).slice(0, max)
         res.status(200).send({arrUrl, id})
         await downloadImages({
-            arrUrl, outputDir: `./public/public/${news.pathSrc}/tg/`, pfx: '', ext: '.png', count: +max, timeout, isResize: false
+            arrUrl,
+            outputDir: `./public/public/${news.pathSrc}/tg/`, pfx: '', ext: '.png',
+            count: +max, timeout
         })
         global?.messageSocket && global.messageSocket.send({type: 'update-news'})
     } catch (error) {
