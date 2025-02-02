@@ -72,9 +72,6 @@ export default function HeaderMenu({
     }
 
     async function onUpdateAllNews(newsSrc) {
-        const listSetStateNews = {'TG': setStateNewsTGUpdate, 'RT': setStateNewsRTUpdate, 'DZ': setStateNewsDZUpdate}
-
-        listSetStateNews[newsSrc](1)
         try {
             await axios.post(glob.hostAPI + 'update-news-type', {typeNews, newsSrc})
             const from = formatDateTime(addDay(hourFrom, new Date()), 'yyyy-mm-dd');
@@ -87,11 +84,11 @@ export default function HeaderMenu({
                 await getNewsData(dtFrom, dtTo, setArrNews, setArrFilter);
             }
 
-            listSetStateNews[newsSrc](0)
+            return 0;
 
         } catch (e) {
             console.log(e)
-            listSetStateNews[newsSrc](2)
+            return 2;
         }
 
     }
@@ -107,8 +104,7 @@ export default function HeaderMenu({
             <ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listSport}/></ButtonGroup>
         </div>
         <div className="header-control-flt d-flex flex-row notranslate">
-            <ButtonSpinner className="btn-secondary btn-sm notranslate d-flex align-items-center" state={stateNewsDZUpdate}
-                           onClick={() => onUpdateAllNews('DZ')}>
+            <ButtonSpinner className="btn-secondary btn-sm notranslate d-flex align-items-center" onAction={() => onUpdateAllNews('DZ')}>
                 <img src={iconDz} className="news-icon" alt={iconDz}/>
             </ButtonSpinner>
 

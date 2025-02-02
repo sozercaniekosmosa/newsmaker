@@ -26,24 +26,21 @@ function arrMoveItem(arr, fromIndex, toIndex) {
     return arr;
 }
 
+const promptGeneralDesc = 'Сделай из этих названий новостей краткий заголовок до трех слов максимально короткими словами для новостного видео (вместо запятой используй вертикальную черту)';
+const promptImgDesc = 'Добавь эмодзи по смыслу перед пунктами и сократи каждый пункт до трех слов максимально короткими словами';
+
 export default function Tools({news, arrNews}) {
 
     const [arrTaskList, setArrTaskList] = useState([]);
     const [showModalRemoveAnTask, setShowModalRemoveAnTask] = useState(false);
     const [showModalRemoveAllTask, setShowModalRemoveAllTask] = useState(false);
-    const [stateBuildALl, setStateBuildALl] = useState(0)
 
-    const [prompt, setPrompt] = useState('Сделай из этих названий новостей краткий заголовок для новостного видео (вместо запятой используй вертикальную черту)')
     const [datePublic, setDatePublic] = useState('')
     const [mainTitle, setMainTitle] = useState('')
     const [titleGPT, setTitleGPT] = useState('')
-    const [stateLoadYaGPT, setStateLoadYaGPT] = useState(0)
-    const [stateLoadArliGPT, setStateLoadArliGPT] = useState(0)
-    const [stateLoadMistralGPT, setStateLoadMistralGPT] = useState(0)
     const [srcImgTitle, setSrcImgTitle] = useState('')
     const [srcImgMain, setSrcImgMain] = useState('')
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
-    const [stateLoadGPT, setStateLoadGPT] = useState({type: '', state: 0});
 
     useEffect(() => {
         (async () => {
@@ -57,31 +54,38 @@ export default function Tools({news, arrNews}) {
         })()
     }, []);
 
-    async function onGPT(type) {
+    async function onGPT(type, prompt) {
         const textContent = arrTaskList.map(({title}) => title).join(' | ');
-        console.log(textContent)
-        setStateLoadGPT({type, state: 1})
+
         const title = await toGPT(type, prompt, textContent)
-        setStateLoadGPT({type, state: title ? 0 : 2})
         const list = '- ' + title.split(' | ').join('\n- ')
         setTitleGPT(title + '\n' + list)
         updateTaskDB({title: title + '\n' + list});
+        return title ? 0 : 2
+    }
+
+    async function onGPTImgDesc(type, prompt) {
+        const textContent = arrTaskList.map(({title}) => title).splice(0, 3).join('\n');
+
+        const title = await toGPT(type, prompt, textContent)
+        const list = title.split('\n').join('</br>\n')
+
+        onChangeData({mainTitle: list}, setMainTitle)
+        return title ? 0 : 2
     }
 
     const buildAllNews = async () => {
         try {
-            setStateBuildALl(1)
-
             await axios.post(global.hostAPI + 'build-all-news');
 
             const arrUpdateDb = arrTaskList.map(it => ({...it, done: true}));
             updateNewsDB(arrUpdateDb);
             eventBus.dispatchEvent('message-local', {type: 'update-news-arr-item', data: arrUpdateDb})
 
-            setStateBuildALl(0)
+            return 0;
         } catch (e) {
             console.error(e)
-            setStateBuildALl(2)
+            return 2;
         }
     }
 
@@ -158,6 +162,11 @@ export default function Tools({news, arrNews}) {
     const isAllowBuildAll = _arr.every(it => it?.videoDur ?? 0)
     const totalDur = _arr.reduce((acc, it) => acc + (+it.videoDur), 0);
 
+    let listGPTPromptButton = [
+        {name: 'ya-GPT', clb: onGPT, arrParam: ['yandex', promptGeneralDesc]},
+        {name: 'arli-GPT', clb: onGPT, arrParam: ['arli', promptGeneralDesc]},
+        {name: 'mistral-GPT', clb: onGPT, arrParam: ['mistral', promptGeneralDesc]},
+    ];
     return (
         <ScrollParent className="pe-1 pb-1">
             <input type="datetime-local" value={datePublic}
@@ -167,12 +176,10 @@ export default function Tools({news, arrNews}) {
                       style={{height: '100px'}}
                       onChange={e => onChangeData({title: e.target.value}, setTitleGPT)}/>
             <ButtonGroup>
-                <ButtonSpinner className="btn-secondary btn-sm" state={stateLoadGPT.type == 'yandex' ? stateLoadGPT.state : 0}
-                               onClick={() => onGPT('yandex')}>ya-GPT</ButtonSpinner>
-                <ButtonSpinner className="btn-secondary btn-sm" state={stateLoadGPT.type == 'arli' ? stateLoadGPT.state : 0}
-                               onClick={() => onGPT('arli')}>arli-GPT</ButtonSpinner>
-                <ButtonSpinner className="btn-secondary btn-sm" state={stateLoadGPT.type == 'mistral' ? stateLoadGPT.state : 0}
-                               onClick={() => onGPT('mistral')}>mistral-GPT</ButtonSpinner>
+                {listGPTPromptButton.map(({name, clb, arrParam}, idi) => (<ButtonSpinner variant="secondary btn-sm" key={idi} onAction={() => {
+                    // @ts-ignore
+                    return clb(...arrParam);
+                }}>{name}</ButtonSpinner>))}
             </ButtonGroup>
             <hr/>
             Список задач:
@@ -208,6 +215,7 @@ export default function Tools({news, arrNews}) {
                                 <span className="notranslate">{arrNews[indexNews].audioDur > 0 ? '🎵' : ''}</span>
                                 <span className="notranslate">{arrNews[indexNews].videoDur > 0 ? '🎥' : ''}</span>
                                 <span className="notranslate">{arrNews[indexNews].donde > 0 ? '✅' : ''}</span>
+                                <span className="notranslate">{arrNews[indexNews]?.length ? '📬' : ''}</span>
                             </div>
                             <div className="text-truncate pe-1 ev-none" title={title}>{title}</div>
                             <Button variant="secondary btn-sm p-0" style={{height: '27px', width: '27px', flex: 'none'}}
@@ -242,18 +250,19 @@ export default function Tools({news, arrNews}) {
                             updateTaskDB({srcImg: ''});
                         }}
                 >X</Button>
+                <ButtonSpinner hidden={srcImgMain == ''} className="btn-sm btn-secondary position-absolute"
+                               style={{lineHeight: '0', height: '22px', width: '22px', left: '12px', top: '12px'}}
+                               onAction={() => onGPTImgDesc('mistral', promptImgDesc)}
+                >*</ButtonSpinner>
                 <Button hidden={srcImgMain == ''} variant="secondary btn-sm py-0 px-0 " className="position-absolute"
-                        style={{lineHeight: '0', height: '22px', width: '22px', left: '12px', top: '12px'}}
+                        style={{lineHeight: '0', height: '22px', width: '22px', left: '45%', top: '12px'}}
                         onClick={onCreateMainImg}
                 ><strong>✓</strong></Button>
             </div>
             <ButtonGroup>
-                <ButtonSpinner state={0} hidden={false} className="btn-secondary btn-sm"
-                               onClick={() => axios.post(glob.hostAPI + 'open-dir')}>
-                    Открыть
-                </ButtonSpinner>
-                <ButtonSpinner state={stateBuildALl} disabled={srcImgMain == '' || isAllowBuildAll == false} className="btn-secondary btn-sm"
-                               onClick={buildAllNews}>
+                <Button className="btn-secondary btn-sm" onClick={() => axios.post(glob.hostAPI + 'open-dir')}>Открыть</Button>
+                <ButtonSpinner disabled={(srcImgMain == '' || isAllowBuildAll == false)} className="btn-secondary btn-sm"
+                               onAction={buildAllNews}>
                     Собрать все видео ({Math.trunc(totalDur / 60)} мин)
                 </ButtonSpinner>
                 {/*<Button onClick={onTest}>tst</Button>*/}

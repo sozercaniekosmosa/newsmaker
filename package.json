@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "srv": "npx tsx watch ./src",
+    "srv": "npx tsx watch ./src --ignore tst",
     "_srv": "node src/index.js"
   },
   "keywords": [],
@@ -31,6 +31,7 @@
     "react-draggable": "^4.4.6",
     "sharp": "^0.33.5",
     "sqlite3": "^5.1.7",
+    "telegram": "^2.26.16",
     "tsx": "^4.19.2"
   },
   "devDependencies": {

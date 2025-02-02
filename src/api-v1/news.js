@@ -5,6 +5,7 @@ import {buildAllNews, buildAnNews} from "../video.js";
 import {getListNews, getListTask, renderToBrowser} from "../parser.js";
 import axios from "axios";
 import routerImage from "./images.js";
+import {clearImage} from "../tst/cleaner.js";
 
 const routerNews = express.Router();
 
@@ -52,14 +53,26 @@ routerNews.post('/build-an-news', async (req, res) => {
         const {body: {id}} = req;
 
         const news = global.dbNews.getByID(id);
+
+        await clearImage(news.arrImg, `public/public/${news.pathSrc}/`)
+
         const dur = news.audioDur / (news.secPerFrame ?? 1.5)
+
+        const titleFrame = news.arrImg.shift()
+
         const _arrImg = Array(Math.ceil(dur / news.arrImg.length)).fill(news.arrImg).flat().splice(0, dur);
+
+        _arrImg[0] = titleFrame;
+        _arrImg[1] = titleFrame;
+
         const arrImg = _arrImg.map(imgName => {
             return `./public/public/${news.pathSrc}/` + imgName.split('?')[0];
         });
 
         let filePath = `./public/public/${news.pathSrc}/`
         await saveTextToFile(filePath + 'title.txt', news.title)
+
+        const arrEff = ['fade', 'fade', 'slideleft', 'slideright', 'slideup', 'slidedown', 'pixelize', 'hblur', 'zoomin', 'smoothleft', 'smoothright', 'smoothup', 'smoothdown', 'circlecrop', 'circleclose', 'horzclose', 'horzopen', 'vertclose', 'vertopen', 'diagbl', 'diagbr', 'diagtl', 'diagtr', 'fadegrays', 'slideleft', 'slideright', 'slideup', 'slidedown', 'pixelize', 'hblur', 'zoomin', 'smoothleft', 'smoothright', 'smoothup', 'smoothdown', 'circlecrop', 'circleclose', 'horzclose', 'horzopen', 'vertclose', 'vertopen', 'diagbl', 'diagbr', 'diagtl', 'diagtr', 'fadegrays', 'slideleft', 'slideright', 'slideup', 'slidedown', 'pixelize', 'hblur', 'zoomin', 'smoothleft', 'smoothright', 'smoothup', 'smoothdown', 'circlecrop', 'circleclose', 'horzclose', 'horzopen', 'vertclose', 'vertopen', 'diagbl', 'diagbr', 'diagtl', 'diagtr', 'fadegrays']
 
         const duration = await buildAnNews({
             dir_ffmpeg: './content/ffmpeg/',
@@ -69,7 +82,8 @@ routerNews.post('/build-an-news', async (req, res) => {
             pathVideoOut: filePath + 'news.mp4',
             pathLogoMini: pathResolveRoot('./content/img/logo-mini.png'),
             from: news.from,
-            textAdd: news.textAdd
+            textAdd: news.textAdd,
+            arrEff
         })
 
         dbNews.update({...news, videoDur: duration})
@@ -82,6 +96,9 @@ routerNews.post('/build-an-news', async (req, res) => {
 routerNews.post('/build-all-news', async (req, res) => {
     try {
         // const {body} = req;
+        // setTimeout(async () => await res.status(200).send('Ok'), 3000);
+        //
+        // return;
 
         const {arrTask, title, date, srcImg} = global.dbTask.getByID('config')
 
@@ -170,13 +187,54 @@ routerNews.post('/create-news', async (req, res) => {
         // let pathOut = `./public/public/${news.pathSrc}/title.png`
         await renderToBrowser({
             urlTemplate: 'http://localhost:3000/content/templates/buildNews',
-            pathOut:'tst.mp4',
+            pathOut: 'tst.mp4',
             data: {
                 // text: news.title,
                 // img: '\\public\\public\\' + url.split('?')[0]
             },
             debug: true
         })
+        res.status(200).send('ok')
+    } catch (error) {
+        res.status(error.status || 500).send({error: error?.message || error},);
+    } finally {
+        global?.messageSocket && global.messageSocket.send({type: 'update-news'})
+    }
+})
+
+routerNews.post('/tg-public-news', async (req, res) => {
+    try {
+        const {body: {id, date, inATime, arrImg, text}} = req;
+
+        const news = global.dbNews.getByID(id);
+
+        await clearImage(news.arrImgTg, `public/public/${news.pathSrc}/tg/`)
+
+        const _arrImg = arrImg.map(imgName => {
+            return `./public/public/${news.pathSrc}/tg/` + imgName.split('?')[0];
+        });
+        const __arrImg = _arrImg.map(src => pathResolveRoot(src.replaceAll(/\\/g, '/')))
+
+        const {scheduledMessages, publishedMessages} = global.dbTB.getByID('tb')
+        const arrMessage = Object.entries(scheduledMessages)?.map(([messageID, message]) => message)
+        let dateTime;
+        if (arrMessage && arrMessage.length) {
+            const [item] = arrMessage.sort((a, b) => new Date(b.publishTime) - new Date(a.publishTime))
+            dateTime = (new Date(item.publishTime)).getTime() + (+inATime);
+        } else {
+            const arrMessage = Object.entries(publishedMessages)?.map(([messageID, message]) => message)
+            if (arrMessage && arrMessage.length) {
+                const [item] = arrMessage.sort((a, b) => new Date(b.publishTime) - new Date(a.publishTime))
+                dateTime = (new Date(item.publishTime)).getTime() + (+inATime);
+            } else {
+                dateTime = new Date(Date.now())
+            }
+        }
+
+        if (new Date(Date.now()) > dateTime) dateTime = new Date(Date.now());
+
+
+        global.tgBot.publishMessage(global.tgChannelID_1, text, __arrImg, new Date(dateTime), id)
         res.status(200).send('ok')
     } catch (error) {
         res.status(error.status || 500).send({error: error?.message || error},);

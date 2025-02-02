@@ -2,36 +2,37 @@
 import React, {useEffect, useState} from "react";
 import {Button} from "react-bootstrap";
 
-export default function ({
-                             state = 0,
-                             className = '',
-                             onAction = null,
-                             onClick = null,
-                             children,
-                             style = {},
-                             disabled = false,
-                             hidden = false,
-                             variant = null
-                         }) {
+function ButtonSpinner({
+                           style = {},
+                           // state = 0,
+                           className = '',
+                           onAction = null,
+                           onClick = null,
+                           disabled = false,
+                           hidden = false,
+                           variant = null,
+                           children,
+                       }) {
     const [_state, set_state] = useState(0)
-    useEffect(() => {
-        set_state(state)
-    }, []);
+    // useEffect(() => {
+    //     set_state(state)
+    // }, []);
     return (
-        <Button variant={variant} className={className + ' btn'}
+        hidden ? '' : <Button variant={variant} className={className + ' d-flex justify-content-center align-items-center'}
                 onClick={async (e) => {
                     onClick && onClick(e)
                     if (onAction) {
-                        debugger
                         set_state(1)
                         const s = await onAction(e)
-                        set_state(s);
+                        setTimeout(() => set_state(s), 500);
                     }
                 }} disabled={_state == 1 || disabled} hidden={hidden}
                 style={{outline: _state == 2 ? '1px solid #cc0000' : 'none', ...style}}>
             <span className="spinner-border spinner-border-sm"
-                  style={{width: '.9em', height: '.9em', zIndex: 9999, position: 'absolute'}}
+                  style={{width: '1.7em', height: '1.7em', zIndex: '9999', position: 'absolute', color: 'black'}}
                   hidden={_state != 1}/>
-            {children}
+            {hidden ? '' : children}
         </Button>)
 }
+
+export default ButtonSpinner;

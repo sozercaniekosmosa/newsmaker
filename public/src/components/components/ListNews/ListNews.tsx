@@ -61,9 +61,9 @@ export default function ListNews(
         <div className="scroll-wrapper">
             <div className="n-list ms-1 mb-1" // @ts-ignore
                  upd={update}>
-                {arrNews.map(({arrImg, date, done, from, id, audioDur, videoDur, tags, text, textGPT, title, type, url}, idx) => {
+                {arrNews.map(({arrImg, date, done, from, id, audioDur, videoDur, tags, text, textGPT, title, type, url, textTg}, idx) => {
 
-                    if (donePre && (!(videoDur.image || textGPT || audioDur || videoDur))) return '';
+                    if (donePre && (!(videoDur.image || textGPT || audioDur || videoDur || textTg))) return '';
                     if (doneTasks == false && done == true) return '';
                     if (filterTags && !tags.includes(filterTags)) return '';
                     if (typeNews && type != typeNews) return '';
@@ -84,6 +84,7 @@ export default function ListNews(
                                     <span className="notranslate">{textGPT ? '📝' : ''}</span>
                                     <span className="notranslate">{audioDur > 0 ? '🎵' : ''}</span>
                                     <span className="notranslate">{videoDur > 0 ? '🎥' : ''}</span>
+                                    <span className="notranslate">{textTg?.length ? '📬' : ''}</span>
                                 </div>
                                 <div className="n-list__title title-ru">{title}</div>
                             </div>

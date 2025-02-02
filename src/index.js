@@ -12,18 +12,24 @@ import routerNews from "./api-v1/news.js";
 import routerGPT from "./api-v1/gpt.js";
 import {NewsUpdater} from "./parser.js";
 import dzen from "./parsers/dzen.js";
+import {TelegramChannelBot} from "./telegram.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const env = config({override: true, path: './.env'});
-const {PORT, WEB_DIR} = env.parsed
+const {PORT, WEB_DIR, BOT_TOKEN, TG_CHANNEL_ID, TG_CHANNEL_NAME, TG_GROUP_STORAGE_ID, TG_GROUP_STORAGE_THREAD_ID} = env.parsed
 
 const port = +process.env.PORT || +PORT;
 
+global.root = path.resolve(__dirname, '..');
 global.port = port
 global.dbNews = new noSQL('./dbNews.json');
 global.dbTask = new noSQL('./dbTask.json');
+global.dbTask = new noSQL('./dbTask.json');
+global.dbTB = new noSQL('./dbTB.json');
+global.tgChannelID_1 = TG_CHANNEL_ID;
+global.tgBot = new TelegramChannelBot(BOT_TOKEN, TG_GROUP_STORAGE_ID, TG_GROUP_STORAGE_THREAD_ID, global.dbTB);
 global.listNewsSrc = {
     // TG: new NewsUpdater({host: 'https://www.theguardian.com', dbNews, ...theGuardian}),
     // RT: new NewsUpdater({host: 'https://russian.rt.com', dbNews, ...russiaToday}),

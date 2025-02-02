@@ -146,7 +146,7 @@ export const getDocument = (html) => {
  * @param ext
  * @param max
  */
-export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.jfif', count = 10, timeout = 3000}) {
+export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.jfif', count = 10, timeout = 3000, isResize = true}) {
     let counter = 0.01
     let max = arrUrl.length;
 
@@ -208,11 +208,13 @@ export async function downloadImages({arrUrl, outputDir, pfx = 'img-', ext = '.j
 
     await Promise.allSettled(arrPromiseTask)
 
-    const targetWidth = 1920; // Ширина
-    const targetHeight = 1080; // Высота
-    const backgroundColor = {r: 32, g: 32, b: 32, alpha: 0};
-    await cv.packageResizeImage({arrPathImage: arrOutNames, ext: 'png', targetWidth, targetHeight, backgroundColor})
-    console.log(`Загружено!!!`);
+    if (isResize) {
+        const targetWidth = 1920; // Ширина
+        const targetHeight = 1080; // Высота
+        const backgroundColor = {r: 32, g: 32, b: 32, alpha: 0};
+        await cv.packageResizeImage({arrPathImage: arrOutNames, ext: 'png', targetWidth, targetHeight, backgroundColor})
+        // console.log(`Загружено!!!`);
+    }
 
     global?.messageSocket?.send({type: 'progress', data: -1})
 
@@ -451,6 +453,9 @@ export class NewsUpdater {
                 audioDur: 0,
                 videoDur: 0,
                 done: false,
+                textTg: '',
+                arrImgTg: [],
+                channelTg: '',
             };
 
             this.db.add(id, news);
@@ -511,7 +516,6 @@ export class ImageDownloadProcessor {
 
         return -1; // Если не найдено закрывающей скобки
     }
-
 
     async #getImages(querySearch) {
         const headers = {

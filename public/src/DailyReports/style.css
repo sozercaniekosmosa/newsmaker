@@ -1,0 +1,41 @@
+table {
+  -moz-hyphens: auto;
+  -webkit-hyphens: auto;
+  -ms-hyphens: auto;
+  hyphens: auto;
+}
+
+th {
+  border-width: 1px;
+  text-align: center;
+  max-width: 23em;
+}
+
+td {
+  border-width: 1px;
+  text-align: center;
+}
+td:hover {
+  background-color: #b5b5b5 !important;
+}
+
+.dr-time-col {
+  rotate: -90deg;
+}
+
+.red {
+  background-color: #ffa1b7;
+  color: #000;
+}
+
+.green {
+  background-color: #d0ffce;
+  color: #000;
+}
+
+.yellow {
+  background-color: #ffeeb2;
+  color: #000;
+}
+
+/*# sourceMappingURL=style.css.map */

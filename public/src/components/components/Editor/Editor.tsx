@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import 'photoswipe/style.css';
 import axios from "axios";
-import {updateNewsDB} from "../../utils.ts";
+import {toGPT, updateNewsDB} from "../../utils.ts";
 import './style.css'
 import {Button, ButtonGroup, Tab, Tabs} from "react-bootstrap";
 import {eventBus} from "../../../utils.ts";
@@ -12,6 +12,7 @@ import glob from "../../../global.ts";
 import global from "../../../global.ts";
 import 'tui-image-editor/dist/tui-image-editor.css';
 import Dialog from "../Auxiliary/Dialog/Dialog.tsx";
+import Telegram from "./components/Telegram/Telegram.tsx";
 
 let currID;
 
@@ -41,25 +42,15 @@ async function updateMedia(node, src, setNews, propName) {
     }
 }
 
-const getLocalImage = async (id, setArrImg): Promise<void> => {
-    try {
-        const {data: arrSrc} = await axios.get(glob.hostAPI + 'local-data', {params: {id}});
-        setArrImg(arrSrc.map((src: string) => ({src: src + '?' + new Date().getTime(), width: 1920, height: 1080})))
-    } catch (e) {
-        // setArrImg([])
-    }
-}
-
 export default function Editor({news, setNews, listHostToData}) {
 
     const [stateAudioRemove, setStateAudioRemove] = useState(0)
     const [stateUpdateAnNews, setStateUpdateAnNews] = useState(0)
     const [stateText2Speech, setStateText2Speech] = useState(0)
-    const [arrImg, setArrImg] = useState([])
     const [textGPT, setTextGPT] = useState('')
     const [stateNewsBuild, setStateNewsBuild] = useState(0)
     const [update, setUpdate] = useState((new Date()).getTime())
-    const [speedDelta, setSpeedDelta] = useState(0);
+    const [speedDelta, setSpeedDelta] = useState(-.2);
     const [audioDur, setAudioDuration] = useState(0);
     const [showModalRemoveAnAudio, setShowModalRemoveAnAudio] = useState(false);
 
@@ -82,7 +73,6 @@ export default function Editor({news, setNews, listHostToData}) {
         if (!news) return;
 
         updateNewsDB(news);
-        (() => getLocalImage(news.id, setArrImg))();
 
         if (currID === news.id) return;
         currID = news.id;
@@ -94,30 +84,22 @@ export default function Editor({news, setNews, listHostToData}) {
 
     }, [news])
 
-    useEffect(() => {
-        if (!news) return
-        (() => getLocalImage(news.id, setArrImg))();
-    }, [update])
 
     async function onBuildVideo() {
-        setStateNewsBuild(1);
         try {
             const {data: {respID}} = await axios.post(glob.hostAPI + 'build-an-news', {id: news.id});
-            setStateNewsBuild(0);
 
             if (currID !== +respID) return; //TODO: переделать
             await updateMedia(refVideo.current, news.pathSrc + `/news.mp4`, setNews, 'videoDur')
-            setStateNewsBuild(0);
         } catch (e) {
-            setStateNewsBuild(2);
+            return 2;
         }
-        console.log()
+        return 0
     }
 
     async function toYASpeech(voice: string, speed: number) {
         setStateText2Speech(1);
         try {
-            const isSelText = glob.selectedText && glob.selectedText.length < 20;
             await axios.post(glob.hostAPI + 'to-speech', {
                 id: news.id,
                 text: glob.selectedText ?? news.textGPT,
@@ -181,6 +163,13 @@ export default function Editor({news, setNews, listHostToData}) {
         }
     }
 
+    const listYA2SpeechButton = [
+        {name: 'Алёна', clb: toYASpeech, arrParam: ['alena', 1.4 + speedDelta]},
+        {name: 'Марина', clb: toYASpeech, arrParam: ['marina', 1.5 + speedDelta]},
+        {name: 'Омаж', clb: toYASpeech, arrParam: ['omazh', 1.5 + speedDelta]},
+        {name: 'Филипп', clb: toYASpeech, arrParam: ['filipp', 1.4 + speedDelta]}
+    ];
+
     return (
         !news ? '' : <div className="options d-flex flex-column h-100 notranslate"
             // @ts-ignore
@@ -217,14 +206,11 @@ export default function Editor({news, setNews, listHostToData}) {
                         <div className="d-flex flex-column w-100">
                             <div className="d-flex flex-row">
                                 <ButtonGroup className="notranslate flex-stretch">
-                                    <ButtonSpinner className="btn-secondary btn-sm mb-2" state={stateText2Speech}
-                                                   onClick={() => toYASpeech('alena', 1.4 + speedDelta)}>Алёна</ButtonSpinner>
-                                    <ButtonSpinner className="btn-secondary btn-sm mb-2" state={stateText2Speech}
-                                                   onClick={() => toYASpeech('marina', 1.5 + speedDelta)}>Марина</ButtonSpinner>
-                                    <ButtonSpinner className="btn-secondary btn-sm mb-2" state={stateText2Speech}
-                                                   onClick={() => toYASpeech('omazh', 1.5 + speedDelta)}>Омаж</ButtonSpinner>
-                                    <ButtonSpinner className="btn-secondary btn-sm mb-2" state={stateText2Speech}
-                                                   onClick={() => toYASpeech('filipp', 1.4 + speedDelta)}>Филипп</ButtonSpinner>
+                                    {listYA2SpeechButton.map(({name, clb, arrParam}, idi) => (
+                                        <ButtonSpinner className="btn-secondary btn-sm mb-2" key={idi} onAction={() => {
+                                            /*@ts-ignore*/
+                                            return clb(...arrParam);
+                                        }}>{name}</ButtonSpinner>))}
                                 </ButtonGroup>
                                 <input className="rounded border text-end mb-2 ms-1" type="range" value={speedDelta}
                                        min={-1} max={1}
@@ -239,15 +225,14 @@ export default function Editor({news, setNews, listHostToData}) {
                                        }}>
                                     <source type="audio/mpeg"/>
                                 </audio>
-                                <ButtonSpinner state={stateAudioRemove} variant="secondary btn-sm p-0 ms-1"
-                                               style={{height: '27px', width: '27px', flex: 'none'}}
-                                               onClick={() => setShowModalRemoveAnAudio(true)}>X</ButtonSpinner>
+                                <Button variant="secondary btn-sm p-0 ms-1" style={{height: '27px', width: '27px', flex: 'none'}}
+                                        onClick={() => setShowModalRemoveAnAudio(true)}>X</Button>
                             </div>
                         </div>
                     </div>
                 </Tab>
                 <Tab eventKey="images" title="Изображения" style={{flex: 1}}>
-                    <Images news={news} setNews={setNews} arrImg={arrImg} setArrImg={setArrImg} maxImage={audioDur}/>
+                    <Images news={news} setNews={setNews} maxImage={audioDur}/>
                 </Tab>
                 <Tab eventKey="build" title="Видео">
                     <div className="flex-stretch" style={{flex: 1}}>
@@ -267,8 +252,7 @@ export default function Editor({news, setNews, listHostToData}) {
                                        title="Длительность кадра"/>
                                 <span className="p-1 text-center text-nowrap ms-1 me-3"
                                       style={{width: '3em'}}>{news.secPerFrame} сек </span>
-                                <ButtonSpinner className="btn-secondary btn-sm mb-1 notranslate" state={stateNewsBuild}
-                                               onClick={onBuildVideo}>
+                                <ButtonSpinner className="btn-secondary btn-sm mb-1 notranslate" onAction={onBuildVideo}>
                                     Собрать видео
                                 </ButtonSpinner>
                             </div>
@@ -278,6 +262,9 @@ export default function Editor({news, setNews, listHostToData}) {
                             </video>
                         </div>
                     </div>
+                </Tab>
+                <Tab eventKey="test" title="Телеграм" style={{flex: 1}}>
+                    <Telegram setNews={setNews} news={news}></Telegram>
                 </Tab>
                 {/*<Tab eventKey="test" title="Тест">*/}
                 {/*    <ImageEditor pathImage="/news\25.01.22\DZ-NatKitUch-8uy0JhC9m\4fSIutQR0.png"*/}

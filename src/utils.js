@@ -388,7 +388,7 @@ const readdir = util.promisify(fs.readdir);
 // Промисификация fs.stat
 const stat = util.promisify(fs.stat);
 
-export const findExtFiles = async (directory, ext = 'png') => {
+export const findExtFiles = async (directory, ext = 'png', isDeep = true) => {
     let files = [];
 
     async function traverseDirectory(currentPath) {
@@ -399,7 +399,7 @@ export const findExtFiles = async (directory, ext = 'png') => {
             const itemStats = await stat(itemPath);
 
             if (itemStats.isDirectory()) {
-                await traverseDirectory(itemPath);
+                if (isDeep) await traverseDirectory(itemPath);
             } else if (itemStats.isFile() && PATH.extname(itemPath) === '.' + ext) {
                 files.push(itemPath);
             }

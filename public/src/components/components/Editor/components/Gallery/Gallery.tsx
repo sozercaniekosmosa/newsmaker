@@ -7,15 +7,12 @@ import Dialog from "../../../Auxiliary/Dialog/Dialog.tsx";
 import axios from "axios";
 import global from "../../../../../global.ts";
 import 'tui-image-editor/dist/tui-image-editor.css';
-// import ImageEditor from '@toast-ui/react-image-editor';
-import {theme, locale_ru} from './cfgEditor';
-import {formatDateTime} from "../../../../../utils.ts";
 import ImageEditor from "../ImageEditor/ImageEditor.tsx";
 
-export default function Gallery({news, galleryID, images}) {
+export default function Gallery({news, galleryID, images, onPrepareImgTitleNews, onConfirmRemoveImage}) {
     const [showModalRemove, setShowModalRemove] = useState(false);
     const [showModalEdit, setShowModalEdit] = useState(false);
-    const [itemToDelete, setItemToDelete] = useState<number | null>(null);
+    const [srcToDelete, setSrcToDelete] = useState<string | null>(null);
     const [srcToEdit, setSrcToEdit] = useState<string | null>(null);
     const [indexImage, setIndexImage] = useState<string | null>('');
     const [update, setUpdate] = useState((new Date()).getTime())
@@ -58,18 +55,8 @@ export default function Gallery({news, galleryID, images}) {
         };
     }, []);
 
-    let onConfirmRemoveImage = async (src: string = null) => {
-        try {
-            console.log(itemToDelete)
-            const path = (src.includes('?')) ? src.split('?')[0] : src;
-            await axios.get(global.hostAPI + 'remove-image', {params: {path}});
-        } catch (e) {
-            console.log(e)
-        }
-    };
-
     return (
-        <div className="pswp-gallery d-flex flex-wrap justify-content-center" id={galleryID} style={{height: 0}}>
+        <div className="pswp-gallery d-flex flex-wrap justify-content-center" id={galleryID} style={{height: '110px'}}>
             {images.length === 0 && <div>
                 <center className="text-secondary opacity-50"><h6>Загрузите изображения...</h6></center>
             </div>}
@@ -80,17 +67,12 @@ export default function Gallery({news, galleryID, images}) {
                                 style={{lineHeight: '0', height: '22px', width: '22px'}}
                                 onClick={(e) => {
                                     setShowModalRemove(true);
-                                    setItemToDelete(image.src)
+                                    setSrcToDelete(image.src)
                                 }}
                         >X</Button>
                         <Button variant="secondary btn-sm py-0 px-0"
                                 style={{lineHeight: '0', height: '22px', width: '22px'}}
-                                onClick={async (e) => {
-                                    await axios.post(global.hostAPI + 'create-title-image', {
-                                        id: news.id,
-                                        url: image.src
-                                    });
-                                }}
+                                onClick={() => onPrepareImgTitleNews(news, image)}
                         >+</Button>
                         <Button variant="secondary btn-sm py-0 px-0"
                                 style={{lineHeight: '0', height: '22px', width: '22px'}}
@@ -120,7 +102,7 @@ export default function Gallery({news, galleryID, images}) {
 
             ))}
             <Dialog title="Удалить изображение" message="Уверены?" show={showModalRemove} setShow={setShowModalRemove}
-                    onConfirm={onConfirmRemoveImage}
+                    onConfirm={() => onConfirmRemoveImage(srcToDelete)}
                     props={{className: 'modal-sm'}}/>
             <Dialog title="Редактировать изображение" show={showModalEdit} setShow={setShowModalEdit}
                     props={{className: 'modal-lg', fullscreen: true}}>
@@ -135,36 +117,6 @@ export default function Gallery({news, galleryID, images}) {
                                  }, "image/png");
                                  // console.log(path)
                              }}/>
-                {/*<ImageEditor*/}
-                {/*    includeUI={{*/}
-                {/*        loadImage: {*/}
-                {/*            path: srcToEdit,*/}
-                {/*            name: srcToEdit,*/}
-                {/*        },*/}
-                {/*        options: {*/}
-                {/*            stroke: "#00ff08",*/}
-                {/*            fill: "",*/}
-                {/*            strokeWidth: 3*/}
-                {/*        },*/}
-                {/*        locale: locale_ru,*/}
-                {/*        theme,*/}
-                {/*        menu: ['shape', 'filter', 'icon', 'draw', 'flip', 'text'],*/}
-                {/*        initMenu: 'shape',*/}
-                {/*        uiSize: {*/}
-                {/*            width: '100%',*/}
-                {/*            height: '100%',*/}
-                {/*        },*/}
-                {/*        menuBarPosition: 'bottom',*/}
-                {/*    }}*/}
-                {/*    // cssMaxHeight={500}*/}
-                {/*    // cssMaxWidth={700}*/}
-                {/*    selectionStyle={{*/}
-                {/*        cornerSize: 20,*/}
-                {/*        rotatingPointOffset: 70,*/}
-                {/*    }}*/}
-                {/*    usageStatistics={false}*/}
-                {/*/>*/}
-
             </Dialog>
         </div>
     );

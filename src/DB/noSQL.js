@@ -16,9 +16,9 @@ export class noSQL {
         this.dumpFilePath = pathResolveRoot(dumpFilePath);
 
 
-        const strDump = this.getDumpDatabase(this.dumpFilePath).toString();
+        const strDump = this.getDumpDatabase(this.dumpFilePath)?.toString();
         if (!strDump) this.writeFileAsync(this.dumpFilePath, '{}')
-        this.db = JSON.parse(strDump?strDump:'{}');
+        this.db = JSON.parse(strDump ? strDump : '{}');
 
         // Debounced function to dump database
         this.debouncedDumpDatabase = _.debounce(this.dumpDatabase.bind(this), 1000);
@@ -66,7 +66,7 @@ export class noSQL {
         for (let i = 0; i < props.length; i++) {
             const uf = props[i];
             const news = this.db[uf.id] ?? {};
-            if (!news) throw new Error(`News with ID ${id} not found.`);
+            if (!news) throw new Error(`News with ID ${uf.id} not found.`);
 
             this.db[uf.id] = {...news, ...uf};
             this.debouncedDumpDatabase();

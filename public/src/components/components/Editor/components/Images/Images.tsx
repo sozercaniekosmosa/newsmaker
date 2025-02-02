@@ -3,9 +3,11 @@ import ButtonSpinner from "../../../Auxiliary/ButtonSpinner/ButtonSpinner";
 import Gallery from "../Gallery/Gallery";
 import axios from "axios";
 import global from "../../../../../global.ts";
-import {toGPT} from "../../../../utils.ts";
+import {toGPT, updateNewsDB} from "../../../../utils.ts";
 import DraggableList from "../../../Auxiliary/DraggableList/DraggableList.tsx";
 import {Button} from "react-bootstrap";
+import glob from "../../../../../global.ts";
+import {eventBus} from "../../../../../utils.ts";
 
 function arrMoveItem(arr, fromIndex, toIndex) {
     if (fromIndex < 0 || fromIndex >= arr.length || toIndex < 0 || toIndex >= arr.length) {
@@ -21,16 +23,44 @@ function arrMoveItem(arr, fromIndex, toIndex) {
     return arr;
 }
 
+const getLocalImage = async (id, setArrImg): Promise<void> => {
+    try {
+        const {data: arrSrc} = await axios.get(glob.hostAPI + 'local-image-src', {params: {id}});
+        setArrImg(arrSrc.map((src: string) => ({src: src + '?' + new Date().getTime(), width: 1920, height: 1080})))
+    } catch (e) {
+        // setArrImg([])
+    }
+}
+
 let currID;
-export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
+export default function Images({news, setNews, maxImage}) {
+    const [arrImg, setArrImg] = useState([])
     const [stateImageLoad, setStateImageLoad] = useState(0)
     const [stateTagGPT, setStateTagGPT] = useState(0)
     const [quantity, setQuantity] = useState(5);
     const [timeout, setTimeout] = useState(3);
+    const [update, setUpdate] = useState((new Date()).getTime())
 
     useEffect(() => {
+        eventBus.addEventListener('message-socket', ({type}) => {
+            if (type === 'update-news') {
+                setUpdate((new Date()).getTime());
+            }
+        })
+    }, [])
+
+    useEffect(() => {
+        if (!news) return
+        (() => getLocalImage(news.id, setArrImg))();
+    }, [update])
+
+    useEffect(() => {
+        if (!news) return;
+        (() => getLocalImage(news.id, setArrImg))();
+
         if (currID == news?.id) return;
         currID = news.id;
+
 
         setArrImg([]);
     }, [news])
@@ -78,10 +108,27 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
     }
 
     let onGetTagsGPT = async () => {
-        setStateTagGPT(1)
         const text = await toGPT('mistral', 'Выдели основные мысли, факты, персоны и на основе них сделай несколько не больше 5 тегов. Ни чего лишенего только ответ формата: тег, тег, тег', news?.text ?? '');
-        setStateTagGPT(text ? 0 : 2);
         setNews(now => ({...now, tags: text}));
+        return text ? 0 : 2;
+    };
+
+    const onPrepareImgTitleNews = async (news, image) => {
+        await axios.post(global.hostAPI + 'create-title-image', {
+            id: news.id,
+            url: image.src
+        });
+        setUpdate((new Date()).getTime())
+    };
+
+    let onConfirmRemoveImage = async (src: string = null) => {
+        try {
+            const path = (src.includes('?')) ? src.split('?')[0] : src;
+            await axios.get(global.hostAPI + 'remove-image', {params: {path}});
+            setUpdate((new Date()).getTime())
+        } catch (e) {
+            console.log(e)
+        }
     };
 
     return <div className="d-flex flex-column w-100 notranslate position-relative">
@@ -90,11 +137,11 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
                                   onChange={({target}) => setNews(was => ({...was, tags: target.value}))}
                                   style={{height: '5em'}}/>
         <div className="d-flex flex-row mb-1 gap-1 w-auto">
-            <ButtonSpinner className="btn-secondary btn-sm" state={stateTagGPT} onClick={onGetTagsGPT}>Получить
+            <ButtonSpinner className="btn-secondary btn-sm" onAction={onGetTagsGPT}>Получить
                 теги</ButtonSpinner>
             <div className={"d-flex gap-1 " + (news.tags.length ? '' : 'ev-none opacity-25')}>
                 {[1, 3, 5, 10, 15, 20, 25, 35, 40]
-                    .map((n, ik) => (<ButtonSpinner className="btn-secondary btn-sm" key={ik} style={{width:'2.4em'}}
+                    .map((n, ik) => (<ButtonSpinner className="btn-secondary btn-sm" key={ik} style={{width: '2.4em'}}
                                                     onAction={() => reqImg({quant: n})}>{n}</ButtonSpinner>))}
                 <input className="rounded border text-end ms-2 flex-stretch" type="range" value={timeout} min={1}
                        max={20}
@@ -103,7 +150,8 @@ export default function Images({news, setNews, arrImg, setArrImg, maxImage}) {
             </div>
         </div>
         <div className="operation__img border rounded mb-1" style={{backgroundColor: '#ebf0f7'}}>
-            <Gallery galleryID="my-test-gallery" images={arrImg} news={news}/>
+            <Gallery galleryID="my-test-gallery" images={arrImg} news={news} onPrepareImgTitleNews={onPrepareImgTitleNews}
+                     onConfirmRemoveImage={onConfirmRemoveImage}/>
             <div className="position-absolute" style={{bottom: '6px', right: '6px', opacity: .5}}>
                 Всего: {arrImg.length} ({maxImage} сек)
             </div>

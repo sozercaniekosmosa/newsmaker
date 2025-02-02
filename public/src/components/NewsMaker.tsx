@@ -8,6 +8,7 @@ import ListNews from "./components/ListNews/ListNews";
 import Editor from "./components/Editor/Editor.tsx";
 import Tools from "./components/Tools/Tools.tsx";
 import iconDZ from "../assets/dzen.ico";
+import {PopupMessage} from "./components/Auxiliary/PopupMessage/PopupMessage.tsx";
 
 const listHostToIcon = {
     'dzen.ru': iconDZ,
@@ -98,6 +99,7 @@ function NewsMaker() {
                     <Tools news={news} arrNews={arrNews}/>
                 </Pane>
             </ResizablePanes>
+            <PopupMessage/>
         </div>
     )
 }
