@@ -24,12 +24,13 @@ const port = +process.env.PORT || +PORT;
 
 global.root = path.resolve(__dirname, '..');
 global.port = port
+global.getImagePath = (newsPathSrc, imageName = '') => global.root + `/public/public/${newsPathSrc}/img/${imageName}`
 global.dbNews = new noSQL('./dbNews.json');
 global.dbTask = new noSQL('./dbTask.json');
 global.dbTask = new noSQL('./dbTask.json');
 global.dbTB = new noSQL('./dbTB.json');
 global.tgChannelID_1 = TG_CHANNEL_ID;
-global.tgBot = {};//new TelegramChannelBot(BOT_TOKEN, TG_GROUP_STORAGE_ID, TG_GROUP_STORAGE_THREAD_ID, global.dbTB);
+global.tgBot = new TelegramChannelBot(BOT_TOKEN, TG_GROUP_STORAGE_ID, TG_GROUP_STORAGE_THREAD_ID, global.dbTB);
 global.listNewsSrc = {
     // TG: new NewsUpdater({host: 'https://www.theguardian.com', dbNews, ...theGuardian}),
     // RT: new NewsUpdater({host: 'https://russian.rt.com', dbNews, ...russiaToday}),

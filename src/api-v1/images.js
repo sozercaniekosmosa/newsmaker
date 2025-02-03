@@ -27,9 +27,9 @@ routerImage.get('/images', async (req, res) => {
         res.status(200).send({arrUrl, id})
         await downloadImages({
             arrUrl,
-            outputDir: global.root + `/public/public/${news.pathSrc}/`, pfx: '', ext: '.png',
+            outputDir: global.root + `/public/public/${news.pathSrc}/img/`, pfx: '', ext: '.png',
             count: +max, timeout,
-            width: 1920, height: 1080
+            // width: 1920, height: 1080
         })
         global?.messageSocket && global.messageSocket.send({type: 'update-news'})
     } catch (error) {
@@ -46,7 +46,7 @@ routerImage.get('/images-tg', async (req, res) => {
         res.status(200).send({arrUrl, id})
         await downloadImages({
             arrUrl,
-            outputDir: `./public/public/${news.pathSrc}/tg/`, pfx: '', ext: '.png',
+            outputDir: `./public/public/${news.pathSrc}/img/`, pfx: '', ext: '.png',
             count: +max, timeout
         })
         global?.messageSocket && global.messageSocket.send({type: 'update-news'})
@@ -73,7 +73,7 @@ routerImage.get('/local-image-src', async (req, res) => {
     const {id} = req.query;
     try {
         const news = global.dbNews.getByID(id);
-        let filePath = `./public/public/${news.pathSrc}/`
+        let filePath = `./public/public/${news.pathSrc}/img/`
 
         const _arrImgUrls = await findExtFiles(filePath, 'png', false);
         arrImgUrls = _arrImgUrls.map(path => path.split('\\').splice(2).join('\\'))
@@ -90,7 +90,7 @@ routerImage.get('/local-image-src-tg', async (req, res) => {
     const {id} = req.query;
     try {
         const news = global.dbNews.getByID(id);
-        let filePath = `./public/public/${news.pathSrc}/tg/`
+        let filePath = `./public/public/${news.pathSrc}/img/`
 
         const _arrImgUrls = await findExtFiles(filePath, 'png', false);
         arrImgUrls = _arrImgUrls.map(path => path.split('\\').splice(2).join('\\'))
@@ -129,13 +129,15 @@ routerImage.post('/create-title-image', async (req, res) => {
     try {
         const {body: {id, url}} = req;
         const news = global.dbNews.getByID(id);
-        let pathOut = `./public/public/${news.pathSrc}/title.png`
+        const pathImg = url.split('?')[0];
+        const nameImage = 'title-' + pathImg.split('\\').reverse()[0].split('-')[1];
+
         await renderToBrowser({
             urlTemplate: 'http://localhost:3000/content/templates/newsTitleImg',
-            pathOut,
+            pathOut: global.getImagePath(news.pathSrc, nameImage),
             data: {
                 text: news.title,
-                img: '\\public\\public\\' + url.split('?')[0]
+                img: '\\public\\public\\' + pathImg
             },
             // debug: true
         })

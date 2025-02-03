@@ -1,10 +1,14 @@
 //import global from "../global.js";
-import {createAndCheckDir, formatDateTime, pathResolveRoot, saveTextToFile} from "../utils.js";
+import {createAndCheckDir, formatDateTime, pathResolveRoot, removeDir, saveTextToFile} from "../utils.js";
 import express from "express";
 import {buildAllNews, buildAnNews} from "../video.js";
 import {getListNews, getListTask, renderToBrowser} from "../parser.js";
 import axios from "axios";
 import routerImage from "./images.js";
+import {clearImage} from "../tst/cleaner.js";
+import {resizeImage} from "../services/imagePrcessing.js";
+import fs from "fs";
+// import fs from "fs";
 // import {clearImage} from "../tst/cleaner.js";
 
 const routerNews = express.Router();
@@ -54,20 +58,32 @@ routerNews.post('/build-an-news', async (req, res) => {
 
         const news = global.dbNews.getByID(id);
 
-        await clearImage(news.arrImg, `public/public/${news.pathSrc}/`)
+        let arrImgExist = ([news.arrImg, news.arrImgTg]).flat();
+        await clearImage(arrImgExist, global.getImagePath(news.pathSrc))
 
         const dur = news.audioDur / (news.secPerFrame ?? 1.5)
 
-        const titleFrame = news.arrImg.shift()
+        let arrImgPrep = [...news.arrImg];
+        const titleFrame = arrImgPrep.shift()
 
-        const _arrImg = Array(Math.ceil(dur / news.arrImg.length)).fill(news.arrImg).flat().splice(0, dur);
+        const _arrImg = Array(Math.ceil(dur / arrImgPrep.length)).fill(arrImgPrep).flat().splice(0, dur);
 
         _arrImg[0] = titleFrame;
         _arrImg[1] = titleFrame;
 
-        const arrImg = _arrImg.map(imgName => {
-            return `./public/public/${news.pathSrc}/` + imgName.split('?')[0];
+        let outputDir = global.root + `/public/public/${news.pathSrc}/tmp/`;
+        if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, {recursive: true});
+
+        const promisedArrImg = _arrImg.map(async imgName => {
+            const imageName = imgName.split('?')[0];
+            const pathOriginal = global.getImagePath(news.pathSrc, imageName);
+            const pathResized = global.root + `/public/public/${news.pathSrc}/tmp/${imageName}`;
+
+            await resizeImage(pathOriginal, pathResized, 1920, 1080);
+            return pathResized;
         });
+
+        const arrImg = await Promise.allSettled(promisedArrImg);
 
         let filePath = `./public/public/${news.pathSrc}/`
         await saveTextToFile(filePath + 'title.txt', news.title)
@@ -77,7 +93,7 @@ routerNews.post('/build-an-news', async (req, res) => {
         const duration = await buildAnNews({
             dir_ffmpeg: './content/ffmpeg/',
             dir_content: filePath,
-            arrImg: arrImg.map(src => pathResolveRoot(src.replaceAll(/\\/g, '/'))),
+            arrImg: arrImg.map(it => it.value),
             pathBridge: pathResolveRoot('./content/audio/bridge.mp3'),
             pathVideoOut: filePath + 'news.mp4',
             pathLogoMini: pathResolveRoot('./content/img/logo-mini.png'),
@@ -85,6 +101,8 @@ routerNews.post('/build-an-news', async (req, res) => {
             textAdd: news.textAdd,
             arrEff
         })
+
+        await removeDir(outputDir);
 
         dbNews.update({...news, videoDur: duration})
         global?.messageSocket && global.messageSocket.send({type: 'update-news'});
@@ -186,13 +204,10 @@ routerNews.post('/create-news', async (req, res) => {
         // const news = global.dbNews.getByID(id);
         // let pathOut = `./public/public/${news.pathSrc}/title.png`
         await renderToBrowser({
-            urlTemplate: 'http://localhost:3000/content/templates/buildNews',
-            pathOut: 'tst.mp4',
-            data: {
+            urlTemplate: 'http://localhost:3000/content/templates/buildNews', pathOut: 'tst.mp4', data: {
                 // text: news.title,
                 // img: '\\public\\public\\' + url.split('?')[0]
-            },
-            debug: true
+            }, debug: true
         })
         res.status(200).send('ok')
     } catch (error) {
@@ -208,10 +223,10 @@ routerNews.post('/tg-public-news', async (req, res) => {
 
         const news = global.dbNews.getByID(id);
 
-        await clearImage(news.arrImgTg, `public/public/${news.pathSrc}/tg/`)
+        await clearImage(news.arrImgTg, `public/public/${news.pathSrc}/img/`)
 
         const _arrImg = arrImg.map(imgName => {
-            return `./public/public/${news.pathSrc}/tg/` + imgName.split('?')[0];
+            return `./public/public/${news.pathSrc}/img/` + imgName.split('?')[0];
         });
         const __arrImg = _arrImg.map(src => pathResolveRoot(src.replaceAll(/\\/g, '/')))
 

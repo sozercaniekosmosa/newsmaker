@@ -16,7 +16,9 @@ export async function resizeImage(inputArrBufOrPath, outputFilePath, width = nul
     try {
         let image = sharp(inputArrBufOrPath).toFormat('png');
 
-        if (width) {
+        const {width: _w, height: _h} = await image.metadata()
+
+        if (width && !(_w === width && _h === height)) {
             const resizeImageBlur = image.clone().resize({width, height, fit: 'fill'});
             const imgBackBlur = await resizeImageBlur.blur(25).toBuffer();
 
@@ -27,7 +29,12 @@ export async function resizeImage(inputArrBufOrPath, outputFilePath, width = nul
             image = await sharp(imgBackBlur)
                 .composite([{input: foregroundImage, gravity: 'center'}]).normalize().sharpen()
         }
-        image.toFile(outputFilePath);
+        const {width: w, height: h} = await image.metadata()
+        let outPath = outputFilePath;
+
+        let arrPathPart = outPath.split(/\.png/)
+        outPath = arrPathPart[0] + `-${w}x${h}.png`;
+        await image.toFile(outPath);
 
         console.log('Изображение успешно обработано и сохранено в', outputFilePath);
     } catch (error) {
@@ -35,7 +42,7 @@ export async function resizeImage(inputArrBufOrPath, outputFilePath, width = nul
     }
 }
 
-await resizeImage('img.png', 'out.png', 1920, 1080)
+// await resizeImage('img.png', 'out.png', 1920, 1080)
 
 async function createVignetteOverlay(pathFile, outputFilePath, width, height) {
     // Размеры изображения (должны совпадать с исходным)

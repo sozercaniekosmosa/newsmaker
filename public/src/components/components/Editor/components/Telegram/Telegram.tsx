@@ -200,15 +200,15 @@ export default function Telegram({news, setNews}) {
                 <span className="p-1 text-center" style={{width: '3.5em'}}>{timeout + ' сек'}</span>
             </div>
         </div>
-        <div className="d-flex flex-row">
+        <div className="d-flex flex-column">
 
-            <div className="operation__img border rounded mb-1" style={{backgroundColor: '#ebf0f7', width: '50%'}}>
+            <div className="operation__img border rounded mb-1" style={{backgroundColor: '#ebf0f7'}}>
                 <Gallery galleryID="my-test-gallery" images={arrImgTg} news={news} onPrepareImgTitleNews={onPrepareImgTitleNews}
                          onConfirmRemoveImage={onConfirmRemoveImage}/>
             </div>
 
             <div className="border rounded mb-1"
-                 style={{backgroundColor: '#ebf0f7', height: '110px', overflowY: 'auto', resize: 'vertical', width: '50%'}}
+                 style={{backgroundColor: '#ebf0f7', height: '110px', overflowY: 'auto', resize: 'vertical'}}
                  onDrop={onDropSortImg}
                  onDragOver={e => e.preventDefault()}>
                 {news?.arrImgTg?.length === 0 && <div>
@@ -218,7 +218,7 @@ export default function Telegram({news, setNews}) {
                 <DraggableList onChange={onChangeSort} className="d-flex flex-wrap flex-stretch justify-content-center">
                     {news?.arrImgTg.map((item, index) => {
                         return <img key={index} className="sortable sortable-img border m-1 rounded shadow-sm" draggable
-                                    src={'/' + news.pathSrc + '/tg/' + item}
+                                    src={'/' + news.pathSrc + '/img/' + item}
                                     data-index={index}
                                     onContextMenu={(e) => onRemoveImage(e)}/>
                     })}

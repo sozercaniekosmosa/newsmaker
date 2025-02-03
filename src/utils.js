@@ -511,7 +511,7 @@ export class CreateVideo {
         console.log(`add sub: ${pathVideo} (${duration} sec)`)
     }
 
-    async imageToVideo({arrPathImg, numImg, transDur = .3, duration, pathOut = 'out.mp4', indexEff = 0, arrEff}) {
+    async imageToVideo({arrPathImg, numImg, transDur = .3, duration, pathOut = 'out.mp4', indexEff = 0, arrEff, w = 1920, h = 1080}) {
         arrEff = arrEff ?? this.arrEff;
         // if (numImages === 0) throw 'Minimum two images required';
 
@@ -524,7 +524,8 @@ export class CreateVideo {
         const n = ''
 
         if (arrPathImg !== undefined) {
-            cmdVideoSeq += arrPathImg.map((it) => `-loop 1 -t ${imgDur.toFixed(2)} -i ${this.setDir(it)}`).join(' ');
+            cmdVideoSeq += arrPathImg.map((path) => `-loop 1 -t ${imgDur.toFixed(2)} -i ${path}`).join(' ');
+            // cmdVideoSeq += arrPathImg.map((it) => `-loop 1 -t ${imgDur.toFixed(2)} -i ${this.setDir(it)}`).join(' ');
         } else {
             cmdVideoSeq += Array(numImg).fill('').map((it, i) => `-loop 1 -t ${imgDur.toFixed(2)} -i ${this.dir_content}${i}.png`).join(' ');
         }
@@ -536,7 +537,7 @@ export class CreateVideo {
             off = i + 2 >= numImg ? off - 1 : off
             cmdVideoSeq += `[f${i - 1}][${i + 1}]xfade=transition=${arrEff[(i + indexEff) % arrEff.length]}:duration=${transDur}:offset=${off}[f${i}];` + n;
         }
-        cmdVideoSeq += `[f${numImg - 2}]scale=1920:1080[vout]" -map "[vout]" -pix_fmt yuv420p `;
+        cmdVideoSeq += `[f${numImg - 2}]scale=${w}:${h}[vout]" -map "[vout]" -pix_fmt yuv420p `;
         cmdVideoSeq += this.setDir(pathOut);
 
         await this.execCmd(cmdVideoSeq);
@@ -866,4 +867,44 @@ export function translit(str) {
         result += converter[char] || char;
     }
     return result;
+}
+
+export async function removeDir(targetPath) {
+    try {
+        // Нормализация и проверка пути
+        const normalizedPath = PATH.normalize(targetPath);
+        const absolutePath = PATH.resolve(process.cwd(), normalizedPath);
+
+        // Защита от выхода за пределы корневой директории
+        const rootDir = process.cwd();
+        if (!absolutePath.startsWith(rootDir)) {
+            throw new Error('Попытка удаления директории вне корневой папки проекта');
+        }
+
+        // Проверка существования пути
+        try {
+            await fsPromises.access(absolutePath);
+        } catch {
+            throw new Error('Директория не существует');
+        }
+
+        // Проверка что это действительно директория
+        const stats = await fsPromises.stat(absolutePath);
+        if (!stats.isDirectory()) {
+            throw new Error('Указанный путь не является директорией');
+        }
+
+        // Удаление с защитой от симлинков
+        await fsPromises.rm(absolutePath, {
+            recursive: true,
+            force: false, // не игнорировать ошибки
+            maxRetries: 3, // попытки для устойчивых ошибок
+        });
+
+        console.log('Папка и её содержимое успешно удалены');
+    } catch (err) {
+        console.error('Ошибка при удалении:', err);
+        // Пробрасываем ошибку для обработки в вызывающем коде
+        throw err;
+    }
 }

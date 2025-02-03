@@ -165,7 +165,7 @@ export default function Images({news, setNews, maxImage}) {
             <DraggableList onChange={onChangeSort} className="d-flex flex-wrap flex-stretch justify-content-center">
                 {news?.arrImg.map((item, index) => {
                     return <img key={index} className="sortable sortable-img border m-1 rounded shadow-sm" draggable
-                                src={'/' + news.pathSrc + '/' + item}
+                                src={'/' + news.pathSrc + '/img/' + item}
                                 data-index={index}
                                 onContextMenu={(e) => onRemoveImage(e)}/>
                 })}

@@ -5,6 +5,7 @@
             width: 1920px;
             height: 1080px;
             margin: 0;
+            background-color: #0e202b;
         }
 
         .text {
@@ -17,9 +18,16 @@
             fill: #fff;
         }
 
+        .cont__back-img{
+            display: flex;
+            justify-content: center;
+        }
+
         .back-img {
             position: absolute;
+            height: 100%;
         }
+
         .wrap-text {
             height: 100%;
             display: flex;
@@ -55,7 +63,9 @@
     </style>
 </head>
 <body>
-<img class="back-img">
+<div class="cont__back-img">
+    <img class="back-img" src="title.png">
+</div>
 <div class="wrap-text">
     <div class="foreign-text"></div>
     <script src="index.js" type="module" defer></script>

@@ -5,7 +5,7 @@ window.render = async (data) => {
     document.querySelector('.foreign-text').innerHTML = data?.text ?? 'Something text for fun';
     const nodeImg = document.querySelector('.back-img')
 
-    await loadImage(nodeImg, data?.img)
+    data?.img && await loadImage(nodeImg, data?.img)
 
     return 0;
 }
