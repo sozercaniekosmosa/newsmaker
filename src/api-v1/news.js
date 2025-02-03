@@ -5,7 +5,7 @@ import {buildAllNews, buildAnNews} from "../video.js";
 import {getListNews, getListTask, renderToBrowser} from "../parser.js";
 import axios from "axios";
 import routerImage from "./images.js";
-import {clearImage} from "../tst/cleaner.js";
+// import {clearImage} from "../tst/cleaner.js";
 import {resizeImage} from "../services/imagePrcessing.js";
 import fs from "fs";
 // import fs from "fs";
@@ -59,7 +59,7 @@ routerNews.post('/build-an-news', async (req, res) => {
         const news = global.dbNews.getByID(id);
 
         let arrImgExist = ([news.arrImg, news.arrImgTg]).flat();
-        await clearImage(arrImgExist, global.getImagePath(news.pathSrc))
+        // await clearImage(arrImgExist, global.getImagePath(news.pathSrc))
 
         const dur = news.audioDur / (news.secPerFrame ?? 1.5)
 
@@ -223,7 +223,7 @@ routerNews.post('/tg-public-news', async (req, res) => {
 
         const news = global.dbNews.getByID(id);
 
-        await clearImage(news.arrImgTg, `public/public/${news.pathSrc}/img/`)
+        // await clearImage(news.arrImgTg, `public/public/${news.pathSrc}/img/`)
 
         const _arrImg = arrImg.map(imgName => {
             return `./public/public/${news.pathSrc}/img/` + imgName.split('?')[0];
