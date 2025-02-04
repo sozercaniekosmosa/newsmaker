@@ -3,11 +3,11 @@ import ButtonSpinner from "../../../Auxiliary/ButtonSpinner/ButtonSpinner";
 import Gallery from "../Gallery/Gallery";
 import axios from "axios";
 import global from "../../../../../global.ts";
-import {extractDimensionsFromUrl, toGPT, updateNewsDB} from "../../../../utils.ts";
-import DraggableList from "../../../Auxiliary/DraggableList/DraggableList.tsx";
-import {Button} from "react-bootstrap";
 import glob from "../../../../../global.ts";
+import {extractDimensionsFromUrl, toGPT} from "../../../../utils.ts";
+import DraggableList from "../../../Auxiliary/DraggableList/DraggableList.tsx";
 import {eventBus} from "../../../../../utils.ts";
+import {ListButton, TArrParam} from "../../../Auxiliary/ListButton/ListButton.tsx";
 
 function arrMoveItem(arr, fromIndex, toIndex) {
     if (fromIndex < 0 || fromIndex >= arr.length || toIndex < 0 || toIndex >= arr.length) {
@@ -35,7 +35,7 @@ const getLocalImage = async (id, setArrImg): Promise<void> => {
 }
 
 let currID;
-export default function Images({news, setNews, maxImage}) {
+export default function Images({news, setNews, maxImage, typeServiceGPT}) {
     const [arrImg, setArrImg] = useState([])
     const [stateImageLoad, setStateImageLoad] = useState(0)
     const [stateTagGPT, setStateTagGPT] = useState(0)
@@ -110,7 +110,7 @@ export default function Images({news, setNews, maxImage}) {
     }
 
     let onGetTagsGPT = async () => {
-        const text = await toGPT('mistral', 'Выдели основные мысли, факты, персоны и на основе них сделай несколько не больше 5 тегов. Ни чего лишенего только ответ формата: тег, тег, тег', news?.text ?? '');
+        const text = await toGPT(typeServiceGPT, 'Выдели основные мысли, факты, персоны и на основе них сделай несколько не больше 5 тегов. Ни чего лишенего только ответ формата: тег, тег, тег', news?.text ?? '');
         setNews(now => ({...now, tags: text}));
         return text ? 0 : 2;
     };
@@ -133,18 +133,17 @@ export default function Images({news, setNews, maxImage}) {
         }
     };
 
+    const arrPrompt: TArrParam = [['Получить теги']]
+
     return <div className="d-flex flex-column w-100 notranslate position-relative">
                         <textarea className="options__tags d-flex flex-row border rounded mb-1 p-2 notranslate"
                                   value={news?.tags || ''}
                                   onChange={({target}) => setNews(was => ({...was, tags: target.value}))}
                                   style={{height: '5em'}}/>
         <div className="d-flex flex-row mb-1 gap-1 w-auto">
-            <ButtonSpinner className="btn-secondary btn-sm" onAction={onGetTagsGPT}>Получить
-                теги</ButtonSpinner>
+            <ListButton arrParam={arrPrompt} onAction={onGetTagsGPT}/>
             <div className={"d-flex gap-1 " + (news.tags.length ? '' : 'ev-none opacity-25')}>
-                {[1, 3, 5, 10, 15, 20, 25, 35, 40]
-                    .map((n, ik) => (<ButtonSpinner className="btn-secondary btn-sm" key={ik} style={{width: '2.4em'}}
-                                                    onAction={() => reqImg({quant: n})}>{n}</ButtonSpinner>))}
+                <ListButton arrParam={[1, 2, 3, 5, 10, 15, 20, 25, 35, 40]} onAction={(n) => reqImg({quant: n})}/>
                 <input className="rounded border text-end ms-2 flex-stretch" type="range" value={timeout} min={1}
                        max={20}
                        step={1} onChange={({target}) => setTimeout(+target.value)} title="Таймаут"/>
@@ -152,7 +151,8 @@ export default function Images({news, setNews, maxImage}) {
             </div>
         </div>
         <div className="operation__img border rounded mb-1" style={{backgroundColor: '#ebf0f7'}}>
-            <Gallery galleryID="my-test-gallery" images={arrImg} news={news} onPrepareImgTitleNews={onPrepareImgTitleNews}
+            <Gallery galleryID="my-test-gallery" images={arrImg} news={news}
+                     onPrepareImgTitleNews={onPrepareImgTitleNews}
                      onConfirmRemoveImage={onConfirmRemoveImage}/>
             <div className="position-absolute" style={{bottom: '6px', right: '6px', opacity: .5}}>
                 Всего: {arrImg.length} ({maxImage} сек)

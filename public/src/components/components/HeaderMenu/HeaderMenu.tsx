@@ -8,6 +8,8 @@ import axios from "axios";
 import './style.css'
 import glob from "../../../global.ts";
 import iconDz from "../../../assets/dzen.ico";
+import GroupCheckbox, {TArrName} from "../Auxiliary/GroupCheckbox/GroupCheckbox.tsx";
+import {ListButton} from "../Auxiliary/ListButton/ListButton.tsx";
 
 async function getNewsData(dtFrom: string, dtTo: string, setArrNews, setArrFilter) {
     let arrNews = await getData(dtFrom, dtTo);
@@ -18,7 +20,8 @@ async function getNewsData(dtFrom: string, dtTo: string, setArrNews, setArrFilte
 
 function ButtonsTypeList({list, arrFilter}) {
     return Object.entries(list).map(([key, val], index) => {
-        return <Button key={index} variant={(arrFilter.includes(key) ? 'secondary' : 'outline-secondary') + ' btn-sm notranslate'}
+        return <Button key={index}
+                       variant={(arrFilter.includes(key) ? 'secondary' : 'outline-secondary') + ' btn-sm notranslate'}
             // @ts-ignore
                        data-type={key}>{val}</Button>;
     });
@@ -26,8 +29,18 @@ function ButtonsTypeList({list, arrFilter}) {
 
 
 export default function HeaderMenu({
-                                       arrButtonSelect, setArrNews, filterTags, typeNews, setTypeNews, setFilterTags, doneTasks, setDoneTasks,
-                                       donePre, setDonePre
+                                       arrButtonSelect,
+                                       setArrNews,
+                                       filterTags,
+                                       typeNews,
+                                       setTypeNews,
+                                       setFilterTags,
+                                       doneTasks,
+                                       setDoneTasks,
+                                       donePre,
+                                       setDonePre,
+                                       typeServiceGPT,
+                                       setTypeServiceGPT,
                                    }) {
     const hourFrom = -6;
 // debugger
@@ -93,18 +106,45 @@ export default function HeaderMenu({
 
     }
 
+    let onChangeServiceGPT = (type) => {
+        setTypeServiceGPT(type)
+    };
+
+    const arrNames: TArrName = [
+        ['YA', 'yandex'],
+        ['RA', 'arli'],
+        ['MI', 'mistral'],
+    ];
+
+    const getElement = (idi: any, fn: any, list: []) =>
+        <div key={idi} className="me-1"><ButtonGroup> {Object.entries(list).map(([key, val], index) =>
+            <Button
+                variant={(arrFilter.includes(key) ? 'secondary' : 'outline-secondary') + ' btn-sm notranslate'}/*@ts-ignore*/
+                data-type={key}>{val}</Button>)}
+        </ButtonGroup></div>;
+
+    let arrParam = [
+        [getElement, listGeneral],
+        [getElement, listPolitics],
+        [getElement, listPoliticsRU],
+        [getElement, listScience],
+        [getElement, listCulture],
+        [getElement, listSport],
+    ];
     return <header>
         <div className="header-type-flt" onClick={onSelectSrcNews}>
             <Button variant="secondary btn-sm notranslate selected-news-type" data-type={''}>Все</Button>
-            <ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listGeneral}/></ButtonGroup>
-            <ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listPolitics}/></ButtonGroup>
-            <ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listPoliticsRU}/></ButtonGroup>
-            <ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listScience}/></ButtonGroup>
-            <ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listCulture}/></ButtonGroup>
-            <ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listSport}/></ButtonGroup>
+            <ListButton arrParam={arrParam}/>
+            {/*<ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listGeneral}/></ButtonGroup>*/}
+            {/*<ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listPolitics}/></ButtonGroup>*/}
+            {/*<ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listPoliticsRU}/></ButtonGroup>*/}
+            {/*<ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listScience}/></ButtonGroup>*/}
+            {/*<ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listCulture}/></ButtonGroup>*/}
+            {/*<ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listSport}/></ButtonGroup>*/}
         </div>
         <div className="header-control-flt d-flex flex-row notranslate">
-            <ButtonSpinner className="btn-secondary btn-sm notranslate d-flex align-items-center" onAction={() => onUpdateAllNews('DZ')}>
+            <ButtonSpinner className="btn-secondary btn-sm notranslate d-flex align-items-center"
+                           onAction={() => onUpdateAllNews('DZ')}>
                 <img src={iconDz} className="news-icon" alt={iconDz}/>
             </ButtonSpinner>
 
@@ -115,17 +155,18 @@ export default function HeaderMenu({
                    value={formatDateTime(addDay(0, new Date(dtTo)), 'yyyy-mm-dd')}
                    onChange={e => setDtTo(e.target.value + ' 00:00:00')}/>
             <div className="selected-filters" onClick={onResetSelectedTag}>{filterTags ? '#' + filterTags : ''}</div>
-
-            <div className="form-check align-content-center py-2" style={{height: '2em'}}>
-                <input type="checkbox" className="form-check-input" checked={doneTasks} onChange={e => setDoneTasks(!!e.target.checked)}
-                       id="doneTask"/>
-                <label className="form-check-label no-select" htmlFor="doneTask">Выполнены</label>
-            </div>
-
-            <div className="form-check align-content-center py-2 ms-2" style={{height: '2em'}}>
-                <input type="checkbox" className="form-check-input" checked={donePre} onChange={e => setDonePre(!!e.target.checked)}
-                       id="pre"/>
-                <label className="form-check-label no-select" htmlFor="pre">К выпуску</label>
+            <div className="d-flex flex-row gap-3">
+                <div className="d-flex flex-row gap-1 text-nowrap align-items-center">
+                    <input type="checkbox" checked={doneTasks}
+                           onChange={e => setDoneTasks(!!e.target.checked)} id="doneTask"/>
+                    Выполнены
+                </div>
+                <div className="d-flex flex-row gap-1 text-nowrap align-items-center">
+                    <input type="checkbox" checked={donePre}
+                           onChange={e => setDonePre(!!e.target.checked)} id="pre"/>
+                    К выпуску
+                </div>
+                <GroupCheckbox state={typeServiceGPT} arrNames={arrNames} onChange={onChangeServiceGPT}/>
             </div>
         </div>
     </header>;

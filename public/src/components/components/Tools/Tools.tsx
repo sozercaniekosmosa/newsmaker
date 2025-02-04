@@ -10,6 +10,7 @@ import ButtonSpinner from "../Auxiliary/ButtonSpinner/ButtonSpinner.tsx";
 import {ScrollChildY, ScrollParent} from "../Auxiliary/Scrollable/Scrollable.tsx";
 import {eventBus, formatDateTime} from "../../../utils.ts";
 import DraggableList from "../Auxiliary/DraggableList/DraggableList.tsx";
+import {ListButton, TOnAction, TArrParam} from "../Auxiliary/ListButton/ListButton.tsx";
 
 function arrMoveItem(arr, fromIndex, toIndex) {
     if (fromIndex < 0 || fromIndex >= arr.length || toIndex < 0 || toIndex >= arr.length) {
@@ -28,7 +29,7 @@ function arrMoveItem(arr, fromIndex, toIndex) {
 const promptGeneralDesc = 'Сделай из этих названий новостей краткий заголовок до трех слов максимально короткими словами для новостного видео (вместо запятой используй вертикальную черту)';
 const promptImgDesc = 'Добавь эмодзи по смыслу перед пунктами и сократи каждый пункт до трех слов максимально короткими словами';
 
-export default function Tools({news, arrNews}) {
+export default function Tools({news, arrNews, typeServiceGPT}) {
 
     const [arrTaskList, setArrTaskList] = useState([]);
     const [showModalRemoveAnTask, setShowModalRemoveAnTask] = useState(false);
@@ -53,16 +54,16 @@ export default function Tools({news, arrNews}) {
         })()
     }, []);
 
-    async function onGPT(type, prompt) {
+    const onGPT: TOnAction = async (name, prompt) => {
         const textContent = arrTaskList.map(({title}) => title).join(' | ');
 
-        const title = await toGPT(type, prompt, textContent)
+        const title = await toGPT(typeServiceGPT, prompt, textContent)
         const list = '- ' + title.split(' | ').join('\n- ')
         const str = title + '\n\n' + global.links + '\n\n' + list;
         setTitleGPT(str)
         updateTaskDB({title: str});
         return title ? 0 : 2
-    }
+    };
 
     async function onGPTImgDesc(type, prompt) {
         const textContent = arrTaskList.map(({title}) => title).splice(0, 3).join('\n');
@@ -162,11 +163,7 @@ export default function Tools({news, arrNews}) {
     const isAllowBuildAll = _arr.every(it => it?.videoDur ?? 0)
     const totalDur = _arr.reduce((acc, it) => acc + (+it.videoDur), 0);
 
-    let listGPTPromptButton = [
-        {name: 'ya-GPT', clb: onGPT, arrParam: ['yandex', promptGeneralDesc]},
-        {name: 'arli-GPT', clb: onGPT, arrParam: ['arli', promptGeneralDesc]},
-        {name: 'mistral-GPT', clb: onGPT, arrParam: ['mistral', promptGeneralDesc]},
-    ];
+
     return (
         <ScrollParent className="pe-1 pb-1">
             <input type="datetime-local" value={datePublic}
@@ -175,16 +172,11 @@ export default function Tools({news, arrNews}) {
             <textarea className="form-control me-1 operation__prompt rounded border mb-1" value={titleGPT}
                       style={{height: '100px'}}
                       onChange={e => onChangeData({title: e.target.value}, setTitleGPT)}/>
-            <ButtonGroup>
-                {listGPTPromptButton.map(({name, clb, arrParam}, idi) => (<ButtonSpinner variant="secondary btn-sm" key={idi} onAction={() => {
-                    // @ts-ignore
-                    return clb(...arrParam);
-                }}>{name}</ButtonSpinner>))}
-            </ButtonGroup>
+            <ListButton arrParam={[['Подготовить', promptGeneralDesc]]} onAction={onGPT}/>
             <hr/>
             Список задач:
             <ButtonGroup>
-                <Button variant="secondary btn-sm" disabled={!(news?.arrImg.length && news?.audioDur)}
+                <Button variant="secondary btn-sm" disabled={!!(news?.arrImg.length && news?.audioDur)}
                         onClick={addToTaskList}>
                     Добавить
                 </Button>
@@ -208,7 +200,8 @@ export default function Tools({news, arrNews}) {
 
                         return <div
                             className="sortable d-flex justify-content-between align-items-center px-1 py-1 m-0 border list-group-item"
-                            key={index} data-id={id} style={arrNews[indexNews].videoDur == 0 ? {backgroundColor: '#ffdddd'} : {}}>
+                            key={index} data-id={id}
+                            style={arrNews[indexNews].videoDur == 0 ? {backgroundColor: '#ffdddd'} : {}}>
                             <div className="d-flex flex-row">
                                 <span className="notranslate">{arrNews[indexNews].arrImg?.length ? '🖼️' : ''}</span>
                                 <span className="notranslate">{arrNews[indexNews].textGPT ? '📝' : ''}</span>
@@ -260,8 +253,10 @@ export default function Tools({news, arrNews}) {
                 ><strong>✓</strong></Button>
             </div>
             <ButtonGroup>
-                <Button className="btn-secondary btn-sm" onClick={() => axios.post(global.hostAPI + 'open-dir')}>Открыть</Button>
-                <ButtonSpinner disabled={(srcImgMain == '' || isAllowBuildAll == false)} className="btn-secondary btn-sm"
+                <Button className="btn-secondary btn-sm"
+                        onClick={() => axios.post(global.hostAPI + 'open-dir')}>Открыть</Button>
+                <ButtonSpinner disabled={(srcImgMain == '' || isAllowBuildAll == false)}
+                               className="btn-secondary btn-sm"
                                onAction={buildAllNews}>
                     Собрать все видео ({Math.trunc(totalDur / 60)} мин)
                 </ButtonSpinner>
@@ -270,7 +265,8 @@ export default function Tools({news, arrNews}) {
             <Dialog title="Удалить эелемент" message="Уверены?" show={showModalRemoveAnTask}
                     setShow={setShowModalRemoveAnTask}
                     onConfirm={onConfirmRemoveAnTask} props={{className: 'modal-sm'}}/>
-            <Dialog title="Очистить" message="Уверены?" show={showModalRemoveAllTask} setShow={setShowModalRemoveAllTask}
+            <Dialog title="Очистить" message="Уверены?" show={showModalRemoveAllTask}
+                    setShow={setShowModalRemoveAllTask}
                     onConfirm={onConfirmRemoveAllTask} props={{className: 'modal-sm'}}/>
 
         </ScrollParent>

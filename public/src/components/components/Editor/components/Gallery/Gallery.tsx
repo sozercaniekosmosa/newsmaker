@@ -56,7 +56,7 @@ export default function Gallery({news, galleryID, images, onPrepareImgTitleNews,
     }, []);
 
     return (
-        <div className="pswp-gallery d-flex flex-wrap justify-content-center" id={galleryID} style={{height: '110px'}}>
+        <div className="pswp-gallery d-flex flex-wrap justify-content-center" id={galleryID}>
             {images.length === 0 && <div>
                 <center className="text-secondary opacity-50"><h6>Загрузите изображения...</h6></center>
             </div>}

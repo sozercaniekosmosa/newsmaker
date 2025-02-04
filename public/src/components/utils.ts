@@ -104,3 +104,29 @@ export function extractDimensionsFromUrl(url: string) {
         return null;
     }
 }
+
+export const checkResourceAvailability = async (url: string) => {
+    try {
+        return await axios.get(glob.hostAPI + 'exist-resource', {params: {url: url.replace('5173/', '3000/public/public/')}});
+    } catch (error) {
+        console.log('Ошибка загрузки видео:', error);
+        return false;
+    }
+};
+
+export async function updateMedia(node, src, setNews, propName) {
+    const res = await checkResourceAvailability(glob.host + src)
+
+    if (res) {
+        node.addEventListener('loadedmetadata', e => setNews((now: {}) => ({
+            ...now,
+            [propName]: (e.target as HTMLAudioElement).duration
+        })));
+        node.querySelector('source').src = glob.host + src + '?upd=' + new Date().getTime();
+        node.load()
+    } else {
+        setNews((now: {}) => ({...now, [propName]: 0}))
+        node.querySelector('source').src = '';
+        node.load()
+    }
+}

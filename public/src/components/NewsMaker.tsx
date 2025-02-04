@@ -32,6 +32,7 @@ function NewsMaker() {
     const [news, setNews] = useState(null)
     const [doneTasks, setDoneTasks] = useState(true)
     const [donePre, setDonePre] = useState(false)
+    const [typeServiceGPT, setTypeServiceGPT] = useState('mistral')
 
     useEffect(() => {
         const socketHandler = ({type, data}) => {
@@ -81,22 +82,27 @@ function NewsMaker() {
         <div className="editor d-flex flex-column h-100">
             {progress >= 0 && <ProgressBar progress={progress}/>}
             <HeaderMenu
-                setTypeNews={setTypeNews} arrButtonSelect={arrTypes} typeNews={typeNews} setArrNews={setArrNews} filterTags={filterTags}
-                setFilterTags={setFilterTags} doneTasks={doneTasks} setDoneTasks={setDoneTasks} donePre={donePre} setDonePre={setDonePre}
+                setTypeNews={setTypeNews} arrButtonSelect={arrTypes} typeNews={typeNews} setArrNews={setArrNews}
+                filterTags={filterTags}
+                setFilterTags={setFilterTags} doneTasks={doneTasks} setDoneTasks={setDoneTasks} donePre={donePre}
+                setDonePre={setDonePre}
+                typeServiceGPT={typeServiceGPT} setTypeServiceGPT={setTypeServiceGPT}
             />
             <ResizablePanes vertical uniqueId="uid1" className="no-scroll" resizerSize={3}>
                 <Pane id="P0" size={4}>
                     <ListNews
                         arrNews={arrNews} arrTypes={arrTypes} filterTags={filterTags}
-                        setNews={setNews} typeNews={typeNews} listHostToData={listHostToIcon} setFilterTags={setFilterTags}
+                        setNews={setNews} typeNews={typeNews} listHostToData={listHostToIcon}
+                        setFilterTags={setFilterTags}
                         doneTasks={doneTasks} donePre={donePre}
                     />
                 </Pane>
                 <Pane id="P1" size={9}>
-                    <Editor news={news} setNews={setNews} listHostToData={listHostToIcon}/>
+                    <Editor news={news} setNews={setNews} listHostToData={listHostToIcon}
+                            typeServiceGPT={typeServiceGPT}/>
                 </Pane>
                 <Pane id="P2" size={4}>
-                    <Tools news={news} arrNews={arrNews}/>
+                    <Tools news={news} arrNews={arrNews} typeServiceGPT={typeServiceGPT}/>
                 </Pane>
             </ResizablePanes>
             <PopupMessage/>

@@ -14,12 +14,15 @@ async function checkFileExists(filePath) {
 
 export async function resizeImage(inputArrBufOrPath, outputFilePath, width = null, height = null, maxWidth = 1280, maxHeight = 1280) {
     try {
-        let image = await sharp(inputArrBufOrPath).resize(maxWidth, maxHeight, {fit: 'inside', withoutEnlargement: true}).toBuffer();
+        let image = await sharp(inputArrBufOrPath).resize(maxWidth, maxHeight, {
+            fit: 'inside',
+            withoutEnlargement: true
+        }).toBuffer();
         image = await sharp(image).toFormat('png');
 
         const {width: _w, height: _h} = await image.metadata();
 
-        if (width && !(_w === width && _h === height)) {
+        if (width && _w !== width && _h !== height) {
             const resizeImageBlur = image.clone().resize({width, height, fit: 'fill'});
             const imgBackBlur = await resizeImageBlur.blur(25).toBuffer();
 
@@ -31,13 +34,11 @@ export async function resizeImage(inputArrBufOrPath, outputFilePath, width = nul
                 .composite([{input: foregroundImage, gravity: 'center'}])
         }
         const {width: w, height: h} = await image.metadata()
-        let outPath = outputFilePath;
 
+        let outPath = outputFilePath;
         const isExist = /-(\d+)x(\d+)\.png/.test(outPath);
-        if (!isExist) {
-            let arrPathPart = outPath.split(/\.png/);
-            outPath = arrPathPart[0] + `-${w}x${h}.png`;
-        }
+        const arrPathPart = outPath.split(isExist ? /-(\d+)x(\d+)\.png/ : /\.png/);
+        outPath = arrPathPart[0] + `-${w}x${h}.png`;
 
         await image.normalize().sharpen().toFile(outPath);
 

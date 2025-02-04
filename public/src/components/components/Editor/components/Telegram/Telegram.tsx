@@ -9,6 +9,7 @@ import DraggableList from "../../../Auxiliary/DraggableList/DraggableList.tsx";
 import {ButtonGroup} from "react-bootstrap";
 import Select from "../../../Auxiliary/Select/Select.tsx";
 import {eventBus} from "../../../../../utils.ts";
+import {ListButton} from "../../../Auxiliary/ListButton/ListButton.tsx";
 
 function arrMoveItem(arr, fromIndex, toIndex) {
     if (fromIndex < 0 || fromIndex >= arr.length || toIndex < 0 || toIndex >= arr.length) {
@@ -39,7 +40,7 @@ const getLocalImage = async (id, setArrImg): Promise<void> => {
 }
 
 let currID;
-export default function Telegram({news, setNews}) {
+export default function Telegram({news, setNews, typeServiceGPT}) {
     const [arrImgTg, setArrImgTg] = useState([])
     const [quantity, setQuantity] = useState(5);
     const [timeout, setTimeout] = useState(3);
@@ -76,7 +77,7 @@ export default function Telegram({news, setNews}) {
 
         let textContent: any = isTotal ? news.text : (global.selectedText ?? news.text.trim());
 
-        const text = await toGPT(type, promptCmd, textContent);
+        const text = await toGPT(typeServiceGPT, promptCmd, textContent);
 
         let textGPT = news.textTg ? news.textTg?.replace(textContent, text) : (news.textTg ?? '') + text + '\n\n';
         setNews({...news, textTg: !news.textTg.length ? `${news.title}.\n\n${textGPT}` : textGPT})
@@ -146,28 +147,12 @@ export default function Telegram({news, setNews}) {
     };
 
     const listGPTPromptButton = [
-        {
-            name: 'Подготовь',
-            clb: onGPT,
-            arrParam: ['Подготовь текст выдели основные мысли перед каждой мыслью поставь эмодзи подходящий по смыслу. Ответ дожен быть в виде требуемого без лишних слов', true]
-        },
-        {name: 'Перефразируй', clb: onGPT, arrParam: ['Перефразируй', true]},
-        {
-            name: 'СИ', clb: onGPT,
-            arrParam: ['Переведи значения в соответствии с Российской системой мер. Ответь очень кратко в виде пересчитаного значения']
-        },
-        {
-            name: 'Аббр. название в текст', clb: onGPT,
-            arrParam: ['Все аббревиатуры и названия необходимо представить в виде слов учитывая форму произношения в контексте текста. Ответ дожен быть в виде требуемого без лишних слов']
-        },
-        {
-            name: 'Число в текст', clb: onGPT,
-            arrParam: ['Все числа необходимо представить в виде слов учитывая форму произношения и единицы измерения в контексте текста. Ответ дожен быть в виде требуемого без лишних слов']
-        },
-        {
-            name: 'На английский', clb: onGPT,
-            arrParam: ['Переведи на английский. Ответ дожен быть в виде требуемого без лишних слов']
-        },
+        ['Подготовь', 'Подготовь текст выдели основные мысли перед каждой мыслью поставь эмодзи подходящий по смыслу. Ответ дожен быть в виде требуемого без лишних слов', true],
+        ['Перефразируй', 'Перефразируй', true],
+        ['СИ', 'Переведи значения в соответствии с Российской системой мер. Ответь очень кратко в виде пересчитаного значения'],
+        ['Аббр. название в текст', 'Все аббревиатуры и названия необходимо представить в виде слов учитывая форму произношения в контексте текста. Ответ дожен быть в виде требуемого без лишних слов'],
+        ['Число в текст', 'Все числа необходимо представить в виде слов учитывая форму произношения и единицы измерения в контексте текста. Ответ дожен быть в виде требуемого без лишних слов'],
+        ['На английский', 'Переведи на английский. Ответ дожен быть в виде требуемого без лишних слов'],
     ]
 
     let onPublishMessage = async () => {
@@ -184,84 +169,67 @@ export default function Telegram({news, setNews}) {
         }
     };
 
-    return <div className="d-flex flex-column w-100 notranslate">
-                        <textarea className="options__tags d-flex flex-row border rounded mb-1 p-2 notranslate"
-                                  value={news?.tags || ''}
-                                  onChange={({target}) => setNews(was => ({...was, tags: target.value}))}
-                                  style={{height: '5em'}}/>
-        <div className="d-flex flex-row mb-1 gap-1 w-auto">
-            <ButtonSpinner className="btn-secondary btn-sm text-truncate" onAction={onGetTagsGPT}>Получить теги</ButtonSpinner>
-            <div className={"d-flex gap-1 " + (news.tags.length ? '' : 'ev-none opacity-25')}>
-                <ButtonGroup>
-                    {[1, 3, 5, 10, 15, 20, 25, 35, 40]
-                        .map((n, ik) => (<ButtonSpinner className="btn-secondary btn-sm" key={ik} style={{width: '2.4em'}}
-                                                        onAction={() => reqImg({quant: n})}>{n}</ButtonSpinner>))}
-                </ButtonGroup>
-                <input className="rounded border text-end ms-2 flex-stretch" type="range" value={timeout} min={1}
-                       max={20}
-                       step={1} onChange={({target}) => setTimeout(+target.value)} title="Таймаут"/>
-                <span className="p-1 text-center" style={{width: '3.5em'}}>{timeout + ' сек'}</span>
-            </div>
-        </div>
-        <div className="d-flex flex-column">
-
-            <div className="operation__img border rounded mb-1" style={{backgroundColor: '#ebf0f7'}}>
-                <Gallery galleryID="my-test-gallery" images={arrImgTg} news={news} onPrepareImgTitleNews={onPrepareImgTitleNews}
-                         onConfirmRemoveImage={onConfirmRemoveImage}/>
-            </div>
-
-            <div className="border rounded mb-1"
-                 style={{backgroundColor: '#ebf0f7', height: '110px', overflowY: 'auto', resize: 'vertical'}}
-                 onDrop={onDropSortImg}
-                 onDragOver={e => e.preventDefault()}>
-                {news?.arrImgTg?.length === 0 && <div>
-                    <center className="text-secondary opacity-50"><h6>Перетащите изображения из загруженых...</h6>
-                    </center>
-                </div>}
-                <DraggableList onChange={onChangeSort} className="d-flex flex-wrap flex-stretch justify-content-center">
-                    {news?.arrImgTg.map((item, index) => {
-                        return <img key={index} className="sortable sortable-img border m-1 rounded shadow-sm" draggable
-                                    src={'/' + news.pathSrc + '/img/' + item}
-                                    data-index={index}
-                                    onContextMenu={(e) => onRemoveImage(e)}/>
-                    })}
-                </DraggableList>
-            </div>
-
-        </div>
-        <div className="d-flex flex-column w-100 flex-stretch" style={{position: 'relative'}}>
-            <ButtonGroup>
-                {listGPTPromptButton.map(({name, clb, arrParam}, idi) => (
-                    <ButtonSpinner variant="secondary btn-sm text-truncate" key={idi} onAction={() => {
-                        // @ts-ignore
-                        return clb(...arrParam);
-                    }}>{name}</ButtonSpinner>))}
-            </ButtonGroup>
-
-            <div className="d-flex flex-row justify-content-end gap-1 text-nowrap">
-                <div><input className="me-1" type="checkbox" checked={type == 'yandex'}
-                            onChange={(e) => e.target.checked && setType('yandex')}/>YA
-                </div>
-                <div><input className="me-1" type="checkbox" checked={type == 'arli'} onChange={(e) => e.target.checked && setType('arli')}/>AR
-                </div>
-                <div><input className="me-1" type="checkbox" checked={type == 'mistral'}
-                            onChange={(e) => e.target.checked && setType('mistral')}/>MY
+    return (
+        <div className="d-flex flex-column w-100 notranslate">
+            <textarea className="options__tags d-flex flex-row border rounded mb-1 p-2 notranslate"
+                      value={news?.tags || ''} style={{height: '5em'}}
+                      onChange={({target}) => setNews(was => ({...was, tags: target.value}))}/>
+            <div className="d-flex flex-row mb-1 gap-1 w-auto">
+                <ButtonSpinner className="btn-secondary btn-sm text-truncate" onAction={onGetTagsGPT}>Получить
+                    теги</ButtonSpinner>
+                <div className={"d-flex gap-1 " + (news.tags.length ? '' : 'ev-none opacity-25')}>
+                    <ListButton arrParam={[1, 2, 3, 5, 10, 15, 20, 25, 35, 40]} onAction={(n) => reqImg({quant: n})}/>
+                    <input className="rounded border text-end ms-2 flex-stretch" type="range" value={timeout} min={1}
+                           max={20} step={1} onChange={({target}) => setTimeout(+target.value)} title="Таймаут"/>
+                    <span className="p-1 text-center" style={{width: '3.5em'}}>{timeout + ' сек'}</span>
                 </div>
             </div>
+            <div className="d-flex flex-column">
 
-            <div className="position-relative flex-stretch mb-1">
+                <div className="operation__img border rounded mb-1" style={{backgroundColor: '#ebf0f7'}}>
+                    <Gallery galleryID="my-test-gallery" images={arrImgTg} news={news}
+                             onPrepareImgTitleNews={onPrepareImgTitleNews}
+                             onConfirmRemoveImage={onConfirmRemoveImage}/>
+                </div>
+
+                <div className="border rounded mb-1 p-0"
+                     style={{backgroundColor: '#ebf0f7', height: '110px', overflow: 'auto', resize: 'vertical'}}
+                     onDrop={onDropSortImg}
+                     onDragOver={e => e.preventDefault()}>
+                    {news?.arrImgTg?.length === 0 && <div>
+                        <center className="text-secondary opacity-50"><h6>Перетащите изображения из загруженых...</h6>
+                        </center>
+                    </div>}
+                    <DraggableList onChange={onChangeSort}
+                                   className="d-flex flex-wrap justify-content-center">
+                        {news?.arrImgTg?.length > 0 && news?.arrImgTg.map((item, index) => {
+                            return <img key={index} className="sortable sortable-img border m-1 rounded shadow-sm"
+                                        draggable
+                                        src={'/' + news.pathSrc + '/img/' + item}
+                                        data-index={index}
+                                        onContextMenu={(e) => onRemoveImage(e)}/>
+                        })}
+                    </DraggableList>
+                </div>
+
+            </div>
+            <div className="d-flex flex-column w-100 flex-stretch" style={{position: 'relative'}}>
+                <ListButton arrParam={listGPTPromptButton} onAction={onGPT}/>
+                <div className="position-relative flex-stretch mb-1">
             <textarea className="flex-stretch no-resize border rounded mb-1 p-2 h-100 w-100" value={news.textTg || ''}
                       onChange={({target}) => setNews({...news, textTg: target.value})}/>
-                <div style={{position: 'absolute', bottom: '6px', left: '6px', opacity: .5}}>
-                    Слов: {(news.textTg?.match(/ /g) || []).length}</div>
+                    <div style={{position: 'absolute', bottom: '6px', left: '6px', opacity: .5}}>
+                        Слов: {(news.textTg?.match(/ /g) || []).length}</div>
+                </div>
+                <div className="d-flex flex-row align-self-end gap-1 mb-1">
+                    <Select arrList={listInATime} value={timePublic} onChange={(val) => setTimePublic(val)}
+                            style={{width: '10em', height: '2em'}}
+                            className="py-0"></Select>
+                    {/*<input type="datetime-local" className="border rounded form-control" style={{width: '8em', height: '2em'}}/>*/}
+                    <ButtonSpinner disabled={news?.textTg?.length == 0 || news?.arrImgTg?.length == 0}
+                                   className="btn-secondary btn-sm"
+                                   onAction={onPublishMessage}>Запланировать публикацию</ButtonSpinner>
+                </div>
             </div>
-            <div className="d-flex flex-row align-self-end gap-1 mb-1">
-                <Select arrList={listInATime} value={timePublic} onChange={(val) => setTimePublic(val)} style={{width: '10em', height: '2em'}}
-                        className="py-0"></Select>
-                {/*<input type="datetime-local" className="border rounded form-control" style={{width: '8em', height: '2em'}}/>*/}
-                <ButtonSpinner disabled={news?.textTg?.length == 0 || news?.arrImgTg?.length == 0} className="btn-secondary btn-sm"
-                               onAction={onPublishMessage}>Запланировать публикацию</ButtonSpinner>
-            </div>
-        </div>
-    </div>
+        </div>)
 }
