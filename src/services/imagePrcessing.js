@@ -12,11 +12,12 @@ async function checkFileExists(filePath) {
     }
 }
 
-export async function resizeImage(inputArrBufOrPath, outputFilePath, width = null, height = null) {
+export async function resizeImage(inputArrBufOrPath, outputFilePath, width = null, height = null, maxWidth = 1280, maxHeight = 1280) {
     try {
-        let image = sharp(inputArrBufOrPath).toFormat('png');
+        let image = await sharp(inputArrBufOrPath).resize(maxWidth, maxHeight, {fit: 'inside', withoutEnlargement: true}).toBuffer();
+        image = await sharp(image).toFormat('png');
 
-        const {width: _w, height: _h} = await image.metadata()
+        const {width: _w, height: _h} = await image.metadata();
 
         if (width && !(_w === width && _h === height)) {
             const resizeImageBlur = image.clone().resize({width, height, fit: 'fill'});
@@ -27,7 +28,7 @@ export async function resizeImage(inputArrBufOrPath, outputFilePath, width = nul
                 .toBuffer();
 
             image = await sharp(imgBackBlur)
-                .composite([{input: foregroundImage, gravity: 'center'}]).normalize().sharpen()
+                .composite([{input: foregroundImage, gravity: 'center'}])
         }
         const {width: w, height: h} = await image.metadata()
         let outPath = outputFilePath;
@@ -38,7 +39,7 @@ export async function resizeImage(inputArrBufOrPath, outputFilePath, width = nul
             outPath = arrPathPart[0] + `-${w}x${h}.png`;
         }
 
-        await image.toFile(outPath);
+        await image.normalize().sharpen().toFile(outPath);
 
         console.log('Изображение успешно обработано и сохранено в', outputFilePath);
     } catch (error) {

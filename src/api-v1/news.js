@@ -52,6 +52,70 @@ routerNews.post('/update-news-type', async (req, res) => {
         res.status(error.status || 500).send({error: error?.message || error},);
     }
 });
+
+routerNews.post('/build-shorts', async (req, res) => {
+    try {
+        const {body: {id}} = req;
+
+        const news = global.dbNews.getByID(id);
+
+        let arrImgExist = ([news.arrImg, news.arrImgTg]).flat();
+        // await clearImage(arrImgExist, global.getImagePath(news.pathSrc))
+
+        const dur = news.audioDur / (news.secPerFrame ?? 1.5)
+
+        let arrImgPrep = [...news.arrImg];
+        const titleFrame = arrImgPrep.shift()
+
+        const _arrImg = Array(Math.ceil(dur / arrImgPrep.length)).fill(arrImgPrep).flat().splice(0, dur);
+
+        _arrImg[0] = titleFrame;
+        _arrImg[1] = titleFrame;
+
+        let outputDir = global.root + `/public/public/${news.pathSrc}/tmp/`;
+        if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, {recursive: true});
+
+        const promisedArrImg = _arrImg.map(async imgName => {
+            const imageName = imgName.split('?')[0];
+            const pathOriginal = global.getImagePath(news.pathSrc, imageName);
+            const pathResized = global.root + `/public/public/${news.pathSrc}/tmp/${imageName}`;
+
+            await resizeImage(pathOriginal, pathResized, 1080, 1920);
+            return pathResized;
+        });
+
+        const arrImg = await Promise.allSettled(promisedArrImg);
+
+        let filePath = `./public/public/${news.pathSrc}/`
+        await saveTextToFile(filePath + 'title.txt', news.title)
+
+        const arrEff = ['fade', 'fade', 'slideleft', 'slideright', 'slideup', 'slidedown', 'pixelize', 'hblur', 'zoomin', 'smoothleft', 'smoothright', 'smoothup', 'smoothdown', 'circlecrop', 'circleclose', 'horzclose', 'horzopen', 'vertclose', 'vertopen', 'diagbl', 'diagbr', 'diagtl', 'diagtr', 'fadegrays', 'slideleft', 'slideright', 'slideup', 'slidedown', 'pixelize', 'hblur', 'zoomin', 'smoothleft', 'smoothright', 'smoothup', 'smoothdown', 'circlecrop', 'circleclose', 'horzclose', 'horzopen', 'vertclose', 'vertopen', 'diagbl', 'diagbr', 'diagtl', 'diagtr', 'fadegrays', 'slideleft', 'slideright', 'slideup', 'slidedown', 'pixelize', 'hblur', 'zoomin', 'smoothleft', 'smoothright', 'smoothup', 'smoothdown', 'circlecrop', 'circleclose', 'horzclose', 'horzopen', 'vertclose', 'vertopen', 'diagbl', 'diagbr', 'diagtl', 'diagtr', 'fadegrays']
+
+        const duration = await buildAnNews({
+            dir_ffmpeg: './content/ffmpeg/',
+            dir_content: filePath,
+            arrImg: arrImg.map(it => it.value),
+            pathBridge: pathResolveRoot('./content/audio/bridge.mp3'),
+            pathVideoOut: filePath + 'news.mp4',
+            pathLogoMini: pathResolveRoot('./content/img/logo-mini.png'),
+            from: news.from,
+            textAdd: news.textAdd,
+            arrEff,
+            width: 1080,
+            height: 1920,
+            pathVideo: 'shorts.mp4'
+        })
+
+        await removeDir(outputDir);
+
+        dbNews.update({...news, videoDur: duration})
+        global?.messageSocket && global.messageSocket.send({type: 'update-news'});
+        res.status(200).send({respID: id});
+    } catch (error) {
+        res.status(error.status || 500).send({error: error?.message || error},);
+    }
+});
+
 routerNews.post('/build-an-news', async (req, res) => {
     try {
         const {body: {id}} = req;
@@ -99,7 +163,9 @@ routerNews.post('/build-an-news', async (req, res) => {
             pathLogoMini: pathResolveRoot('./content/img/logo-mini.png'),
             from: news.from,
             textAdd: news.textAdd,
-            arrEff
+            arrEff,
+            width: 1920,
+            height: 1080
         })
 
         await removeDir(outputDir);

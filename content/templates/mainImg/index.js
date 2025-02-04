@@ -9,6 +9,6 @@ window.render = async (data) => {
 
     nodeText.innerHTML = data?.mainTitle ?? 'Something text for fun';
     await loadImage(nodeImgLogo, '/content/img/logo-lg.png')
-    await loadImage(nodeImgBack, data?.img)
+    data?.img && await loadImage(nodeImgBack, data?.img)
 }
 window.render()

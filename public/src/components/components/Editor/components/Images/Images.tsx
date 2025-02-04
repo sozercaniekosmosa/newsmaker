@@ -3,7 +3,7 @@ import ButtonSpinner from "../../../Auxiliary/ButtonSpinner/ButtonSpinner";
 import Gallery from "../Gallery/Gallery";
 import axios from "axios";
 import global from "../../../../../global.ts";
-import {toGPT, updateNewsDB} from "../../../../utils.ts";
+import {extractDimensionsFromUrl, toGPT, updateNewsDB} from "../../../../utils.ts";
 import DraggableList from "../../../Auxiliary/DraggableList/DraggableList.tsx";
 import {Button} from "react-bootstrap";
 import glob from "../../../../../global.ts";
@@ -26,7 +26,9 @@ function arrMoveItem(arr, fromIndex, toIndex) {
 const getLocalImage = async (id, setArrImg): Promise<void> => {
     try {
         const {data: arrSrc} = await axios.get(glob.hostAPI + 'local-image-src', {params: {id}});
-        setArrImg(arrSrc.map((src: string) => ({src: src + '?' + new Date().getTime(), width: 1920, height: 1080})))
+        setArrImg(arrSrc.map((srcUrl: string) => {
+            return {src: srcUrl + '?' + new Date().getTime(), ...extractDimensionsFromUrl(srcUrl)};
+        }))
     } catch (e) {
         // setArrImg([])
     }

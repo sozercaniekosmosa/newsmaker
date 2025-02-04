@@ -5,12 +5,26 @@
             width: 1920px;
             height: 1080px;
             margin: 0;
+            background-color: #25c5ff;
         }
 
         .text {
             fill: #000;
             font-size: 24px;
             font-family: Verdana;
+        }
+
+
+        .cont__back-img{
+            display: flex;
+            justify-content: center;
+        }
+
+        .back-img {
+            position: absolute;
+            top: 0;
+            /*left: 0;*/
+            height: 100%;
         }
 
         .background {
@@ -43,12 +57,6 @@
             /* border-left: 18px solid white; */
         }
 
-        .back-img {
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-
         .logo-img {
             position: absolute;
             bottom: 40px;
@@ -56,7 +64,10 @@
     </style>
 </head>
 <body>
-<img class="back-img" src="">
+<div class="cont__back-img">
+    <img class="back-img" src="title.png">
+</div>
+
 <div class="text-wrapper">
     <div class="text-title"></div>
     <script src="index.js" type="module" defer></script>

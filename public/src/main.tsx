@@ -24,6 +24,7 @@ glob.host = 'http://localhost:5173/'
 glob.hostAPI = 'http://localhost:5173/api/v1/'
 glob.wsHost = 'localhost'
 glob.wsPort = '3000'
+glob.links = 'Подписывайтесь на другие социальные сети:\n Телеграм ● https://t.me/nebo_news\n ВК ● https://vk.com/nebonews\n RuTube ● https://rutube.ru/channel/52912366\n Дзен ● https://dzen.ru/nebo_news';
 
 
 // const data = ;

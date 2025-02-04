@@ -452,6 +452,7 @@ export class NewsUpdater {
                 textTg: '',
                 arrImgTg: [],
                 channelTg: '',
+                textShort: '',
             };
 
             this.db.add(id, news);

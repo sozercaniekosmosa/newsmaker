@@ -6,4 +6,5 @@ export default {
     draggingElement: null,
     wsHost: '',
     wsPort: '',
+    links: '',
 }

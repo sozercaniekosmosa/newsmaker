@@ -4,7 +4,7 @@ import Gallery from "../Gallery/Gallery";
 import axios from "axios";
 import global from "../../../../../global.ts";
 import glob from "../../../../../global.ts";
-import {toGPT} from "../../../../utils.ts";
+import {extractDimensionsFromUrl, toGPT} from "../../../../utils.ts";
 import DraggableList from "../../../Auxiliary/DraggableList/DraggableList.tsx";
 import {ButtonGroup} from "react-bootstrap";
 import Select from "../../../Auxiliary/Select/Select.tsx";
@@ -29,7 +29,10 @@ const listInATime = {'Прямо сейчас': 0, '+ 1 мин': 60e3, '+ 15 м�
 const getLocalImage = async (id, setArrImg): Promise<void> => {
     try {
         const {data: arrSrc} = await axios.get(glob.hostAPI + 'local-image-src-tg', {params: {id}});
-        setArrImg(arrSrc.map((src: string) => ({src: src + '?' + new Date().getTime(), width: 1920, height: 1080})))
+
+        setArrImg(arrSrc.map((srcUrl: string) => {
+            return {src: srcUrl + '?' + new Date().getTime(), ...extractDimensionsFromUrl(srcUrl)};
+        }))
     } catch (e) {
         // setArrImg([])
     }
@@ -256,7 +259,8 @@ export default function Telegram({news, setNews}) {
                 <Select arrList={listInATime} value={timePublic} onChange={(val) => setTimePublic(val)} style={{width: '10em', height: '2em'}}
                         className="py-0"></Select>
                 {/*<input type="datetime-local" className="border rounded form-control" style={{width: '8em', height: '2em'}}/>*/}
-                <ButtonSpinner className="btn-secondary btn-sm" onAction={onPublishMessage}>Запланировать публикацию</ButtonSpinner>
+                <ButtonSpinner disabled={news?.textTg?.length == 0 || news?.arrImgTg?.length == 0} className="btn-secondary btn-sm"
+                               onAction={onPublishMessage}>Запланировать публикацию</ButtonSpinner>
             </div>
         </div>
     </div>

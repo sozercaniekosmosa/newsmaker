@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import 'photoswipe/style.css';
 import axios from "axios";
-import {toGPT, updateNewsDB} from "../../utils.ts";
+import {toGPT, updateNewsDB, updateTaskDB} from "../../utils.ts";
 import './style.css'
 import {Button, ButtonGroup, Tab, Tabs} from "react-bootstrap";
 import {eventBus} from "../../../utils.ts";
@@ -15,6 +15,8 @@ import Dialog from "../Auxiliary/Dialog/Dialog.tsx";
 import Telegram from "./components/Telegram/Telegram.tsx";
 
 let currID;
+
+const promptGeneralDesc = 'Сделай из этой новости краткий сжатый текст до 15 слов максимально короткими словами для новостного видео';
 
 const checkResourceAvailability = async (url: string) => {
     try {
@@ -53,9 +55,11 @@ export default function Editor({news, setNews, listHostToData}) {
     const [speedDelta, setSpeedDelta] = useState(-.2);
     const [audioDur, setAudioDuration] = useState(0);
     const [showModalRemoveAnAudio, setShowModalRemoveAnAudio] = useState(false);
+    const [titleGPT, setTitleGPT] = useState('')
 
     const refAudio: React.MutableRefObject<HTMLAudioElement> = useRef();
     const refVideo: React.MutableRefObject<HTMLVideoElement> = useRef();
+    const refShorts: React.MutableRefObject<HTMLVideoElement> = useRef();
 
     useEffect(() => {
         eventBus.addEventListener('message-socket', ({type}) => {
@@ -80,10 +84,25 @@ export default function Editor({news, setNews, listHostToData}) {
         (async () => {
             await updateMedia(refVideo.current, news.pathSrc + `/news.mp4`, setNews, 'videoDur')
             await updateMedia(refAudio.current, news.pathSrc + `/speech.mp3`, setNews, 'audioDur')
+            await updateMedia(refShorts.current, news.pathSrc + `/shorts.mp4`, setNews, 'videoDur')
         })()
 
     }, [news])
 
+    async function onGPT(type, prompt) {
+
+        const text = await toGPT(type, prompt, news.text)
+
+        const str = news.title + '\n\n' + global.links + '\n\n' + text;
+        setTitleGPT(str)
+        updateTaskDB({title: str});
+        return text ? 0 : 2
+    }
+
+    let onChangeData = (obj, stateForUpd) => {
+        updateNewsDB({...obj});
+        stateForUpd(Object.values(obj)[0]);
+    };
 
     async function onBuildVideo() {
         try {
@@ -91,6 +110,18 @@ export default function Editor({news, setNews, listHostToData}) {
 
             if (currID !== +respID) return; //TODO: переделать
             await updateMedia(refVideo.current, news.pathSrc + `/news.mp4`, setNews, 'videoDur')
+        } catch (e) {
+            return 2;
+        }
+        return 0
+    }
+
+    async function onBuildShorts() {
+        try {
+            const {data: {respID}} = await axios.post(glob.hostAPI + 'build-shorts', {id: news.id});
+
+            if (currID !== +respID) return; //TODO: переделать
+            await updateMedia(refShorts.current, news.pathSrc + `/shorts.mp4`, setNews, 'videoDur')
         } catch (e) {
             return 2;
         }
@@ -169,6 +200,11 @@ export default function Editor({news, setNews, listHostToData}) {
         {name: 'Омаж', clb: toYASpeech, arrParam: ['omazh', 1.5 + speedDelta]},
         {name: 'Филипп', clb: toYASpeech, arrParam: ['filipp', 1.4 + speedDelta]}
     ];
+    let listGPTPromptButton = [
+        {name: 'ya-GPT', clb: onGPT, arrParam: ['yandex', promptGeneralDesc]},
+        {name: 'arli-GPT', clb: onGPT, arrParam: ['arli', promptGeneralDesc]},
+        {name: 'mistral-GPT', clb: onGPT, arrParam: ['mistral', promptGeneralDesc]},
+    ];
 
     return (
         !news ? '' : <div className="options d-flex flex-column h-100 notranslate"
@@ -237,29 +273,48 @@ export default function Editor({news, setNews, listHostToData}) {
                 <Tab eventKey="build" title="Видео">
                     <div className="flex-stretch" style={{flex: 1}}>
                         <div className="d-flex flex-column w-100">
-                            <div className="d-flex flex-row align-self-end">
-                                <input className="rounded border text-end mb-2 ms-1" type="checkbox"
+                            <div className="d-flex flex-row align-self-end gap-1">
+                                <input className="rounded border text-end mb-2 " type="checkbox"
                                        checked={news?.done}
                                        min={1.5} max={4}
                                        step={0.1}
                                        onChange={({target}) => setNews(was => ({...was, done: target.checked}))}
                                        title="Завершено"/>
-                                <input className="rounded border text-end mb-2 ms-1" type="range"
+                                <input className="rounded border text-end mb-2 " type="range"
                                        value={news?.secPerFrame}
                                        min={1.5} max={4}
                                        step={0.1}
                                        onChange={({target}) => setNews(was => ({...was, secPerFrame: +target.value}))}
                                        title="Длительность кадра"/>
-                                <span className="p-1 text-center text-nowrap ms-1 me-3"
+                                <span className="p-1 text-center text-nowrap me-3"
                                       style={{width: '3em'}}>{news.secPerFrame} сек </span>
                                 <ButtonSpinner className="btn-secondary btn-sm mb-1 notranslate" onAction={onBuildVideo}>
                                     Собрать видео
                                 </ButtonSpinner>
+                                <ButtonSpinner className="btn-secondary btn-sm mb-1 notranslate" onAction={onBuildShorts}>
+                                    Собрать shorts
+                                </ButtonSpinner>
                             </div>
-                            <video controls ref={refVideo} className="w-100">
-                                <source type="video/mp4"/>
-                                Ваш браузер не поддерживает тег video.
-                            </video>
+                            <div className="d-flex flex-row justify-content-center gap-1">
+                                <video controls ref={refVideo} style={{height: '20em'}}>
+                                    <source type="video/mp4"/>
+                                    Ваш браузер не поддерживает тег video.
+                                </video>
+                                <video controls ref={refShorts} style={{height: '20em'}}>
+                                    <source type="video/mp4"/>
+                                    Ваш браузер не поддерживает тег video.
+                                </video>
+                            </div>
+                            <textarea className="form-control me-1 operation__prompt rounded border mb-1" value={titleGPT}
+                                      style={{height: '15em'}}
+                                      onChange={e => onChangeData({title: e.target.value}, setTitleGPT)}/>
+                            <ButtonGroup>
+                                {listGPTPromptButton.map(({name, clb, arrParam}, idi) => (
+                                    <ButtonSpinner variant="secondary btn-sm" key={idi} onAction={() => {
+                                        // @ts-ignore
+                                        return clb(...arrParam);
+                                    }}>{name}</ButtonSpinner>))}
+                            </ButtonGroup>
                         </div>
                     </div>
                 </Tab>

@@ -91,3 +91,16 @@ export async function toGPT(type: string, promptCmd = null, textContent: string)
         return null;
     }
 }
+
+export function extractDimensionsFromUrl(url: string) {
+    const regex = /-(\d+)x(\d+)\.png/;
+    const match = url.match(regex);
+
+    if (match) {
+        const width = match[1];
+        const height = match[2];
+        return {width, height};
+    } else {
+        return null;
+    }
+}
