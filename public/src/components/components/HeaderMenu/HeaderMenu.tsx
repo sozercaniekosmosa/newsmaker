@@ -9,7 +9,8 @@ import './style.css'
 import glob from "../../../global.ts";
 import iconDz from "../../../assets/dzen.ico";
 import GroupCheckbox, {TArrName} from "../Auxiliary/GroupCheckbox/GroupCheckbox.tsx";
-import {ListButton} from "../Auxiliary/ListButton/ListButton.tsx";
+import {ButtonSeries} from "../Auxiliary/ButtonSeries/ButtonSeries.tsx";
+import {GeneratorList} from "../Auxiliary/ButtonSeries/GeneratorList.tsx";
 
 async function getNewsData(dtFrom: string, dtTo: string, setArrNews, setArrFilter) {
     let arrNews = await getData(dtFrom, dtTo);
@@ -27,6 +28,11 @@ function ButtonsTypeList({list, arrFilter}) {
     });
 }
 
+let idCount = 0;
+let getID = () => {
+    console.log(idCount);
+    return idCount++;
+};
 
 export default function HeaderMenu({
                                        arrButtonSelect,
@@ -116,31 +122,21 @@ export default function HeaderMenu({
         ['MI', 'mistral'],
     ];
 
-    const getElement = (idi: any, fn: any, list: []) =>
-        <div key={idi} className="me-1"><ButtonGroup> {Object.entries(list).map(([key, val], index) =>
-            <Button
-                variant={(arrFilter.includes(key) ? 'secondary' : 'outline-secondary') + ' btn-sm notranslate'}/*@ts-ignore*/
-                data-type={key}>{val}</Button>)}
-        </ButtonGroup></div>;
+    function getGroupHeaderButton(key: string, val: string, index: string) {
+        var variant = (arrFilter.includes(key) ? 'secondary' : 'outline-secondary') + ' btn-sm notranslate';
+        return <Button key={index} data-type={key} variant={variant}>{val}</Button>
+    }
 
-    let arrParam = [
-        [getElement, listGeneral],
-        [getElement, listPolitics],
-        [getElement, listPoliticsRU],
-        [getElement, listScience],
-        [getElement, listCulture],
-        [getElement, listSport],
-    ];
+    const getAllGroupHeaderButton = (list: [], idi) => <ButtonGroup key={idi}>
+        <GeneratorList arrParam={Object.entries(list)} onGenerate={getGroupHeaderButton}/>
+    </ButtonGroup>;
+
     return <header>
         <div className="header-type-flt" onClick={onSelectSrcNews}>
-            <Button variant="secondary btn-sm notranslate selected-news-type" data-type={''}>Все</Button>
-            <ListButton arrParam={arrParam}/>
-            {/*<ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listGeneral}/></ButtonGroup>*/}
-            {/*<ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listPolitics}/></ButtonGroup>*/}
-            {/*<ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listPoliticsRU}/></ButtonGroup>*/}
-            {/*<ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listScience}/></ButtonGroup>*/}
-            {/*<ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listCulture}/></ButtonGroup>*/}
-            {/*<ButtonGroup><ButtonsTypeList arrFilter={arrFilter} list={listSport}/></ButtonGroup>*/}
+            <div className="d-flex gap-1">
+                <Button variant="secondary btn-sm notranslate selected-news-type" data-type={''}>Все</Button>
+                <GeneratorList arrParam={arrButtonSelect} onGenerate={getAllGroupHeaderButton}/>
+            </div>
         </div>
         <div className="header-control-flt d-flex flex-row notranslate">
             <ButtonSpinner className="btn-secondary btn-sm notranslate d-flex align-items-center"

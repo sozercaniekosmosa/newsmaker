@@ -10,7 +10,7 @@ import ButtonSpinner from "../Auxiliary/ButtonSpinner/ButtonSpinner.tsx";
 import {ScrollChildY, ScrollParent} from "../Auxiliary/Scrollable/Scrollable.tsx";
 import {eventBus, formatDateTime} from "../../../utils.ts";
 import DraggableList from "../Auxiliary/DraggableList/DraggableList.tsx";
-import {ListButton, TOnAction, TArrParam} from "../Auxiliary/ListButton/ListButton.tsx";
+import {ButtonSeries, TOnAction, TArrParam} from "../Auxiliary/ButtonSeries/ButtonSeries.tsx";
 
 function arrMoveItem(arr, fromIndex, toIndex) {
     if (fromIndex < 0 || fromIndex >= arr.length || toIndex < 0 || toIndex >= arr.length) {
@@ -172,7 +172,7 @@ export default function Tools({news, arrNews, typeServiceGPT}) {
             <textarea className="form-control me-1 operation__prompt rounded border mb-1" value={titleGPT}
                       style={{height: '100px'}}
                       onChange={e => onChangeData({title: e.target.value}, setTitleGPT)}/>
-            <ListButton arrParam={[['Подготовить', promptGeneralDesc]]} onAction={onGPT}/>
+            <ButtonSeries arrParam={[['Подготовить', promptGeneralDesc]]} onGenerate={onGPT}/>
             <hr/>
             Список задач:
             <ButtonGroup>

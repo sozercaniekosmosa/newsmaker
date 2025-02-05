@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from "react";
 import global from "../../../../../global.ts";
 import {toGPT, updateMedia, updateNewsDB, updateTaskDB} from "../../../../utils.ts";
-import {ListButton, TOnAction, TArrParam} from "../../../Auxiliary/ListButton/ListButton.tsx";
+import {ButtonSeries, TOnGenerate, TArrParam} from "../../../Auxiliary/ButtonSeries/ButtonSeries.tsx";
 import ButtonSpinner from "../../../Auxiliary/ButtonSpinner/ButtonSpinner.tsx";
 import axios from "axios";
 import glob from "../../../../../global.ts";
@@ -100,11 +100,11 @@ function VideoPrepare({typeServiceGPT, news, setNews}) {
                 </ButtonSpinner>
             </div>
             <div className="d-flex flex-row justify-content-center gap-1 mb-1">
-                <video controls ref={refVideo} style={{height: '20em'}}>
+                <video controls ref={refVideo} >
                     <source type="video/mp4"/>
                     Ваш браузер не поддерживает тег video.
                 </video>
-                <video controls ref={refShorts} style={{height: '20em'}}>
+                <video controls ref={refShorts}>
                     <source type="video/mp4"/>
                     Ваш браузер не поддерживает тег video.
                 </video>
@@ -113,7 +113,7 @@ function VideoPrepare({typeServiceGPT, news, setNews}) {
                       value={titleGPT}
                       style={{height: '15em'}}
                       onChange={e => onChangeData({title: e.target.value}, setTitleGPT)}/>
-            <ListButton arrParam={[['Подготовить', promptGeneralDesc]]} onAction={onGPT}/>
+            <ButtonSeries arrParam={[['Подготовить', promptGeneralDesc]]} onGenerate={onGPT}/>
         </div>
     </div>
 }

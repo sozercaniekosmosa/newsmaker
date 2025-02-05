@@ -7,7 +7,7 @@ import glob from "../../../../../global.ts";
 import {extractDimensionsFromUrl, toGPT} from "../../../../utils.ts";
 import DraggableList from "../../../Auxiliary/DraggableList/DraggableList.tsx";
 import {eventBus} from "../../../../../utils.ts";
-import {ListButton, TArrParam} from "../../../Auxiliary/ListButton/ListButton.tsx";
+import {ButtonSeries, TArrParam} from "../../../Auxiliary/ButtonSeries/ButtonSeries.tsx";
 
 function arrMoveItem(arr, fromIndex, toIndex) {
     if (fromIndex < 0 || fromIndex >= arr.length || toIndex < 0 || toIndex >= arr.length) {
@@ -141,9 +141,9 @@ export default function Images({news, setNews, maxImage, typeServiceGPT}) {
                                   onChange={({target}) => setNews(was => ({...was, tags: target.value}))}
                                   style={{height: '5em'}}/>
         <div className="d-flex flex-row mb-1 gap-1 w-auto">
-            <ListButton arrParam={arrPrompt} onAction={onGetTagsGPT}/>
+            <ButtonSeries arrParam={arrPrompt} onGenerate={onGetTagsGPT}/>
             <div className={"d-flex gap-1 " + (news.tags.length ? '' : 'ev-none opacity-25')}>
-                <ListButton arrParam={[1, 2, 3, 5, 10, 15, 20, 25, 35, 40]} onAction={(n) => reqImg({quant: n})}/>
+                <ButtonSeries arrParam={[1, 2, 3, 5, 10, 15, 20, 25, 35, 40]} onGenerate={(n) => reqImg({quant: n})}/>
                 <input className="rounded border text-end ms-2 flex-stretch" type="range" value={timeout} min={1}
                        max={20}
                        step={1} onChange={({target}) => setTimeout(+target.value)} title="Таймаут"/>

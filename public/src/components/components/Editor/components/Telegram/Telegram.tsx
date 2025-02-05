@@ -9,7 +9,7 @@ import DraggableList from "../../../Auxiliary/DraggableList/DraggableList.tsx";
 import {ButtonGroup} from "react-bootstrap";
 import Select from "../../../Auxiliary/Select/Select.tsx";
 import {eventBus} from "../../../../../utils.ts";
-import {ListButton} from "../../../Auxiliary/ListButton/ListButton.tsx";
+import {ButtonSeries} from "../../../Auxiliary/ButtonSeries/ButtonSeries.tsx";
 
 function arrMoveItem(arr, fromIndex, toIndex) {
     if (fromIndex < 0 || fromIndex >= arr.length || toIndex < 0 || toIndex >= arr.length) {
@@ -177,7 +177,7 @@ export default function Telegram({news, setNews, typeServiceGPT}) {
                 <ButtonSpinner className="btn-secondary btn-sm text-truncate" onAction={onGetTagsGPT}>Получить
                     теги</ButtonSpinner>
                 <div className={"d-flex gap-1 " + (news.tags.length ? '' : 'ev-none opacity-25')}>
-                    <ListButton arrParam={[1, 2, 3, 5, 10, 15, 20, 25, 35, 40]} onAction={(n) => reqImg({quant: n})}/>
+                    <ButtonSeries arrParam={[1, 2, 3, 5, 10, 15, 20, 25, 35, 40]} onGenerate={(n) => reqImg({quant: n})}/>
                     <input className="rounded border text-end ms-2 flex-stretch" type="range" value={timeout} min={1}
                            max={20} step={1} onChange={({target}) => setTimeout(+target.value)} title="Таймаут"/>
                     <span className="p-1 text-center" style={{width: '3.5em'}}>{timeout + ' сек'}</span>
@@ -213,7 +213,7 @@ export default function Telegram({news, setNews, typeServiceGPT}) {
 
             </div>
             <div className="d-flex flex-column w-100 flex-stretch" style={{position: 'relative'}}>
-                <ListButton arrParam={listGPTPromptButton} onAction={onGPT}/>
+                <ButtonSeries arrParam={listGPTPromptButton} onGenerate={onGPT}/>
                 <div className="position-relative flex-stretch mb-1">
             <textarea className="flex-stretch no-resize border rounded mb-1 p-2 h-100 w-100" value={news.textTg || ''}
                       onChange={({target}) => setNews({...news, textTg: target.value})}/>
