@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<head>
+    <style>
+        body {
+            width: 1080px;
+            height: 1920px;
+            margin: 0;
+            background-color: #25c5ff;
+        }
+
+        .text {
+            fill: #000;
+            font-size: 24px;
+            font-family: Verdana;
+        }
+
+
+        .cont__back-img{
+            display: flex;
+            justify-content: center;
+        }
+
+        .back-img {
+            /*position: absolute;*/
+            /*top: 0;*/
+            /*left: 0;*/
+            height: 100%;
+        }
+
+        .background {
+            fill: #fff;
+        }
+
+        .text-wrapper {
+            height: 100%;
+            width: inherit;
+            display: flex;
+            text-align: center;
+            background: lch(0 0 0 / 0.5);
+            align-items: stretch;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .text-title {
+            font-size: 75px;
+            /*word-spacing: 50px;*/
+            line-height: 1.8em;
+            font-weight: 800;
+            font-family: Arial, sans-serif;
+            color: #fff;
+            height: 75%;
+            text-align: left;
+            align-content: center;
+            /* border: 1px solid black; */
+            margin: 0 0.1em;
+            padding: 0.2em 0.5em;
+            /* -webkit-text-stroke: 5px #000000; */
+            /* border-left: 18px solid white; */
+        }
+
+        .logo-img {
+            position: absolute;
+            bottom: 40px;
+        }
+    </style>
+</head>
+<body>
+<div class="cont__back-img">
+    <img class="back-img" src="title.png">
+</div>
+
+<div class="text-wrapper">
+    <div class="text-title"></div>
+    <script src="index.js" type="module" defer></script>
+    <img class="logo-img">
+</div>
+</body>
+</html>

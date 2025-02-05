@@ -42,7 +42,8 @@ export async function resizeImage(inputArrBufOrPath, outputFilePath, width = nul
 
         await image.normalize().sharpen().toFile(outPath);
 
-        console.log('Изображение успешно обработано и сохранено в', outputFilePath);
+        // console.log('Изображение успешно обработано и сохранено в', outputFilePath);
+        return outPath;
     } catch (error) {
         console.error('Ошибка при обработке изображения:', error);
     }

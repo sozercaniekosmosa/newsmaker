@@ -68,7 +68,8 @@ export const buildAnNews = async ({
                                       arrEff,
                                       width = null,
                                       height = null,
-                                      pathVideo = 'news.mp4'
+                                      pathVideo = 'news.mp4',
+                                      clbMessage
                                   }) => {
     let prc = 100 / 7, currPrc = 0;
 
@@ -82,7 +83,7 @@ export const buildAnNews = async ({
     const duration = await video.getDuration(pathAudio)
 
     global.messageSocket.send({type: 'progress', data: currPrc += prc})
-    await video.imageToVideo({arrPathImg: arrImg, duration, pathOut: pathVideo, arrEff, w: width, h: height})
+    await video.imageToVideo({arrPathImg: arrImg, duration, pathOut: pathVideo, arrEff, w: width, h: height, clbMessage})
     // await video.imageToVideo({arrPathImg: await findExtFilesAbs(dir_content, 'png'), duration, pathOut: pathVideo})
 
     global.messageSocket.send({type: 'progress', data: currPrc += prc})

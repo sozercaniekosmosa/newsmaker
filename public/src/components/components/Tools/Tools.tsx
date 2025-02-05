@@ -176,7 +176,7 @@ export default function Tools({news, arrNews, typeServiceGPT}) {
             <hr/>
             Список задач:
             <ButtonGroup>
-                <Button variant="secondary btn-sm" disabled={!!(news?.arrImg.length && news?.audioDur)}
+                <Button variant="secondary btn-sm" disabled={!(news?.arrImg.length && news?.audioDur)}
                         onClick={addToTaskList}>
                     Добавить
                 </Button>

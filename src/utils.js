@@ -511,7 +511,18 @@ export class CreateVideo {
         console.log(`add sub: ${pathVideo} (${duration} sec)`)
     }
 
-    async imageToVideo({arrPathImg, numImg, transDur = .3, duration, pathOut = 'out.mp4', indexEff = 0, arrEff, w = 1920, h = 1080}) {
+    async imageToVideo({
+                           arrPathImg,
+                           numImg,
+                           transDur = .3,
+                           duration,
+                           pathOut = 'out.mp4',
+                           indexEff = 0,
+                           arrEff,
+                           w = 1920,
+                           h = 1080,
+                           clbMessage
+                       }) {
         arrEff = arrEff ?? this.arrEff;
         // if (numImages === 0) throw 'Minimum two images required';
 
@@ -540,7 +551,7 @@ export class CreateVideo {
         cmdVideoSeq += `[f${numImg - 2}]scale=${w}:${h}[vout]" -map "[vout]" -pix_fmt yuv420p `;
         cmdVideoSeq += this.setDir(pathOut);
 
-        await this.execCmd(cmdVideoSeq);
+        await this.execCmd(cmdVideoSeq, clbMessage);
 
         await this.fitVideoTime({duration, pathVideo: pathOut})
 
@@ -698,13 +709,74 @@ export class CreateVideo {
         console.log(`add img to video: ${pathVideo}`)
     }
 
-    execCmd(cmd) {
+    // execCmd(cmd) {
+    //     return new Promise((resolve, reject) => {
+    //         const child = spawn(cmd, {shell: true,})
+    //         const output = [];
+    //         child.stdout.on('data', chunk => output.push(chunk))
+    //         child.on('close', () => resolve(output.join('').trim()))
+    //         child.on('error', error => reject(error))
+    //     });
+    // }
+
+    // execCmd(cmd, callback) {
+    //     return new Promise((resolve, reject) => {
+    //         const child = spawn(cmd, { shell: true });
+    //         const output = [];
+    //         // Устанавливаем кодировку для получения данных в виде строки
+    //         child.stdout.setEncoding('utf8');
+    //
+    //         // Обрабатываем данные из stdout
+    //         child.stdout.on('data', (chunk) => {
+    //             output.push(chunk);
+    //             if (callback && typeof callback === 'function') {
+    //                 callback(chunk);
+    //             }
+    //         });
+    //
+    //         // Завершение процесса
+    //         child.on('close', (code) => {
+    //             resolve(output.join('').trim());
+    //         });
+    //
+    //         // Обработка ошибок
+    //         child.on('error', (error) => {
+    //             reject(error);
+    //         });
+    //     });
+    // }
+
+    execCmd(cmd, callback) {
         return new Promise((resolve, reject) => {
-            const child = spawn(cmd, {shell: true,})
-            const output = [];
-            child.stdout.on('data', chunk => output.push(chunk))
-            child.on('close', () => resolve(output.join('').trim()))
-            child.on('error', error => reject(error))
+            // Запускаем процесс с опциями, обеспечивающими получение вывода
+            const child = spawn(cmd, { shell: true });
+
+            // Устанавливаем кодировку для потоков, чтобы данные приходили как строки
+            child.stdout.setEncoding('utf8');
+            child.stderr.setEncoding('utf8');
+
+            let output = '';
+
+            // Собираем данные из stdout
+            child.stdout.on('data', chunk => {
+                output += chunk;
+            });
+
+            // Собираем данные из stderr (на случай, если вывод идёт туда)
+            child.stderr.on('data', chunk => {
+                output += chunk;
+            });
+
+            child.on('close', (code) => {
+                output = output.trim(); // Убираем лишние пробелы и переносы строк
+                if (typeof callback === 'function') {
+                    // Передаём в колбэк итоговый вывод и код завершения (если требуется)
+                    callback&&callback(output);
+                }
+                resolve(output);
+            });
+
+            child.on('error', error => reject(error));
         });
     }
 

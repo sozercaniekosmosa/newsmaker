@@ -80,8 +80,7 @@ routerNews.post('/build-shorts', async (req, res) => {
             const pathOriginal = global.getImagePath(news.pathSrc, imageName);
             const pathResized = global.root + `/public/public/${news.pathSrc}/tmp/${imageName}`;
 
-            await resizeImage(pathOriginal, pathResized, 1080, 1920);
-            return pathResized;
+            return await resizeImage(pathOriginal, pathResized, 1080, 1920);
         });
 
         const arrImg = await Promise.allSettled(promisedArrImg);
@@ -143,8 +142,7 @@ routerNews.post('/build-an-news', async (req, res) => {
             const pathOriginal = global.getImagePath(news.pathSrc, imageName);
             const pathResized = global.root + `/public/public/${news.pathSrc}/tmp/${imageName}`;
 
-            await resizeImage(pathOriginal, pathResized, 1920, 1080);
-            return pathResized;
+            return await resizeImage(pathOriginal, pathResized, 1920, 1080);
         });
 
         const arrImg = await Promise.allSettled(promisedArrImg);
@@ -165,7 +163,10 @@ routerNews.post('/build-an-news', async (req, res) => {
             textAdd: news.textAdd,
             arrEff,
             width: 1920,
-            height: 1080
+            height: 1080,
+            clbMessage: (mess) => {
+                global.messageSocket.send({type: 'popup-message', data: mess})
+            }
         })
 
         await removeDir(outputDir);

@@ -73,8 +73,7 @@ export default function Telegram({news, setNews, typeServiceGPT}) {
         setArrImgTg([]);
     }, [news])
 
-    const onGPT = async (promptCmd: string, isTotal = false) => {
-
+    const onGPT = async (name, promptCmd: string, isTotal = false) => {
         let textContent: any = isTotal ? news.text : (global.selectedText ?? news.text.trim());
 
         const text = await toGPT(typeServiceGPT, promptCmd, textContent);
