@@ -12,22 +12,34 @@ async function checkFileExists(filePath) {
     }
 }
 
-export async function resizeImage(inputArrBufOrPath, outputFilePath, width = null, height = null, maxWidth = 1280, maxHeight = 1280) {
+export async function resizeImage({
+                                      inputArrBufOrPath,
+                                      outputFilePath,
+                                      width = null,
+                                      height = null,
+                                      maxWidth = 1920,
+                                      maxHeight = 1080,
+                                      fit = 'inside',
+                                      background = true,
+                                      withoutEnlargement = true,
+                                      position
+                                  }) {
     try {
         let image = await sharp(inputArrBufOrPath).resize(maxWidth, maxHeight, {
-            fit: 'inside',
-            withoutEnlargement: true
+            fit,
+            withoutEnlargement,
+            position
         }).toBuffer();
         image = await sharp(image).toFormat('png');
 
         const {width: _w, height: _h} = await image.metadata();
 
-        if (width && _w !== width && _h !== height) {
+        if (width && (_w !== width || _h !== height) && background) {
             const resizeImageBlur = image.clone().resize({width, height, fit: 'fill'});
             const imgBackBlur = await resizeImageBlur.blur(25).toBuffer();
 
             const foregroundImage = await image
-                .resize({width, height, fit: 'contain', background: {r: 128, g: 200, b: 255, alpha: 0.5}})
+                .resize({width, height, fit: "contain", background: {r: 128, g: 200, b: 255, alpha: 0.5}})
                 .toBuffer();
 
             image = await sharp(imgBackBlur)

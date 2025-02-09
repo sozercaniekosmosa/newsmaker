@@ -15,7 +15,7 @@
         }
 
 
-        .cont__back-img{
+        .cont__back-img {
             display: flex;
             justify-content: center;
         }
@@ -36,33 +36,37 @@
             width: inherit;
             display: flex;
             text-align: center;
-            background: lch(0 0 0 / 0.5);
-            align-items: stretch;
+            /* background: lch(0 0 0 / 0.5); */
+            /*align-items: center;*/
             position: absolute;
             top: 0;
             left: 0;
         }
 
         .text-title {
-            font-size: 75px;
-            /*word-spacing: 50px;*/
-            line-height: 1.8em;
+            font-size: 90px;
+            /* word-spacing: 50px; */
+            line-height: 1.2em;
             font-weight: 800;
             font-family: Arial, sans-serif;
             color: #fff;
-            height: 75%;
+            height: min-content;
             text-align: left;
-            align-content: center;
+            /* align-content: center; */
             /* border: 1px solid black; */
-            margin: 0 0.1em;
-            padding: 0.2em 0.5em;
+            background-color: hsl(0deg 0% 0% / 50%);
+            /* margin: 0 0.1em; */
+            padding: 0.5em;
             /* -webkit-text-stroke: 5px #000000; */
             /* border-left: 18px solid white; */
+            /* transform: perspective(9em) translateX(1.6em) rotateY(21deg); */
         }
 
         .logo-img {
             position: absolute;
             bottom: 40px;
+            /*width: -webkit-fill-available;*/
+            height: 10em;
         }
     </style>
 </head>
@@ -74,7 +78,7 @@
 <div class="text-wrapper">
     <div class="text-title"></div>
     <script src="index.js" type="module" defer></script>
-    <img class="logo-img">
 </div>
+<img class="logo-img">
 </body>
 </html>

@@ -7,7 +7,8 @@ import glob from "../../../../../global.ts";
 import {extractDimensionsFromUrl, toGPT} from "../../../../utils.ts";
 import DraggableList from "../../../Auxiliary/DraggableList/DraggableList.tsx";
 import {eventBus} from "../../../../../utils.ts";
-import {ButtonSeries, TArrParam} from "../../../Auxiliary/ButtonSeries/ButtonSeries.tsx";
+import {ButtonSeries, TArrParam} from "../../../Auxiliary/Groups/ButtonSeries/ButtonSeries.tsx";
+import {ERR, WARN} from "../../../Auxiliary/PopupMessage/PopupMessage.tsx";
 
 function arrMoveItem(arr, fromIndex, toIndex) {
     if (fromIndex < 0 || fromIndex >= arr.length || toIndex < 0 || toIndex >= arr.length) {
@@ -26,13 +27,25 @@ function arrMoveItem(arr, fromIndex, toIndex) {
 const getLocalImage = async (id, setArrImg): Promise<void> => {
     try {
         const {data: arrSrc} = await axios.get(glob.hostAPI + 'local-image-src', {params: {id}});
-        setArrImg(arrSrc.map((srcUrl: string) => {
+
+        const newArrImage = arrSrc.sort((a, b) => {
+            if (a.includes('title')) return -1;
+            if (b.includes('title')) return 1;
+            if (a.includes('short')) return -1;
+            if (b.includes('short')) return 1;
+            return 0;
+        })
+
+        setArrImg(newArrImage.map((srcUrl: string) => {
             return {src: srcUrl + '?' + new Date().getTime(), ...extractDimensionsFromUrl(srcUrl)};
         }))
     } catch (e) {
         // setArrImg([])
     }
 }
+
+const promptTags = 'Из новостной статьи сделай несколько тегов (в виде: тег, тег, тег) не больше 6 тегов, если есть страны то с названием страны ставь слово флаг, ни чего лишенего';
+const promptToEng = 'Переведи на английский. Ответ дожен быть в виде требуемого без лишних слов';
 
 let currID;
 export default function Images({news, setNews, maxImage, typeServiceGPT}) {
@@ -104,14 +117,29 @@ export default function Images({news, setNews, maxImage, typeServiceGPT}) {
     const onDropSortImg = () => {
         if (!global.draggingElement) return;
         //@ts-ignore
-        let src = (new URL(global.draggingElement.src)).pathname.split('/').at(-1) + '?' + new Date().getTime();
+        let src = (new URL(global.draggingElement.src)).pathname.split('/').at(-1);// + '?' + new Date().getTime();
         setNews({...news, arrImg: [...news.arrImg, src]});
         global.draggingElement = null;
     }
 
-    let onGetTagsGPT = async () => {
-        const text = await toGPT(typeServiceGPT, 'Выдели основные мысли, факты, персоны и на основе них сделай несколько не больше 5 тегов. Ни чего лишенего только ответ формата: тег, тег, тег', news?.text ?? '');
-        setNews(now => ({...now, tags: text}));
+    let onGetTagsGPT = async (name, prompt, isSelect) => {
+
+        if (!isSelect && news.tags.length) {
+            WARN('Поле тегов уже содержит информацию!')
+            return;
+        }
+
+        let textContent: any = isSelect ? global.selectedText : news.text;
+        if (!textContent) {
+            WARN('Ни чего не выбрано для обработки!')
+            return;
+        }
+
+        const text = await toGPT(typeServiceGPT, prompt, textContent ?? '');
+
+        let textGPT = isSelect ? news.tags?.replace(textContent, text) : text;
+
+        setNews(now => ({...now, tags: textGPT}));
         return text ? 0 : 2;
     };
 
@@ -119,6 +147,23 @@ export default function Images({news, setNews, maxImage, typeServiceGPT}) {
         await axios.post(global.hostAPI + 'create-title-image', {
             id: news.id,
             url: image.src
+        });
+        setUpdate((new Date()).getTime())
+    };
+
+    let onPrepareImgShorts = async (news, image) => {
+        await axios.post(global.hostAPI + 'create-shorts-image', {
+            id: news.id,
+            url: image.src
+        });
+        setUpdate((new Date()).getTime())
+    };
+
+    let onPrepareImgUpscale = async (news, image, way) => {
+        await axios.post(global.hostAPI + 'upscale-image', {
+            id: news.id,
+            url: image.src,
+            way
         });
         setUpdate((new Date()).getTime())
     };
@@ -133,27 +178,42 @@ export default function Images({news, setNews, maxImage, typeServiceGPT}) {
         }
     };
 
-    const arrPrompt: TArrParam = [['Получить теги']]
+    const arrPrompt: TArrParam = [['✨Получить теги', promptTags, false], ['🇺🇸 На английский', promptToEng, true]]
 
+    let onRemoveAllImg = async () => {
+        try {
+            await axios.post(global.hostAPI + 'remove-all-image', {id: news.id});
+            setNews(news => ({...news, arrImg: []}));
+            setUpdate((new Date()).getTime())
+            return 0;
+        } catch (e) {
+            ERR(e);
+            return 2;
+        }
+    }
     return <div className="d-flex flex-column w-100 notranslate position-relative">
                         <textarea className="options__tags d-flex flex-row border rounded mb-1 p-2 notranslate"
                                   value={news?.tags || ''}
                                   onChange={({target}) => setNews(was => ({...was, tags: target.value}))}
-                                  style={{height: '5em'}}/>
+                                  style={{height: '3em'}}/>
         <div className="d-flex flex-row mb-1 gap-1 w-auto">
-            <ButtonSeries arrParam={arrPrompt} onGenerate={onGetTagsGPT}/>
+            <ButtonSeries arrParam={arrPrompt} onAction={onGetTagsGPT}/>
             <div className={"d-flex gap-1 " + (news.tags.length ? '' : 'ev-none opacity-25')}>
-                <ButtonSeries arrParam={[1, 2, 3, 5, 10, 15, 20, 25, 35, 40]} onGenerate={(n) => reqImg({quant: n})}/>
+                <ButtonSeries arrParam={[1, 2, 3, 5, 10, 15, 20, 25, 35, 40]} onAction={(n) => reqImg({quant: n})}/>
                 <input className="rounded border text-end ms-2 flex-stretch" type="range" value={timeout} min={1}
                        max={20}
                        step={1} onChange={({target}) => setTimeout(+target.value)} title="Таймаут"/>
                 <span className="p-1 text-center" style={{width: '3.5em'}}>{timeout + ' сек'}</span>
+                <ButtonSpinner onConfirm={onRemoveAllImg} className="btn-secondary btn-sm">Удалить</ButtonSpinner>
             </div>
         </div>
         <div className="operation__img border rounded mb-1" style={{backgroundColor: '#ebf0f7'}}>
-            <Gallery galleryID="my-test-gallery" images={arrImg} news={news}
+            <Gallery galleryID="my-test-gallery" arrImages={arrImg} news={news}
                      onPrepareImgTitleNews={onPrepareImgTitleNews}
-                     onConfirmRemoveImage={onConfirmRemoveImage}/>
+                     onPrepareImgShorts={onPrepareImgShorts}
+                     onConfirmRemoveImage={onConfirmRemoveImage}
+                     onPrepareImgUpscale={onPrepareImgUpscale}
+            />
             <div className="position-absolute" style={{bottom: '6px', right: '6px', opacity: .5}}>
                 Всего: {arrImg.length} ({maxImage} сек)
             </div>

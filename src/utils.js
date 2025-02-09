@@ -332,6 +332,30 @@ export const writeData = (path, data) => {
     }
 };
 
+export const copyFile = async (pathSrc, pathDest) => {
+    try {
+        try {
+            await fsPromises.access(pathDest);
+            console.log('Файл уже существует в целевой директории.');
+        } catch (err) {
+            if (err.code === 'ENOENT') {
+                try {
+                    await fsPromises.copyFile(pathSrc, pathDest);
+                    console.log('Файл успешно скопирован.');
+                } catch (copyErr) {
+                    console.error('Ошибка при копировании файла:', copyErr);
+                    throw copyErr;
+                }
+            } else {
+                console.error('Ошибка при проверке существования файла:', err);
+            }
+        }
+    } catch (err) {
+        console.error(err);
+        throw err;
+    }
+};
+
 export async function checkFileExists(filePath) {
     try {
         await fsPromises.access(filePath);
@@ -749,7 +773,7 @@ export class CreateVideo {
     execCmd(cmd, callback) {
         return new Promise((resolve, reject) => {
             // Запускаем процесс с опциями, обеспечивающими получение вывода
-            const child = spawn(cmd, { shell: true });
+            const child = spawn(cmd, {shell: true});
 
             // Устанавливаем кодировку для потоков, чтобы данные приходили как строки
             child.stdout.setEncoding('utf8');
@@ -771,7 +795,7 @@ export class CreateVideo {
                 output = output.trim(); // Убираем лишние пробелы и переносы строк
                 if (typeof callback === 'function') {
                     // Передаём в колбэк итоговый вывод и код завершения (если требуется)
-                    callback&&callback(output);
+                    callback && callback(output);
                 }
                 resolve(output);
             });
@@ -831,23 +855,6 @@ export class CreateVideo {
 
         // await Promise.allSettled(arrPromiseHandling)
     }
-
-    // async resizeImage(inputFilePath, outputFilePath, targetWidth, targetHeight, backgroundColor) {
-    //     try {
-    //         let outputPng = this.setDir(inputFilePath.split('.').slice(0, -1).join('.') + '.png', '_');
-    //         await this.toPng({inputPath: this.setDir(inputFilePath), outputPath: outputPng})
-    //         let sh = await sharp(this.setDir(outputPng))
-    //         await sh.resize({
-    //             width: targetWidth, height: targetHeight, fit: 'contain', // Сохраняет пропорции, добавляя отступы
-    //             background: backgroundColor // Цвет заполнения
-    //         })
-    //         await sh.toFile(this.setDir(outputFilePath));
-    //         // console.log('Изображение успешно обработано и сохранено в', outputFilePath);
-    //         await this.dry(outputPng)
-    //     } catch (error) {
-    //         console.error('Ошибка при обработке изображения:', error);
-    //     }
-    // }
 
     async resizeImage(inputFilePath, outputFilePath, targetWidth, targetHeight) {
         try {

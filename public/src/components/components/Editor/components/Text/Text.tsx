@@ -2,7 +2,7 @@ import React, {useEffect, useRef, useState} from "react";
 import global from "../../../../../global.ts";
 import glob from "../../../../../global.ts";
 import {toGPT, updateMedia, updateNewsDB} from "../../../../utils.ts";
-import {ButtonSeries, TArrParam, TOnGenerate} from "../../../Auxiliary/ButtonSeries/ButtonSeries.tsx";
+import {ButtonSeries, TArrParam, TOnAction} from "../../../Auxiliary/Groups/ButtonSeries/ButtonSeries.tsx";
 import {Button} from "react-bootstrap";
 import axios from "axios";
 import Dialog from "../../../Auxiliary/Dialog/Dialog.tsx";
@@ -15,6 +15,7 @@ export default function Text({typeServiceGPT, news, setNews}) {
     const [speedDelta, setSpeedDelta] = useState(-.2);
     const [audioDur, setAudioDuration] = useState(0);
     const [showModalRemoveAnAudio, setShowModalRemoveAnAudio] = useState(false);
+    const [arrHistory, setArrHistory] = useState<any>([]);
 
     const refAudio: React.MutableRefObject<HTMLAudioElement> = useRef();
 
@@ -30,12 +31,12 @@ export default function Text({typeServiceGPT, news, setNews}) {
 
     }, [news])
 
-    const onGPT: TOnGenerate = async (name, promptCmd, isTotal = false) => {
-
+    const onGPT: TOnAction = async (name, promptCmd, isTotal = false) => {
         let textContent: any = isTotal ? news.text : (global.selectedText ?? news.text.trim());
 
         const text = await toGPT(typeServiceGPT, promptCmd, textContent);
         let textGPT = promptCmd && news.textGPT ? news.textGPT?.replace(textContent, text) : (news.textGPT ?? '') + text + '\n\n';
+        if (arrHistory.at(-1) != news.textGPT) setArrHistory(arr => [...arr, news.textGPT]);
         setNews({...news, textGPT: !news?.textGPT?.length ? news.title + '.\n' + textGPT : textGPT});
         return text ? 0 : 2
     };
@@ -90,9 +91,18 @@ export default function Text({typeServiceGPT, news, setNews}) {
         }
     }
 
-    const getElementTextHandling = (name, prompt, isTotal, idi) => <ButtonSpinner
-        variant="secondary btn-sm text-truncate" key={idi}
-        onAction={() => onGPT(name, prompt, isTotal)}>{name}</ButtonSpinner>;
+    const onChangeMainText = ({target}) => {
+        if (arrHistory.at(-1) != news.textGPT) setArrHistory(arr => [...arr, news.textGPT]);
+        return setNews({...news, textGPT: target.value});
+    };
+
+    const onUndo = () => {
+        setArrHistory((arr) => {
+            const textGPT = arr.pop();
+            setNews(news => ({...news, textGPT}))
+            return arr;
+        })
+    };
 
     return <div className="d-flex flex-column flex-stretch w-100" style={{position: 'relative'}}>
         <div className="w-100" style={{position: 'relative'}}>
@@ -108,20 +118,23 @@ export default function Text({typeServiceGPT, news, setNews}) {
         <hr/>
 
         <div className="d-flex flex-column flex-stretch" style={{position: 'relative'}}>
-            <ButtonSeries arrParam={arrPrompt} onGenerate={getElementTextHandling}/>
+            <div className="d-flex flex-row justify-content-between">
+                <ButtonSeries arrParam={arrPrompt} onAction={onGPT}/>
+                <ButtonSpinner className="btn-sm btn-secondary" onClick={onUndo}>Отмена</ButtonSpinner>
+            </div>
             <input type="text" value={news.textAdd ?? ''}
                    onChange={({target}) => setNews({...news, textAdd: target.value})}
                    className="rounded border my-1  px-2"
                    placeholder="Дополнительный текст для особых отметок (верний левый угол видео)"/>
             <textarea className="flex-stretch no-resize border rounded mb-1 p-2" value={news.textGPT || ''}
-                      onChange={({target}) => setNews({...news, textGPT: target.value})}/>
+                      onChange={onChangeMainText}/>
             <div style={{position: 'absolute', bottom: '6px', left: '6px', opacity: .5}}>
                 Слов: {(news.textGPT?.match(/ /g) || []).length}</div>
         </div>
         <hr/>
         <div className="d-flex flex-column w-100">
             <div className="d-flex flex-row mb-2">
-                <ButtonSeries arrParam={listYA2SpeechButton} onGenerate={toYASpeech}/>
+                <ButtonSeries arrParam={listYA2SpeechButton} onAction={toYASpeech}/>
                 <input className="rounded border text-end ms-1" type="range" value={speedDelta}
                        min={-1} max={1}
                        step={0.1} onChange={({target}) => setSpeedDelta(+target.value)}

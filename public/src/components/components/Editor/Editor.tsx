@@ -13,8 +13,9 @@ import global from "../../../global.ts";
 import 'tui-image-editor/dist/tui-image-editor.css';
 import Dialog from "../Auxiliary/Dialog/Dialog.tsx";
 import Telegram from "./components/Telegram/Telegram.tsx";
-import {ButtonSeries} from "../Auxiliary/ButtonSeries/ButtonSeries.tsx";
-import {VideoPrepare} from "./components/Video/Video.tsx";
+import {ButtonSeries} from "../Auxiliary/Groups/ButtonSeries/ButtonSeries.tsx";
+import {VideoPrepare} from "./components/VideoPrepare/VideoPrepare.tsx";
+import {ShortsPrepare} from "./components/Shorts/Shorts.tsx";
 
 let currID;
 
@@ -82,28 +83,30 @@ export default function Editor({news, setNews, listHostToData, typeServiceGPT}) 
     }
 
     return (
-        !news ? '' : <div className="options d-flex flex-column h-100 notranslate"
-            // @ts-ignore
+        !news ? '' : <div className="options d-flex flex-column h-100 notranslate"/* @ts-ignore*/
                           upd={update}>
-            <Button hidden={false} variant="secondary btn-sm mb-1 notranslate"
-                    onClick={() => axios.post(glob.hostAPI + 'open-dir', {id: news.id})}>Открыть</Button>
 
             <Button hidden={true} variant="secondary btn-sm mb-1 notranslate" onClick={onUpdateAnNews}>Обновить</Button>
             <Button hidden={true} variant="secondary btn-sm mb-1 notranslate" onClick={onRemoveNews}>X</Button>
             <div className="d-flex flex-row">
-            <textarea className="options__title d-flex flex-row flex-stretch input-text border rounded mb-1 p-2"
-                      value={news?.title || ''}
-                      onChange={({target}) => setNews(was => ({...was, title: target.value}))}/>
+                <textarea className="options__title d-flex flex-row flex-stretch input-text border rounded mb-1 p-2"
+                          value={news?.title.replaceAll(/['"`]/g, '') || ''}
+                          onChange={({target}) => setNews(was => ({...was, title: target.value}))}/>
+                <Button hidden={false} variant="secondary btn-sm mb-1 notranslate" style={{width: '7em'}} className="align-content-center"
+                        onClick={() => axios.post(glob.hostAPI + 'open-dir', {id: news.id})}>📂Открыть</Button>
             </div>
             <Tabs defaultActiveKey="original" className="mb-1">
                 <Tab eventKey="original" title="Текст" style={{flex: 1}} className="">
                     <Text typeServiceGPT={typeServiceGPT} news={news} setNews={setNews}/>
                 </Tab>
-                <Tab eventKey="images" title="Изображения" style={{flex: 1}}>
+                <Tab eventKey="arrImages" title="Изображения" style={{flex: 1}}>
                     <Images news={news} setNews={setNews} maxImage={news.audioDur} typeServiceGPT={typeServiceGPT}/>
                 </Tab>
-                <Tab eventKey="build" title="Видео">
+                <Tab eventKey="build-video" title="Видео">
                     <VideoPrepare news={news} setNews={setNews} typeServiceGPT={typeServiceGPT}/>
+                </Tab>
+                <Tab eventKey="build-shorts" title="Shorts" className="flex-stretch">
+                    <ShortsPrepare news={news} setNews={setNews} typeServiceGPT={typeServiceGPT}/>
                 </Tab>
                 <Tab eventKey="test" title="Телеграм" style={{flex: 1}}>
                     <Telegram setNews={setNews} news={news} typeServiceGPT={typeServiceGPT}/>

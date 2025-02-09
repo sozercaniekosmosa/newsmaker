@@ -23,7 +23,7 @@ export default ({
     };
 
     return (<>
-        <Modal show={show} onHide={handleClose} {...props}>
+        <Modal show={!!show} onHide={handleClose} {...props}>
             <Modal.Header closeButton>
                 <Modal.Title className="h6">{title}</Modal.Title>
             </Modal.Header>

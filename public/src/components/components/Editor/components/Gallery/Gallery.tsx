@@ -9,7 +9,15 @@ import global from "../../../../../global.ts";
 import 'tui-image-editor/dist/tui-image-editor.css';
 import ImageEditor from "../ImageEditor/ImageEditor.tsx";
 
-export default function Gallery({news, galleryID, images, onPrepareImgTitleNews, onConfirmRemoveImage}) {
+export default function Gallery({
+                                    news,
+                                    galleryID,
+                                    arrImages,
+                                    onPrepareImgTitleNews,
+                                    onPrepareImgShorts,
+                                    onConfirmRemoveImage,
+                                    onPrepareImgUpscale
+                                }) {
     const [showModalRemove, setShowModalRemove] = useState(false);
     const [showModalEdit, setShowModalEdit] = useState(false);
     const [srcToDelete, setSrcToDelete] = useState<string | null>(null);
@@ -57,10 +65,10 @@ export default function Gallery({news, galleryID, images, onPrepareImgTitleNews,
 
     return (
         <div className="pswp-gallery d-flex flex-wrap justify-content-center" id={galleryID}>
-            {images.length === 0 && <div>
+            {arrImages.length === 0 && <div>
                 <center className="text-secondary opacity-50"><h6>Загрузите изображения...</h6></center>
             </div>}
-            {images.map((image, index) => (
+            {arrImages.map((image, index) => (
                 <div style={{width: 'fit-content'}} key={index}>
                     <div className="d-flex justify-content-between px-2" style={{position: "relative", top: '28px'}}>
                         <Button variant="danger btn-sm py-0 px-0"
@@ -73,24 +81,26 @@ export default function Gallery({news, galleryID, images, onPrepareImgTitleNews,
                         <Button variant="secondary btn-sm py-0 px-0"
                                 style={{lineHeight: '0', height: '22px', width: '22px'}}
                                 onClick={() => onPrepareImgTitleNews(news, image)}
-                        >+</Button>
+                        >T</Button>
+                        <Button variant="secondary btn-sm py-0 px-0"
+                                style={{lineHeight: '0', height: '22px', width: '22px'}}
+                                onClick={() => onPrepareImgShorts(news, image)}
+                        >S</Button>
+                        <Button variant="secondary btn-sm py-0 px-0"
+                                style={{lineHeight: '0', height: '22px', width: '22px'}}
+                                onClick={(e) => onPrepareImgUpscale(news, image, (e.ctrlKey && !e.shiftKey ? 1 : 0) + (!e.ctrlKey && e.shiftKey ? 2 : 0))}
+                        >U</Button>
                         <Button variant="secondary btn-sm py-0 px-0"
                                 style={{lineHeight: '0', height: '22px', width: '22px'}}
                                 onClick={(e) => {
                                     setShowModalEdit(true);
-                                    setSrcToEdit(image.src)
-                                    setIndexImage(index)
-                                    console.log(srcToEdit)
+                                    setSrcToEdit(image.src);
+                                    setIndexImage(index);
                                 }}
                         >…</Button>
                     </div>
-                    <a href={image.src}
-                       data-pswp-width={image.width}
-                       data-pswp-height={image.height}
-                       key={galleryID + '-' + index}
-                       target="_blank"
-                       rel="noreferrer"
-                    >
+                    <a href={image.src} data-pswp-width={image.width} data-pswp-height={image.height} key={galleryID + '-' + index}
+                       target="_blank" rel="noreferrer">
                         <img src={'/' + image.src + '?' + update + new Date().getTime()} alt=""
                              onDragStart={e => global.draggingElement = e.target}
                              onContextMenu={(e) => {

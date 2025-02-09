@@ -10,7 +10,7 @@ import ButtonSpinner from "../Auxiliary/ButtonSpinner/ButtonSpinner.tsx";
 import {ScrollChildY, ScrollParent} from "../Auxiliary/Scrollable/Scrollable.tsx";
 import {eventBus, formatDateTime} from "../../../utils.ts";
 import DraggableList from "../Auxiliary/DraggableList/DraggableList.tsx";
-import {ButtonSeries, TOnAction, TArrParam} from "../Auxiliary/ButtonSeries/ButtonSeries.tsx";
+import {ButtonSeries, TOnAction, TArrParam} from "../Auxiliary/Groups/ButtonSeries/ButtonSeries.tsx";
 
 function arrMoveItem(arr, fromIndex, toIndex) {
     if (fromIndex < 0 || fromIndex >= arr.length || toIndex < 0 || toIndex >= arr.length) {
@@ -54,10 +54,10 @@ export default function Tools({news, arrNews, typeServiceGPT}) {
         })()
     }, []);
 
-    const onGPT: TOnAction = async (name, prompt) => {
+    const onGPT: TOnAction = async () => {
         const textContent = arrTaskList.map(({title}) => title).join(' | ');
 
-        const title = await toGPT(typeServiceGPT, prompt, textContent)
+        const title = await toGPT(typeServiceGPT, promptGeneralDesc, textContent)
         const list = '- ' + title.split(' | ').join('\n- ')
         const str = title + '\n\n' + global.links + '\n\n' + list;
         setTitleGPT(str)
@@ -163,7 +163,6 @@ export default function Tools({news, arrNews, typeServiceGPT}) {
     const isAllowBuildAll = _arr.every(it => it?.videoDur ?? 0)
     const totalDur = _arr.reduce((acc, it) => acc + (+it.videoDur), 0);
 
-
     return (
         <ScrollParent className="pe-1 pb-1">
             <input type="datetime-local" value={datePublic}
@@ -172,18 +171,21 @@ export default function Tools({news, arrNews, typeServiceGPT}) {
             <textarea className="form-control me-1 operation__prompt rounded border mb-1" value={titleGPT}
                       style={{height: '100px'}}
                       onChange={e => onChangeData({title: e.target.value}, setTitleGPT)}/>
-            <ButtonSeries arrParam={[['Подготовить', promptGeneralDesc]]} onGenerate={onGPT}/>
+            <ButtonGroup>
+                <ButtonSpinner onAction={onGPT} className="btn-secondary btn-sm">✨Подготовить</ButtonSpinner>
+                <ButtonSpinner onAction={() => navigator.clipboard.writeText(titleGPT)} className="btn-secondary btn-sm">📄Скопировать</ButtonSpinner>
+            </ButtonGroup>
             <hr/>
             Список задач:
             <ButtonGroup>
                 <Button variant="secondary btn-sm" disabled={!(news?.arrImg.length && news?.audioDur)}
                         onClick={addToTaskList}>
-                    Добавить
+                    +Добавить
                 </Button>
                 <Button variant="secondary btn-sm" disabled={setArrTaskList.length === 0} onClick={() => {
                     setShowModalRemoveAllTask(true)
                 }}>
-                    Очистить
+                    ❌Очистить
                 </Button>
             </ButtonGroup>
             <ScrollChildY className="my-1 border rounded p-1">
@@ -254,11 +256,11 @@ export default function Tools({news, arrNews, typeServiceGPT}) {
             </div>
             <ButtonGroup>
                 <Button className="btn-secondary btn-sm"
-                        onClick={() => axios.post(global.hostAPI + 'open-dir')}>Открыть</Button>
+                        onClick={() => axios.post(global.hostAPI + 'open-dir')}>📂Открыть</Button>
                 <ButtonSpinner disabled={(srcImgMain == '' || isAllowBuildAll == false)}
                                className="btn-secondary btn-sm"
                                onAction={buildAllNews}>
-                    Собрать все видео ({Math.trunc(totalDur / 60)} мин)
+                    🎞️Собрать все видео ({Math.trunc(totalDur / 60)} мин)
                 </ButtonSpinner>
                 {/*<Button onClick={onTest}>tst</Button>*/}
             </ButtonGroup>

@@ -9,7 +9,7 @@ import DraggableList from "../../../Auxiliary/DraggableList/DraggableList.tsx";
 import {ButtonGroup} from "react-bootstrap";
 import Select from "../../../Auxiliary/Select/Select.tsx";
 import {eventBus} from "../../../../../utils.ts";
-import {ButtonSeries} from "../../../Auxiliary/ButtonSeries/ButtonSeries.tsx";
+import {ButtonSeries} from "../../../Auxiliary/Groups/ButtonSeries/ButtonSeries.tsx";
 
 function arrMoveItem(arr, fromIndex, toIndex) {
     if (fromIndex < 0 || fromIndex >= arr.length || toIndex < 0 || toIndex >= arr.length) {
@@ -25,7 +25,10 @@ function arrMoveItem(arr, fromIndex, toIndex) {
     return arr;
 }
 
-const listInATime = {'Прямо сейчас': 0, '+ 1 мин': 60e3, '+ 15 мин': 15 * 60e3, '+ 30 мин': 30 * 60e3,};
+const listInATime = {
+    'Прямо сейчас': 0, '+ 1 мин': 60e3, '+ 15 мин': 15 * 60e3, '+ 30 мин': 30 * 60e3,
+    '+ 1 час': 60 * 60e3, '+ 1.5 час': 90 * 60e3, '+ 2 час': 120 * 60e3
+};
 
 const getLocalImage = async (id, setArrImg): Promise<void> => {
     try {
@@ -177,7 +180,7 @@ export default function Telegram({news, setNews, typeServiceGPT}) {
                 <ButtonSpinner className="btn-secondary btn-sm text-truncate" onAction={onGetTagsGPT}>Получить
                     теги</ButtonSpinner>
                 <div className={"d-flex gap-1 " + (news.tags.length ? '' : 'ev-none opacity-25')}>
-                    <ButtonSeries arrParam={[1, 2, 3, 5, 10, 15, 20, 25, 35, 40]} onGenerate={(n) => reqImg({quant: n})}/>
+                    <ButtonSeries arrParam={[1, 2, 3, 5, 10, 15, 20, 25, 35, 40]} onAction={(n) => reqImg({quant: n})}/>
                     <input className="rounded border text-end ms-2 flex-stretch" type="range" value={timeout} min={1}
                            max={20} step={1} onChange={({target}) => setTimeout(+target.value)} title="Таймаут"/>
                     <span className="p-1 text-center" style={{width: '3.5em'}}>{timeout + ' сек'}</span>
@@ -186,9 +189,12 @@ export default function Telegram({news, setNews, typeServiceGPT}) {
             <div className="d-flex flex-column">
 
                 <div className="operation__img border rounded mb-1" style={{backgroundColor: '#ebf0f7'}}>
-                    <Gallery galleryID="my-test-gallery" images={arrImgTg} news={news}
+                    <Gallery galleryID="my-test-gallery" arrImages={arrImgTg} news={news}
                              onPrepareImgTitleNews={onPrepareImgTitleNews}
-                             onConfirmRemoveImage={onConfirmRemoveImage}/>
+                             onConfirmRemoveImage={onConfirmRemoveImage}
+                             onPrepareImgShorts={null}
+                             onPrepareImgUpscale={null}
+                    />
                 </div>
 
                 <div className="border rounded mb-1 p-0"
@@ -213,7 +219,7 @@ export default function Telegram({news, setNews, typeServiceGPT}) {
 
             </div>
             <div className="d-flex flex-column w-100 flex-stretch" style={{position: 'relative'}}>
-                <ButtonSeries arrParam={listGPTPromptButton} onGenerate={onGPT}/>
+                <ButtonSeries arrParam={listGPTPromptButton} onAction={onGPT}/>
                 <div className="position-relative flex-stretch mb-1">
             <textarea className="flex-stretch no-resize border rounded mb-1 p-2 h-100 w-100" value={news.textTg || ''}
                       onChange={({target}) => setNews({...news, textTg: target.value})}/>

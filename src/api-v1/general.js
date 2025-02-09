@@ -1,10 +1,29 @@
-//import global from "../global.js";
 import {formatDateTime, pathResolveRoot, removeFile, saveTextToFile} from "../utils.js";
 import {execFile} from "child_process";
 import express from "express";
 import routerImage from "./images.js";
 
 const routerGeneral = express.Router();
+
+routerGeneral.get('/dir', async (req, res) => {
+    try {
+        const {id} = req.query;
+        let folderPath;
+
+        if (id) {
+            const news = global.dbNews.getByID(id);
+            folderPath = pathResolveRoot(`./public/public/${news.pathSrc}/`);
+        } else {
+            const {arrTask, title, date, srcImg} = global.dbTask.getByID('config')
+            folderPath = pathResolveRoot(`./public/public/done/` + formatDateTime(new Date(date), 'yy-mm-dd_hh_MM_ss' + '/'));
+        }
+
+        res.send(folderPath);
+    } catch (error) {
+        console.log(error)
+        res.status(error.status || 500).send({error: error?.message || error},);
+    }
+});
 
 routerGeneral.post('/open-dir', async (req, res) => {
 

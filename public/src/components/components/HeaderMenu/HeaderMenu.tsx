@@ -8,9 +8,9 @@ import axios from "axios";
 import './style.css'
 import glob from "../../../global.ts";
 import iconDz from "../../../assets/dzen.ico";
-import GroupCheckbox, {TArrName} from "../Auxiliary/GroupCheckbox/GroupCheckbox.tsx";
-import {ButtonSeries} from "../Auxiliary/ButtonSeries/ButtonSeries.tsx";
-import {GeneratorList} from "../Auxiliary/ButtonSeries/GeneratorList.tsx";
+import GroupCheckbox, {TArrName} from "../Auxiliary/Groups/GroupCheckbox/GroupCheckbox.tsx";
+import {ButtonSeries} from "../Auxiliary/Groups/ButtonSeries/ButtonSeries.tsx";
+import {GeneratorList} from "../Auxiliary/Groups/GeneratorList.tsx";
 
 async function getNewsData(dtFrom: string, dtTo: string, setArrNews, setArrFilter) {
     let arrNews = await getData(dtFrom, dtTo);
@@ -81,6 +81,7 @@ export default function HeaderMenu({
     }
 
     function onSelectSrcNews({target, currentTarget}) {
+        if (target.tagName !== 'BUTTON') return;
         if (target === currentTarget) return;
 
         const {dataset: {type}} = target;
@@ -133,7 +134,7 @@ export default function HeaderMenu({
 
     return <header>
         <div className="header-type-flt" onClick={onSelectSrcNews}>
-            <div className="d-flex gap-1">
+            <div className="d-flex gap-1 no-select">
                 <Button variant="secondary btn-sm notranslate selected-news-type" data-type={''}>Все</Button>
                 <GeneratorList arrParam={arrButtonSelect} onGenerate={getAllGroupHeaderButton}/>
             </div>

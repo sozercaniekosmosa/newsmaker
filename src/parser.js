@@ -190,7 +190,7 @@ export async function downloadImages({
         try {
             const {data} = await axios.get(url, {headers, responseType: 'arraybuffer', timeout});
             console.log(`Получено: ${url}`);
-            await resizeImage(data, outputDir + outPath, width, height);
+            await resizeImage({inputArrBufOrPath:data, outputFilePath:outputDir + outPath, width, height});
         } catch (error) {
             console.error(`Ошибка при загрузке ${url}: ${error.message}`);
         } finally {
@@ -452,7 +452,7 @@ export class NewsUpdater {
                 textTg: '',
                 arrImgTg: [],
                 channelTg: '',
-                textShort: '',
+                titleShorts: '',
             };
 
             this.db.add(id, news);

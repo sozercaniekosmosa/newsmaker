@@ -4,7 +4,7 @@ import {fileURLToPath} from 'url';
 import path, {dirname} from 'path';
 import {config} from "dotenv";
 import bodyParser from "body-parser";
-import {WEBSocket} from "./utils.js";
+import {copyFile, translit, WEBSocket} from "./utils.js";
 import {noSQL} from "./DB/noSQL.js";
 import routerGeneral from "./api-v1/general.js";
 import routerImage from "./api-v1/images.js";
@@ -13,6 +13,7 @@ import routerGPT from "./api-v1/gpt.js";
 import {NewsUpdater} from "./parser.js";
 import dzen from "./parsers/dzen.js";
 import {TelegramChannelBot} from "./telegram.js";
+import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -24,19 +25,27 @@ const port = +process.env.PORT || +PORT;
 
 global.root = path.resolve(__dirname, '..');
 global.port = port
+global.getPathTagsImg = () => global.root + `/public/public/tags`
+global.getNewsPath = (newsPathSrc) => global.root + `/public/public/${newsPathSrc}`
 global.getImagePath = (newsPathSrc, imageName = '') => global.root + `/public/public/${newsPathSrc}/img/${imageName}`
 global.dbNews = new noSQL('./dbNews.json');
 global.dbTask = new noSQL('./dbTask.json');
-global.dbTask = new noSQL('./dbTask.json');
 global.dbTB = new noSQL('./dbTB.json');
+global.dbGeneral = new noSQL('./dbGeneral.json');
 global.tgChannelID_1 = TG_CHANNEL_ID;
 global.tgBot = new TelegramChannelBot(BOT_TOKEN, TG_GROUP_STORAGE_ID, TG_GROUP_STORAGE_THREAD_ID, global.dbTB);
 global.listNewsSrc = {
     // TG: new NewsUpdater({host: 'https://www.theguardian.com', dbNews, ...theGuardian}),
     // RT: new NewsUpdater({host: 'https://russian.rt.com', dbNews, ...russiaToday}),
     DZ: new NewsUpdater({host: 'https://dzen.ru/news', short: 'DZ', db: global.dbNews, ...dzen}),
-}
+};
 
+global["LOG"] = (mess) => global?.messageSocket && global.messageSocket.send({type: 'popup-message', data: mess});
+global["ERR"] = (mess) => global?.messageSocket && global.messageSocket.send({type: 'popup-message-err', data: mess});
+global["WARN"] = (mess) => global?.messageSocket && global.messageSocket.send({type: 'popup-message-warn', data: mess});
+global["OK"] = (mess) => global?.messageSocket && global.messageSocket.send({type: 'popup-message-ok', data: mess});
+
+// if (!fs.existsSync(global.getPathTagsImg())) fs.mkdirSync(global.getPathTagsImg(), {recursive: false});//если нет директории то зададим
 
 async function createWebServer(port) {
     const app = express();
@@ -78,3 +87,30 @@ async function createWebServer(port) {
 }
 
 await createWebServer(global.port);
+
+const limitStr = (str, max) => str.length > max ? str.slice(0, max) : str;
+
+async function a() {
+
+    const arr = global.dbNews.getAll().filter(it => it.arrImg.length > 0).map(({arrImg, pathSrc, tags}) => ({arrImg, pathSrc, tags}));
+    for (let i = 0; i < arr.length; i++) {
+        const {arrImg, pathSrc, tags} = arr[i];
+        const arrTag = tags.split(',').map(str => str.trim())
+        const pathTagsImg = global.getPathTagsImg();
+        const pathDest = limitStr(`${pathTagsImg}/${arrTag.join('-')}`, 255).replaceAll(/\s/g, '_').replaceAll(/["]/g, '')
+        if (arrImg.length === 0) continue;
+        if (!fs.existsSync(pathDest)) fs.mkdirSync(pathDest, {recursive: true});
+        for (let j = 0; j < arrImg.length; j++) {
+            const fn = arrImg[j];
+            const pathImg = global.getImagePath(pathSrc, fn);
+            try {
+                await copyFile(pathImg, `${pathDest}/${fn}`);
+            } catch (e) {
+                console.log(e)
+            }
+        }
+    }
+    console.log(arr)
+}
+
+setTimeout(a, 100);

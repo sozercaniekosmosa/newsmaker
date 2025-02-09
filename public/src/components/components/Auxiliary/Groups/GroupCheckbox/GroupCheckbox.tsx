@@ -1,7 +1,7 @@
 //0-ok, 1-processing, 2-error
 import React, {useCallback, useEffect, useState} from "react";
 import {Button} from "react-bootstrap";
-import {GeneratorList} from "../ButtonSeries/GeneratorList.tsx";
+import {GeneratorList} from "../GeneratorList.tsx";
 
 export type TArrName = Array<[string, any]>;
 export type TOnChange = (data: any) => void;

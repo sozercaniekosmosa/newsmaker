@@ -1,5 +1,5 @@
 //import global from "../global.js";
-import {createAndCheckDir, formatDateTime, pathResolveRoot, removeDir, saveTextToFile} from "../utils.js";
+import {checkFileExists, copyFile, createAndCheckDir, formatDateTime, pathResolveRoot, removeDir, saveTextToFile} from "../utils.js";
 import express from "express";
 import {buildAllNews, buildAnNews} from "../video.js";
 import {getListNews, getListTask, renderToBrowser} from "../parser.js";
@@ -8,6 +8,8 @@ import routerImage from "./images.js";
 // import {clearImage} from "../tst/cleaner.js";
 import {resizeImage} from "../services/imagePrcessing.js";
 import fs from "fs";
+import sharp from "sharp";
+import {clearImage} from "../services/cleaner.js";
 // import fs from "fs";
 // import {clearImage} from "../tst/cleaner.js";
 
@@ -60,17 +62,19 @@ routerNews.post('/build-shorts', async (req, res) => {
         const news = global.dbNews.getByID(id);
 
         let arrImgExist = ([news.arrImg, news.arrImgTg]).flat();
-        // await clearImage(arrImgExist, global.getImagePath(news.pathSrc))
+        await clearImage(arrImgExist, news.pathSrc)
 
         const dur = news.audioDur / (news.secPerFrame ?? 1.5)
 
-        let arrImgPrep = [...news.arrImg];
-        const titleFrame = arrImgPrep.shift()
+        const fileShortsName = 'shorts-1080x1920.png';
+        if (!await checkFileExists(global.root + `/public/public/${news.pathSrc}/img/` + fileShortsName)) {
+            global.messageSocket.send({type: 'popup-message', data: 'Добавьте shorts - файл'});
+            res.status(error.status || 500).send({error: error?.message || error},);
+            return
+        }
+        let arrImgPrep = [fileShortsName, fileShortsName, ...news.arrImg];
 
         const _arrImg = Array(Math.ceil(dur / arrImgPrep.length)).fill(arrImgPrep).flat().splice(0, dur);
-
-        _arrImg[0] = titleFrame;
-        _arrImg[1] = titleFrame;
 
         let outputDir = global.root + `/public/public/${news.pathSrc}/tmp/`;
         if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, {recursive: true});
@@ -80,7 +84,14 @@ routerNews.post('/build-shorts', async (req, res) => {
             const pathOriginal = global.getImagePath(news.pathSrc, imageName);
             const pathResized = global.root + `/public/public/${news.pathSrc}/tmp/${imageName}`;
 
-            return await resizeImage(pathOriginal, pathResized, 1080, 1920);
+            return await resizeImage({
+                inputArrBufOrPath: pathOriginal, outputFilePath: pathResized,
+                maxWidth: 1080, maxHeight: 1920,
+                fit: 'cover',
+                background: false,
+                withoutEnlargement: false,
+                position: sharp.strategy.attention
+            });
         });
 
         const arrImg = await Promise.allSettled(promisedArrImg);
@@ -122,17 +133,20 @@ routerNews.post('/build-an-news', async (req, res) => {
         const news = global.dbNews.getByID(id);
 
         let arrImgExist = ([news.arrImg, news.arrImgTg]).flat();
-        // await clearImage(arrImgExist, global.getImagePath(news.pathSrc))
+        await clearImage(arrImgExist, news.pathSrc)
 
         const dur = news.audioDur / (news.secPerFrame ?? 1.5)
 
-        let arrImgPrep = [...news.arrImg];
-        const titleFrame = arrImgPrep.shift()
+        const fileTitleName = 'title-1920x1080.png';
+        if (!await checkFileExists(global.root + `/public/public/${news.pathSrc}/img/` + fileTitleName)) {
+            global.messageSocket.send({type: 'popup-message', data: 'Добавьте title - файл'});
+            res.status(error.status || 500).send({error: error?.message || error},);
+            return
+        }
+
+        let arrImgPrep = [fileTitleName, fileTitleName, ...news.arrImg];
 
         const _arrImg = Array(Math.ceil(dur / arrImgPrep.length)).fill(arrImgPrep).flat().splice(0, dur);
-
-        _arrImg[0] = titleFrame;
-        _arrImg[1] = titleFrame;
 
         let outputDir = global.root + `/public/public/${news.pathSrc}/tmp/`;
         if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, {recursive: true});
@@ -142,7 +156,10 @@ routerNews.post('/build-an-news', async (req, res) => {
             const pathOriginal = global.getImagePath(news.pathSrc, imageName);
             const pathResized = global.root + `/public/public/${news.pathSrc}/tmp/${imageName}`;
 
-            return await resizeImage(pathOriginal, pathResized, 1920, 1080);
+            return await resizeImage({
+                inputArrBufOrPath: pathOriginal, outputFilePath: pathResized, width: 1920, height: 1080,
+                // maxWidth: 1920, maxHeight: 1080, fit: 'contain'
+            });
         });
 
         const arrImg = await Promise.allSettled(promisedArrImg);

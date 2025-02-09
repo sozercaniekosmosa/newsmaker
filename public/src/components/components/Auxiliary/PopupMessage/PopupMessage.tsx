@@ -34,6 +34,21 @@ const PopupMessage = () => {
                 addMessage({data})
                 console.log(data)
             }
+            if (type === 'popup-message-err') {
+                if (!data) return;
+                addMessage({type: 'err', data})
+                console.log(data)
+            }
+            if (type === 'popup-message-warn') {
+                if (!data) return;
+                addMessage({type: 'warn', data})
+                console.log(data)
+            }
+            if (type === 'popup-message-ok') {
+                if (!data) return;
+                addMessage({type: 'ok', data})
+                console.log(data)
+            }
         })
 
         eventBus.addEventListener('popup-message', addMessage)

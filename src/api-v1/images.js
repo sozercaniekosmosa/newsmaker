@@ -1,9 +1,10 @@
-import {findExtFiles, formatDateTime, pathResolveRoot, readFileAsync, removeFile, writeFileAsync} from "../utils.js";
+import {copyFile, findExtFiles, removeFile, writeFileAsync} from "../utils.js";
 import express from "express";
-import {renderToBrowser, downloadImages, ImageDownloadProcessor} from "../parser.js";
+import {downloadImages, ImageDownloadProcessor, renderToBrowser} from "../parser.js";
 import multer from "multer";
-import {fileURLToPath} from "url";
-import general from "./general.js";
+import {resizeImage} from "../services/imagePrcessing.js";
+import sharp from "sharp";
+import {removeImageDir} from "../services/cleaner.js";
 
 const routerImage = express.Router();
 
@@ -69,12 +70,11 @@ routerImage.post('/save-image', upload.single('image'), async (req, res) => {
     }
 })
 routerImage.get('/local-image-src', async (req, res) => {
-    let arrImgUrls, textContent, isAudioExist, isExistVideo;
+    let arrImgUrls;
     const {id} = req.query;
     try {
         const news = global.dbNews.getByID(id);
-        let filePath = `./public/public/${news.pathSrc}/img/`
-
+        let filePath = `./public/public/${news.pathSrc}/img/`;
         const _arrImgUrls = await findExtFiles(filePath, 'png', false);
         arrImgUrls = _arrImgUrls.map(path => path.split('\\').splice(2).join('\\'))
 
@@ -130,20 +130,127 @@ routerImage.post('/create-title-image', async (req, res) => {
         const {body: {id, url}} = req;
         const news = global.dbNews.getByID(id);
         const pathImg = url.split('?')[0];
-        const nameImage = 'title-' + pathImg.split('\\').reverse()[0].split('-')[1];
+
+        const nameImage = pathImg.split('\\').reverse()[0];
+        const nameImageOut = 'title-' + nameImage.split('-')[1];
+        const pathIn = global.getImagePath(news.pathSrc, nameImage)
+        const pathOut = global.getImagePath(news.pathSrc, nameImageOut)
+
+        const _pathOut = await resizeImage({
+            inputArrBufOrPath: pathIn,
+            outputFilePath: pathOut,
+            maxWidth: 1920, maxHeight: 1080,
+            fit: 'cover',
+            background: false,
+            withoutEnlargement: false,
+            position: sharp.strategy.entropy
+        })
+
+        const _arr = _pathOut.split('/')
+        _arr.shift()
+        const __pathOut = '/' + _arr.join('/')
 
         await renderToBrowser({
-            urlTemplate: 'http://localhost:3000/content/templates/newsTitleImg',
-            pathOut: global.getImagePath(news.pathSrc, nameImage),
+            urlTemplate: 'http://localhost:3000/content/templates/newsTitleImg', pathOut: _pathOut,//: global.getImagePath(news.pathSrc, nameImage),
             data: {
-                text: news.title,
-                img: '\\public\\public\\' + pathImg
+                text: news.title, img: __pathOut
             },
             // debug: true
         })
         res.status(200).send('ok')
     } catch (error) {
         res.status(error.status || 500).send({error: error?.message || error},);
+    } finally {
+        global?.messageSocket && global.messageSocket.send({type: 'update-news'})
+    }
+})
+
+routerImage.post('/create-shorts-image', async (req, res) => {
+    try {
+        const {body: {id, url}} = req;
+        const news = global.dbNews.getByID(id);
+        const pathImg = url.split('?')[0];
+
+        const nameImage = pathImg.split('\\').reverse()[0];
+        const nameImageOut = 'shorts-' + nameImage.split('-')[1];
+        const pathIn = global.getImagePath(news.pathSrc, nameImage)
+        const pathOut = global.getImagePath(news.pathSrc, nameImageOut)
+
+        const _pathOut = await resizeImage({
+            inputArrBufOrPath: pathIn, outputFilePath: pathOut,
+            maxWidth: 1080, maxHeight: 1920,
+            fit: 'cover',
+            background: false,
+            withoutEnlargement: false,
+            position: sharp.strategy.attention
+        })
+
+        const _arr = _pathOut.split('/')
+        _arr.shift()
+        const __pathOut = '/' + _arr.join('/')
+
+        await renderToBrowser({
+            urlTemplate: 'http://localhost:3000/content/templates/shortsImg', pathOut: _pathOut,
+            data: {
+                text: news.title, img: __pathOut
+            },
+            width: 1080,
+            height: 1920,
+            // debug: true
+        })
+        res.status(200).send('ok')
+    } catch
+        (error) {
+        res.status(error.status || 500).send({error: error?.message || error},);
+    } finally {
+        global?.messageSocket && global.messageSocket.send({type: 'update-news'})
+    }
+})
+
+routerImage.post('/upscale-image', async (req, res) => {
+    try {
+        const {body: {id, url, way}} = req;
+        const news = global.dbNews.getByID(id);
+        const pathImg = url.split('?')[0];
+
+        const nameImage = pathImg.split('\\').reverse()[0];
+        const nameImageOut = 'main-' + nameImage.split('-')[1];
+        const pathIn = global.getImagePath(news.pathSrc, nameImage)
+        const pathOut = global.getImagePath(news.pathSrc, nameImageOut)
+
+        await resizeImage({
+            inputArrBufOrPath: pathIn, outputFilePath: pathOut,
+            width: way === 0 ? 1920 : undefined, height: way === 0 ? 1080 : undefined,
+            maxWidth: 1920, maxHeight: 1080,
+            fit: 'cover',
+            background: false,
+            withoutEnlargement: false,
+            position: way === 1 ? sharp.strategy.attention : way === 2 ? sharp.strategy.entropy : undefined
+        })
+
+        res.status(200).send('ok')
+    } catch
+        (error) {
+        res.status(error.status || 500).send({error: error?.message || error},);
+    } finally {
+        global?.messageSocket && global.messageSocket.send({type: 'update-news'})
+    }
+})
+
+routerImage.post('/remove-all-image', async (req, res) => {
+    try {
+        const {body: {id}} = req;
+        const news = global.dbNews.getByID(id);
+
+        const pathImg = global.getImagePath(news.pathSrc)
+
+        await removeImageDir(pathImg);
+        OK(`Содержимое директории удалено ${pathImg}`)
+        res.status(200).send('ok')
+    } catch
+        (error) {
+        res.status(error.status || 500).send({error: error?.message || error},);
+        ERR(error?.message || error)
     } finally {
         global?.messageSocket && global.messageSocket.send({type: 'update-news'})
     }
