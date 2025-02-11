@@ -37,12 +37,12 @@ export class noSQL {
     generateUID = (pre = '') => pre + this.#toShortString((new Date().getTime() + Math.ceil(Math.random() * 100) + (this.#__id++)))
 
     // Add an item
-    add(id, news) {
+    add(id, data) {
         if (this.db[id]) return
-        news.id = id;
-        this.db[id] = news;
+        data.id = id;
+        this.db[id] = data;
         this.debouncedDumpDatabase();
-        return news;
+        return data;
     }
 
     // Add an item
@@ -65,10 +65,10 @@ export class noSQL {
 
         for (let i = 0; i < props.length; i++) {
             const uf = props[i];
-            const news = this.db[uf.id] ?? {};
-            if (!news) throw new Error(`News with ID ${uf.id} not found.`);
+            const data = this.db[uf.id] ?? {};
+            if (!data) throw new Error(`News with ID ${uf.id} not found.`);
 
-            this.db[uf.id] = {...news, ...uf};
+            this.db[uf.id] = {...data, ...uf};
             this.debouncedDumpDatabase();
         }
 

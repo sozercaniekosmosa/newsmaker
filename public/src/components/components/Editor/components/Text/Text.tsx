@@ -106,7 +106,7 @@ export default function Text({typeServiceGPT, news, setNews}) {
 
     return <div className="d-flex flex-column flex-stretch w-100" style={{position: 'relative'}}>
         <div className="w-100" style={{position: 'relative'}}>
-                            <textarea className="news-text border rounded mb-1 p-2 w-100" value={news?.text || ''}
+                            <textarea className="news-text border rounded mb-1 p-2 w-100" value={news?.text.replaceAll(/\<\.\.\.\>/g, '') || ''}
                                       onChange={({target}) => setNews(was => ({...was, text: target.value}))}
                                       style={{height: '15em'}}/>
             <div style={{

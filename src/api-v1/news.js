@@ -61,9 +61,6 @@ routerNews.post('/build-shorts', async (req, res) => {
 
         const news = global.dbNews.getByID(id);
 
-        let arrImgExist = ([news.arrImg, news.arrImgTg]).flat();
-        await clearImage(arrImgExist, news.pathSrc)
-
         const dur = news.audioDur / (news.secPerFrame ?? 1.5)
 
         const fileShortsName = 'shorts-1080x1920.png';
@@ -118,6 +115,9 @@ routerNews.post('/build-shorts', async (req, res) => {
 
         await removeDir(outputDir);
 
+        let arrImgExist = ([news.arrImg, news.arrImgTg]).flat();
+        await clearImage(arrImgExist, news.pathSrc)
+
         dbNews.update({...news, videoDur: duration})
         global?.messageSocket && global.messageSocket.send({type: 'update-news'});
         res.status(200).send({respID: id});
@@ -131,9 +131,6 @@ routerNews.post('/build-an-news', async (req, res) => {
         const {body: {id}} = req;
 
         const news = global.dbNews.getByID(id);
-
-        let arrImgExist = ([news.arrImg, news.arrImgTg]).flat();
-        await clearImage(arrImgExist, news.pathSrc)
 
         const dur = news.audioDur / (news.secPerFrame ?? 1.5)
 
@@ -187,6 +184,9 @@ routerNews.post('/build-an-news', async (req, res) => {
         })
 
         await removeDir(outputDir);
+
+        let arrImgExist = ([news.arrImg, news.arrImgTg]).flat();
+        await clearImage(arrImgExist, news.pathSrc)
 
         dbNews.update({...news, videoDur: duration})
         global?.messageSocket && global.messageSocket.send({type: 'update-news'});

@@ -11,6 +11,8 @@ import iconDz from "../../../assets/dzen.ico";
 import GroupCheckbox, {TArrName} from "../Auxiliary/Groups/GroupCheckbox/GroupCheckbox.tsx";
 import {ButtonSeries} from "../Auxiliary/Groups/ButtonSeries/ButtonSeries.tsx";
 import {GeneratorList} from "../Auxiliary/Groups/GeneratorList.tsx";
+import {ERR} from "../Auxiliary/PopupMessage/PopupMessage.tsx";
+import global from '../../../global.ts';
 
 async function getNewsData(dtFrom: string, dtTo: string, setArrNews, setArrFilter) {
     let arrNews = await getData(dtFrom, dtTo);
@@ -132,6 +134,16 @@ export default function HeaderMenu({
         <GeneratorList arrParam={Object.entries(list)} onGenerate={getGroupHeaderButton}/>
     </ButtonGroup>;
 
+    let onUpdateTags = async () => {
+        try {
+            await axios.post(global.hostAPI + 'update-tags');
+            return 0;
+        } catch (e) {
+            ERR(e);
+            return 2;
+        }
+    };
+
     return <header>
         <div className="header-type-flt" onClick={onSelectSrcNews}>
             <div className="d-flex gap-1 no-select">
@@ -164,6 +176,7 @@ export default function HeaderMenu({
                     К выпуску
                 </div>
                 <GroupCheckbox state={typeServiceGPT} arrNames={arrNames} onChange={onChangeServiceGPT}/>
+                <ButtonSpinner onAction={onUpdateTags} className="btn-secondary btn-sm" title="Обновить теги">🔄</ButtonSpinner>
             </div>
         </div>
     </header>;

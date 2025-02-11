@@ -304,18 +304,6 @@ export const removeFile = async (path) => {
 };
 
 
-// export const removeFile = async (path) => {
-//     try {
-//         let isAvailable = await isFileAvailable(path);
-//         if (isAvailable)
-//             await fsPromises.unlink(path);
-//         else throw 'Файл занят!'
-//     } catch (error) {
-//         throw error;
-//     }
-// };
-
-
 export const readData = async (path, options) => {
     try {
         const data = await readFileAsync(path, options);
@@ -412,7 +400,34 @@ const readdir = util.promisify(fs.readdir);
 // Промисификация fs.stat
 const stat = util.promisify(fs.stat);
 
-export const findExtFiles = async (directory, ext = 'png', isDeep = true) => {
+export const getDirAll = async (directory) => {
+    const len = directory.length;
+    let arrDir = [];
+
+    async function traverseDirectory(currentPath) {
+        const items = await readdir(currentPath);
+        let hasSubdirectories = false;
+        for (const item of items) {
+            const itemPath = PATH.join(currentPath, item);
+            const itemStats = await stat(itemPath);
+
+            if (itemStats.isDirectory()) {
+                // arrDir.push(itemPath);
+                hasSubdirectories = true;
+                await traverseDirectory(itemPath);
+            }
+        }
+
+        if (!hasSubdirectories) {
+            arrDir.push(currentPath.substring(len + 1).split('\\'));//.replaceAll(/\\/g, ','));
+        }
+    }
+
+    await traverseDirectory(directory);
+    return arrDir;
+};
+
+export const findExtFiles = async (directory, ext, isDeep = true) => {
     let files = [];
 
     async function traverseDirectory(currentPath) {
@@ -424,7 +439,7 @@ export const findExtFiles = async (directory, ext = 'png', isDeep = true) => {
 
             if (itemStats.isDirectory()) {
                 if (isDeep) await traverseDirectory(itemPath);
-            } else if (itemStats.isFile() && PATH.extname(itemPath) === '.' + ext) {
+            } else if (itemStats.isFile() && (PATH.extname(itemPath) === '.' + ext || ext === undefined)) {
                 files.push(itemPath);
             }
         }

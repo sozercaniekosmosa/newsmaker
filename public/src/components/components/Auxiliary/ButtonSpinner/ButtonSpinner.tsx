@@ -12,7 +12,8 @@ function ButtonSpinner({
                            hidden = false,
                            variant = null,
                            children,
-                           onConfirm = null
+                           onConfirm = null,
+                           title = null
                        }) {
     const [_state, set_state] = useState(0)
     const [showAndDataEvent, setShowAndDataEvent] = useState<boolean | null | object>(false);
@@ -33,7 +34,8 @@ function ButtonSpinner({
 
     return <> {hidden ? '' : <Button variant={variant} className={className + ' d-flex justify-content-center align-items-center'}
                                      onClick={onAct} disabled={_state == 1 || disabled} hidden={hidden}
-                                     style={{outline: _state == 2 ? '1px solid #cc0000' : 'none', ...style}}>
+                                     style={{outline: _state == 2 ? '1px solid #cc0000' : 'none', ...style}}
+                                     title={title}>
             <span className="spinner-border spinner-border-sm"
                   style={{width: '1.7em', height: '1.7em', zIndex: '9999', position: 'absolute', color: 'black'}}
                   hidden={_state != 1}/>

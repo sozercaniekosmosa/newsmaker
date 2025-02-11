@@ -6,7 +6,7 @@ import global from "../../../../../global.ts";
 import glob from "../../../../../global.ts";
 import {extractDimensionsFromUrl, toGPT} from "../../../../utils.ts";
 import DraggableList from "../../../Auxiliary/DraggableList/DraggableList.tsx";
-import {eventBus} from "../../../../../utils.ts";
+import {debounce, eventBus} from "../../../../../utils.ts";
 import {ButtonSeries, TArrParam} from "../../../Auxiliary/Groups/ButtonSeries/ButtonSeries.tsx";
 import {ERR, WARN} from "../../../Auxiliary/PopupMessage/PopupMessage.tsx";
 
@@ -50,6 +50,7 @@ const promptToEng = 'Переведи на английский. Ответ до
 let currID;
 export default function Images({news, setNews, maxImage, typeServiceGPT}) {
     const [arrImg, setArrImg] = useState([])
+    const [arrImgTags, setArrImgTags] = useState([])
     const [stateImageLoad, setStateImageLoad] = useState(0)
     const [stateTagGPT, setStateTagGPT] = useState(0)
     const [quantity, setQuantity] = useState(5);
@@ -76,12 +77,10 @@ export default function Images({news, setNews, maxImage, typeServiceGPT}) {
         if (currID == news?.id) return;
         currID = news.id;
 
-
         setArrImg([]);
     }, [news])
 
     async function reqImg({quant}) {
-        setStateImageLoad(1);
         try {
             const {id, tags} = news;
 
@@ -90,14 +89,12 @@ export default function Images({news, setNews, maxImage, typeServiceGPT}) {
 
             const {data: {arrUrl, id: respID}} = await axios.get(global.hostAPI + 'images',
                 {params: {prompt, max: quant ?? quantity, id, timeout: timeout * 1000}});
-            setStateImageLoad(0)
 
             if (currID !== +respID) return 0; //TODO: переделать
             setArrImg(arrUrl.map(src => ({src, width: undefined, height: undefined,})))
             return 0
         } catch (e) {
             console.log(e)
-            setStateImageLoad(2)
             return 2
         }
     }
@@ -139,9 +136,26 @@ export default function Images({news, setNews, maxImage, typeServiceGPT}) {
 
         let textGPT = isSelect ? news.tags?.replace(textContent, text) : text;
 
+        textGPT = textGPT.split(',').map(it => it.trim().replaceAll(/\s/g, '-')).join(', ').toLocaleLowerCase()
+
         setNews(now => ({...now, tags: textGPT}));
+
         return text ? 0 : 2;
     };
+
+    const updateImageByTags = async () => {
+        try {
+            let tags: any = global.selectedText ?? news.tags;
+
+            const {data: newArrImage} = await axios.get(global.hostAPI + 'tags-image', {params: {tags, id: news.id}});
+            setUpdate((new Date()).getTime())
+            return 0;
+        } catch (e) {
+            ERR('Ошибка получения изображений по тегам')
+            return 2;
+        }
+    };
+
 
     const onPrepareImgTitleNews = async (news, image) => {
         await axios.post(global.hostAPI + 'create-title-image', {
@@ -191,31 +205,35 @@ export default function Images({news, setNews, maxImage, typeServiceGPT}) {
             return 2;
         }
     }
-    return <div className="d-flex flex-column w-100 notranslate position-relative">
+
+    return <div className="d-flex flex-column w-100">
                         <textarea className="options__tags d-flex flex-row border rounded mb-1 p-2 notranslate"
                                   value={news?.tags || ''}
                                   onChange={({target}) => setNews(was => ({...was, tags: target.value}))}
                                   style={{height: '3em'}}/>
-        <div className="d-flex flex-row mb-1 gap-1 w-auto">
-            <ButtonSeries arrParam={arrPrompt} onAction={onGetTagsGPT}/>
-            <div className={"d-flex gap-1 " + (news.tags.length ? '' : 'ev-none opacity-25')}>
-                <ButtonSeries arrParam={[1, 2, 3, 5, 10, 15, 20, 25, 35, 40]} onAction={(n) => reqImg({quant: n})}/>
-                <input className="rounded border text-end ms-2 flex-stretch" type="range" value={timeout} min={1}
-                       max={20}
-                       step={1} onChange={({target}) => setTimeout(+target.value)} title="Таймаут"/>
-                <span className="p-1 text-center" style={{width: '3.5em'}}>{timeout + ' сек'}</span>
-                <ButtonSpinner onConfirm={onRemoveAllImg} className="btn-secondary btn-sm">Удалить</ButtonSpinner>
+        <div className="d-flex flex-column w-100 notranslate">
+            <div className="d-flex flex-row mb-1 gap-1 w-auto">
+                <ButtonSeries arrParam={arrPrompt} onAction={onGetTagsGPT}/>
+                <div className={"d-flex gap-1 " + (news.tags.length ? '' : 'ev-none opacity-25')}>
+                    <ButtonSeries arrParam={[1, 2, 3, 5, 10, 15, 20, 25, 35, 40]} onAction={(n) => reqImg({quant: n})}/>
+                    <input className="rounded border text-end ms-2 flex-stretch" type="range" value={timeout} min={1}
+                           max={20}
+                           step={1} onChange={({target}) => setTimeout(+target.value)} title="Таймаут"/>
+                    <span className="p-1 text-center" style={{width: '3.5em'}}>{timeout + ' сек'}</span>
+                    <ButtonSpinner onAction={updateImageByTags} className="btn-secondary btn-sm">По тегам</ButtonSpinner>
+                    <ButtonSpinner onConfirm={onRemoveAllImg} className="btn-secondary btn-sm">❌</ButtonSpinner>
+                </div>
             </div>
-        </div>
-        <div className="operation__img border rounded mb-1" style={{backgroundColor: '#ebf0f7'}}>
-            <Gallery galleryID="my-test-gallery" arrImages={arrImg} news={news}
-                     onPrepareImgTitleNews={onPrepareImgTitleNews}
-                     onPrepareImgShorts={onPrepareImgShorts}
-                     onConfirmRemoveImage={onConfirmRemoveImage}
-                     onPrepareImgUpscale={onPrepareImgUpscale}
-            />
-            <div className="position-absolute" style={{bottom: '6px', right: '6px', opacity: .5}}>
-                Всего: {arrImg.length} ({maxImage} сек)
+            <div className="operation__img border rounded mb-1" style={{backgroundColor: '#ebf0f7'}}>
+                <Gallery galleryID="my-test-gallery" arrImages={arrImg} news={news}
+                         onPrepareImgTitleNews={onPrepareImgTitleNews}
+                         onPrepareImgShorts={onPrepareImgShorts}
+                         onConfirmRemoveImage={onConfirmRemoveImage}
+                         onPrepareImgUpscale={onPrepareImgUpscale}
+                />
+                <div className="position-absolute" style={{bottom: '6px', right: '6px', opacity: .5}}>
+                    Всего: {arrImg.length} ({maxImage} сек)
+                </div>
             </div>
         </div>
         <div className="flex-stretch border rounded mb-1" style={{backgroundColor: '#ebf0f7'}} onDrop={onDropSortImg}

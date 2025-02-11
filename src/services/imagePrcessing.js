@@ -1,6 +1,7 @@
 import fs, {promises as fsPromises} from 'fs'
 import * as console from "node:console";
 import sharp from "sharp";
+import {removeFile} from "../utils.js";
 
 
 async function checkFileExists(filePath) {
@@ -30,7 +31,7 @@ export async function resizeImage({
             withoutEnlargement,
             position
         }).toBuffer();
-        image = await sharp(image).toFormat('png');
+        image = await sharp(image).flatten({background: '#454545'}).toFormat('png');
 
         const {width: _w, height: _h} = await image.metadata();
 
@@ -60,6 +61,44 @@ export async function resizeImage({
         console.error('Ошибка при обработке изображения:', error);
     }
 }
+
+export const toPng = async ({inputPath, outputFilePath}) => {
+    try {
+        let image = await sharp(inputPath);
+        const {width: w, height: h} = await image.metadata()
+
+        let outPath = outputFilePath;
+        if (!outPath.endsWith('.png')) outPath = outPath.substring(0, outPath.lastIndexOf('.'))
+        const isExist = /-(\d+)x(\d+)\.png/.test(outPath);
+        const arrPathPart = outPath.split(isExist ? /-(\d+)x(\d+)\.png/ : /\.png/);
+        outPath = arrPathPart[0] + `-${w}x${h}.png`;
+
+        await image.toFormat('png').toFile(outPath);
+
+        // console.log('Изображение успешно обработано и сохранено в', outputFilePath);
+        return outPath;
+    } catch (error) {
+        throw error;
+        // console.error('Ошибка при обработке изображения:', error);
+    }
+};
+
+export const toPngT = async ({inputPath, outputFilePath}) => {
+    try {
+        let image = await sharp(inputPath).flatten({background: '#676767'});
+
+        await image.toFormat('png').toFile(outputFilePath);
+
+        // return outPath;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// await toPngT({
+//     inputPath: 'D:\\Dev\\JS\\Prj\\2024\\newsmaker\\src\\services\\t.png',
+//     outputFilePath: 'D:\\Dev\\JS\\Prj\\2024\\newsmaker\\src\\services\\o.png'
+// })
 
 // await resizeImage('img.png', 'out.png', 1920, 1080)
 

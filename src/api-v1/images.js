@@ -5,6 +5,8 @@ import multer from "multer";
 import {resizeImage} from "../services/imagePrcessing.js";
 import sharp from "sharp";
 import {removeImageDir} from "../services/cleaner.js";
+import {getAllImagesByTags, updateTags} from "../services/tagToImages.js";
+import fs from "fs";
 
 const routerImage = express.Router();
 
@@ -253,6 +255,44 @@ routerImage.post('/remove-all-image', async (req, res) => {
         ERR(error?.message || error)
     } finally {
         global?.messageSocket && global.messageSocket.send({type: 'update-news'})
+    }
+})
+routerImage.post('/update-tags', async (req, res) => {
+    try {
+        await updateTags();
+        OK(`Теги обновлено`)
+        res.status(200).send('ok')
+    } catch
+        (error) {
+        res.status(error.status || 500).send({error: error?.message || error},);
+        ERR(error?.message || error)
+    }
+})
+
+routerImage.get('/tags-image', async (req, res) => {
+    try {
+        const {tags, id} = req.query;
+        const news = global.dbNews.getByID(id);
+        const arr = global.dbGeneral.getByID('tags').arr;
+        const arrImgPath = await getAllImagesByTags(tags.toLocaleLowerCase(), arr);
+
+        const outputDir = global.getImagePath(news.pathSrc);
+        if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, {recursive: true});
+
+        for (let j = 0; j < arrImgPath.length; j++) {
+            const pathFrom = arrImgPath[j];
+            const fn = pathFrom.split('\\').reverse()[0];
+            const pathTo = global.getImagePath(news.pathSrc, fn);
+            await copyFile(pathFrom, pathTo);
+
+        }
+
+        OK(`Теги изображений получены`)
+        res.status(200).send(arrImgPath)
+    } catch
+        (error) {
+        res.status(error.status || 500).send({error: error?.message || error},);
+        ERR(error?.message || error)
     }
 })
 

@@ -4,7 +4,7 @@ import {fileURLToPath} from 'url';
 import path, {dirname} from 'path';
 import {config} from "dotenv";
 import bodyParser from "body-parser";
-import {copyFile, translit, WEBSocket} from "./utils.js";
+import {copyFile, WEBSocket} from "./utils.js";
 import {noSQL} from "./DB/noSQL.js";
 import routerGeneral from "./api-v1/general.js";
 import routerImage from "./api-v1/images.js";
@@ -44,8 +44,6 @@ global["LOG"] = (mess) => global?.messageSocket && global.messageSocket.send({ty
 global["ERR"] = (mess) => global?.messageSocket && global.messageSocket.send({type: 'popup-message-err', data: mess});
 global["WARN"] = (mess) => global?.messageSocket && global.messageSocket.send({type: 'popup-message-warn', data: mess});
 global["OK"] = (mess) => global?.messageSocket && global.messageSocket.send({type: 'popup-message-ok', data: mess});
-
-// if (!fs.existsSync(global.getPathTagsImg())) fs.mkdirSync(global.getPathTagsImg(), {recursive: false});//если нет директории то зададим
 
 async function createWebServer(port) {
     const app = express();
@@ -95,9 +93,9 @@ async function a() {
     const arr = global.dbNews.getAll().filter(it => it.arrImg.length > 0).map(({arrImg, pathSrc, tags}) => ({arrImg, pathSrc, tags}));
     for (let i = 0; i < arr.length; i++) {
         const {arrImg, pathSrc, tags} = arr[i];
-        const arrTag = tags.split(',').map(str => str.trim())
+        const arrTag = tags.split(',').map(str => str.trim().toLocaleLowerCase().replaceAll(/[^а-яa-z0-9\s]/g, ''))
         const pathTagsImg = global.getPathTagsImg();
-        const pathDest = limitStr(`${pathTagsImg}/${arrTag.join('-')}`, 255).replaceAll(/\s/g, '_').replaceAll(/["]/g, '')
+        const pathDest = limitStr(`${pathTagsImg}/tmp/${pathSrc.split('/')[1]}/${arrTag.join('-')}`, 255).replaceAll(/\s/g, '_')
         if (arrImg.length === 0) continue;
         if (!fs.existsSync(pathDest)) fs.mkdirSync(pathDest, {recursive: true});
         for (let j = 0; j < arrImg.length; j++) {
@@ -113,4 +111,12 @@ async function a() {
     console.log(arr)
 }
 
+// const arr = global.dbGeneral.getByID('tags');
+// const sim = await getAllImagesByTags('сша флаг , золото', arr);
+// console.log(sim)
 // setTimeout(a, 100);
+
+// console.log(JSON.stringify(all))
+// for (let i = 0; i < all.length; i++) {
+//     console.log(all[i])
+// }
