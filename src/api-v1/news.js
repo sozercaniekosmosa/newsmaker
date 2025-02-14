@@ -185,7 +185,7 @@ routerNews.post('/build-an-news', async (req, res) => {
 
         await removeDir(outputDir);
 
-        let arrImgExist = ([news.arrImg, news.arrImgTg]).flat();
+        let arrImgExist = ([news.arrImg, news.arrImgTg, fileTitleName]).flat();
         await clearImage(arrImgExist, news.pathSrc)
 
         dbNews.update({...news, videoDur: duration})
