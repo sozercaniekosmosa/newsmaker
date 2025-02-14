@@ -47,13 +47,11 @@ function videoFromImage({pathInput, pathOutput, dur = 5, fps = 30, clb}) {
 async function getArrDataVideo(arrPath) {
     const promiseArrDataVideo = arrPath.map(path => getDataVideo(path));
     const arrDataVideo = (await Promise.allSettled(promiseArrDataVideo)).map(it => it.value)
-    const arrDurFrame = arrDataVideo.map(dataVideo => {
+    return arrDataVideo.map(dataVideo => {
         const duration = dataVideo.streams[0].duration;
         const frames = dataVideo.streams[0].nb_frames;
         return {duration, frames};
-    })
-
-    return arrDurFrame;
+    });
 }
 
 async function videoConcat({arrPath, pathOutput, maxDuration, tmTrans, clb}) {
