@@ -303,6 +303,24 @@ export const removeFile = async (path) => {
     }
 };
 
+export const renameFile = async (path, toPath) => {
+    new Promise((resolve, reject) => {
+        try {
+            fs.rename(path, toPath, function (err) {
+                if (err) {
+                    console.log('ERROR: ' + err);
+                    reject(err)
+                } else {
+                    resolve()
+                }
+            });
+        } catch (error) {
+            reject(error)
+            throw error;
+        }
+    })
+};
+
 
 export const readData = async (path, options) => {
     try {

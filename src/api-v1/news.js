@@ -135,6 +135,7 @@ routerNews.post('/build-an-news', async (req, res) => {
         const dur = news.audioDur / (news.secPerFrame ?? 1.5)
 
         const fileTitleName = 'title-1920x1080.png';
+        const fileShortsName = 'shorts-1080x1920.png';
         if (!await checkFileExists(global.root + `/public/public/${news.pathSrc}/img/` + fileTitleName)) {
             global.messageSocket.send({type: 'popup-message', data: 'Добавьте title - файл'});
             res.status(error.status || 500).send({error: error?.message || error},);
@@ -185,7 +186,7 @@ routerNews.post('/build-an-news', async (req, res) => {
 
         await removeDir(outputDir);
 
-        let arrImgExist = ([news.arrImg, news.arrImgTg, fileTitleName]).flat();
+        let arrImgExist = ([news.arrImg, news.arrImgTg, fileTitleName, fileShortsName]).flat();
         await clearImage(arrImgExist, news.pathSrc)
 
         dbNews.update({...news, videoDur: duration})

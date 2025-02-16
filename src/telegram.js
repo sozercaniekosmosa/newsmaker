@@ -60,6 +60,7 @@ export class TelegramChannelBot {
             }
         } catch (e) {
             console.error(e)
+            throw e;
         }
 
 
@@ -97,28 +98,36 @@ export class TelegramChannelBot {
     }
 
     async publishMessage(channelID, text, arrImg, publishTime, messageId = Date.now().toString()) {
-        const arrUploadedImage = await this.#uploadImages(this.groupStorageID, this.groupStorageThreadID, text, arrImg);
-        const arrImgID = arrUploadedImage.map(({photo}) => photo.pop().file_id);
-        const arrMessageID = arrUploadedImage.map(({message_id}) => message_id);
+        try {
+            const arrUploadedImage = await this.#uploadImages(this.groupStorageID, this.groupStorageThreadID, text, arrImg);
+            const arrImgID = arrUploadedImage.map(({photo}) => photo.pop().file_id);
+            const arrMessageID = arrUploadedImage.map(({message_id}) => message_id);
 
-        const task = {
-            channelID,
-            text,
-            arrImgID,
-            publishTime: new Date(publishTime),
-            arrMessageID,
-            strTime: formatDateTime(new Date(publishTime)),
-        };
-        this.scheduledMessages[messageId] = task;
-        await this.bot.editMessageCaption(task.strTime + ': ' + task.text, {
-            chat_id: this.groupStorageID,
-            message_id: arrMessageID[0],
-            parse_mode: 'HTML'
-        });
-        // await this.bot.sendMessage(this.groupStorageID, JSON.stringify(this.scheduledMessages[messageId]), {message_thread_id: this.groupStorageThreadID})
+            const task = {
+                channelID,
+                text,
+                arrImgID,
+                publishTime: new Date(publishTime),
+                arrMessageID,
+                strTime: formatDateTime(new Date(publishTime)),
+            };
+            this.scheduledMessages[messageId] = task;
+            await this.bot.editMessageCaption(task.strTime + ': ' + task.text, {
+                chat_id: this.groupStorageID,
+                message_id: arrMessageID[0],
+                parse_mode: 'HTML'
+            });
+            // await this.bot.sendMessage(this.groupStorageID, JSON.stringify(this.scheduledMessages[messageId]), {message_thread_id: this.groupStorageThreadID})
 
-        await this.#storeState();
-        return messageId;
+            await this.#storeState();
+            return messageId;
+        } catch (e) {
+            console.error(e)
+            ERR(e.toString())
+            throw e;
+        }finally {
+            return messageId;
+        }
     }
 
     async editMessage(channelID, messageTaskID, newText, arrImg) {
